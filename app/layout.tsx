@@ -1,21 +1,20 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
-import { Header } from '@/components/layout/header'
-import { Footer } from '@/components/layout/footer'
-import { SITE_CONFIG } from '@/constants'
-import '@/styles/globals.css'
+import '../styles/globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: {
-    default: SITE_CONFIG.name,
-    template: `%s | ${SITE_CONFIG.name}`,
-  },
-  description: SITE_CONFIG.description,
-  keywords: SITE_CONFIG.keywords,
-  authors: [{ name: SITE_CONFIG.author }],
-  creator: SITE_CONFIG.author,
+  title: 'Blackbird Portal',
+  description: 'Explore our interconnected universe of innovation, creativity, and discovery',
+  keywords: ['portal', 'innovation', 'technology', 'creativity', 'discovery'],
+  authors: [{ name: 'Blackbird Portal Team' }],
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#000000',
 }
 
 export default function RootLayout({
@@ -24,12 +23,10 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
-        <div className="relative flex min-h-screen flex-col">
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
+    <html lang="en" className="dark">
+      <body className={`${inter.className} min-h-screen bg-black text-white antialiased`}>
+        <div className="relative min-h-screen">
+          {children}
         </div>
       </body>
     </html>

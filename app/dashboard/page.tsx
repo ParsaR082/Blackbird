@@ -23,7 +23,7 @@ export default function DashboardPage() {
               <LayoutDashboard className="w-8 h-8" />
               Dashboard
             </h1>
-            <p className="text-muted-foreground mt-1">Welcome back! Here's what's happening in your portal.</p>
+            <p className="text-muted-foreground mt-1">Welcome back! Here&apos;s what&apos;s happening in your portal.</p>
           </div>
           <Button>
             <Plus className="w-4 h-4 mr-2" />
@@ -174,7 +174,7 @@ export default function DashboardPage() {
       <Card className="mt-6">
         <CardHeader>
           <CardTitle>Current Projects</CardTitle>
-          <CardDescription>Projects you're actively working on</CardDescription>
+          <CardDescription>Projects you&apos;re actively working on</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">

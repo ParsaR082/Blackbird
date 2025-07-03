@@ -3,7 +3,7 @@ import { SupabaseAdapter } from '@next-auth/supabase-adapter'
 import GitHubProvider from 'next-auth/providers/github'
 import GoogleProvider from 'next-auth/providers/google'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { createClient } from './supabase'
+import { supabase } from './supabase'
 
 // Extend NextAuth types
 declare module 'next-auth' {
@@ -53,8 +53,6 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        const supabase = createClient()
-        
         const { data, error } = await supabase.auth.signInWithPassword({
           email: credentials.email,
           password: credentials.password,
@@ -94,6 +92,5 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: '/auth/signin',
-    signUp: '/auth/signup',
   },
 } 
