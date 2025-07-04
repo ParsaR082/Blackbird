@@ -32,14 +32,76 @@ const BackgroundNodes: React.FC<BackgroundNodesProps> = ({ isMobile = false }) =
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    // Set canvas size
+    let currentNodes: Node[] = []
+
+    // Set canvas size and redistribute nodes
     const resizeCanvas = () => {
+      const oldWidth = canvas.width
+      const oldHeight = canvas.height
+      
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
+      
+      // If we have existing nodes, redistribute them proportionally
+      if (currentNodes.length > 0 && oldWidth > 0 && oldHeight > 0) {
+        currentNodes.forEach(node => {
+          // Calculate proportional position
+          const xRatio = node.originalX / oldWidth
+          const yRatio = node.originalY / oldHeight
+          
+          // Update positions based on new canvas size
+          node.originalX = xRatio * canvas.width
+          node.originalY = yRatio * canvas.height
+          
+          // Also update current position proportionally
+          const currentXRatio = node.x / oldWidth
+          const currentYRatio = node.y / oldHeight
+          node.x = currentXRatio * canvas.width
+          node.y = currentYRatio * canvas.height
+        })
+        
+        // Add more nodes if screen got significantly larger
+        const oldArea = oldWidth * oldHeight
+        const newArea = canvas.width * canvas.height
+        const areaRatio = newArea / oldArea
+        
+        if (areaRatio > 1.2) { // If area increased by more than 20%
+          const targetNodeCount = isMobile ? 25 : 60
+          const additionalNodes = Math.floor((areaRatio - 1) * targetNodeCount * 0.5)
+          
+          for (let i = 0; i < additionalNodes; i++) {
+            const baseRadius = Math.random() * 2 + 1
+            const baseOpacity = Math.random() * 0.3 + 0.1
+            const x = Math.random() * canvas.width
+            const y = Math.random() * canvas.height
+            
+            currentNodes.push({
+              x,
+              y,
+              originalX: x,
+              originalY: y,
+              vx: (Math.random() - 0.5) * 0.5,
+              vy: (Math.random() - 0.5) * 0.5,
+              radius: baseRadius,
+              baseRadius,
+              opacity: baseOpacity,
+              baseOpacity
+            })
+          }
+        }
+        
+        // Remove excess nodes if screen got smaller
+        if (areaRatio < 0.8) { // If area decreased by more than 20%
+          const targetNodeCount = isMobile ? 25 : 60
+          const nodesToRemove = Math.floor((1 - areaRatio) * targetNodeCount * 0.3)
+          currentNodes.splice(-nodesToRemove, nodesToRemove)
+        }
+        
+        setNodes([...currentNodes])
+      }
     }
     
     resizeCanvas()
-    window.addEventListener('resize', resizeCanvas)
 
     // Create nodes
     const createNodes = () => {
@@ -70,7 +132,15 @@ const BackgroundNodes: React.FC<BackgroundNodesProps> = ({ isMobile = false }) =
       return newNodes
     }
 
-    let currentNodes = createNodes()
+    // Initialize nodes
+    currentNodes = createNodes()
+
+    // Handle resize events
+    const handleResize = () => {
+      resizeCanvas()
+    }
+    
+    window.addEventListener('resize', handleResize)
 
     // Mouse movement handler
     const handleMouseMove = (e: MouseEvent) => {
@@ -187,7 +257,7 @@ const BackgroundNodes: React.FC<BackgroundNodesProps> = ({ isMobile = false }) =
     animate()
 
     return () => {
-      window.removeEventListener('resize', resizeCanvas)
+      window.removeEventListener('resize', handleResize)
       window.removeEventListener('mousemove', handleMouseMove)
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current)

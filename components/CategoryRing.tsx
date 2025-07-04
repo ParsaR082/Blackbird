@@ -9,7 +9,8 @@ const categories = [
   { name: 'Games', path: '/games' },
   { name: 'Product Playground', path: '/product-playground' },
   { name: 'Roadmaps', path: '/roadmaps' },
-  { name: 'Events', path: '/events' }
+  { name: 'Events', path: '/events' },
+  { name: 'Assistant', path: '/assistant' }
 ]
 
 const CategoryRing = () => {
@@ -19,7 +20,7 @@ const CategoryRing = () => {
     <div className="absolute inset-0 flex items-center justify-center">
       {categories.map((category, index) => {
         // Calculate position in circle (starting from top and going clockwise)
-        const angle = (index * 72) - 90 // 72 degrees apart (360/5), start from top
+        const angle = (index * 60) - 90 // 60 degrees apart (360/6), start from top
         const radians = (angle * Math.PI) / 180
         const x = radius * Math.cos(radians)
         const y = radius * Math.sin(radians)
@@ -87,7 +88,7 @@ const CategoryRing = () => {
       
       {/* Connecting lines from center (subtle effect) */}
       {categories.map((_, index) => {
-        const angle = (index * 72) - 90
+        const angle = (index * 60) - 90
         
         return (
           <motion.div

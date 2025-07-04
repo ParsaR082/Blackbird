@@ -9,7 +9,8 @@ const categories = [
   { name: 'Games', path: '/games' },
   { name: 'Product Playground', path: '/product-playground' },
   { name: 'Roadmaps', path: '/roadmaps' },
-  { name: 'Events', path: '/events' }
+  { name: 'Events', path: '/events' },
+  { name: 'Assistant', path: '/assistant' }
 ]
 
 const CategoryList = () => {
