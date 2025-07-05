@@ -25,6 +25,7 @@ import {
 
 export default function GamesPage() {
   const [isMobile, setIsMobile] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
 
   useEffect(() => {
     const checkMobile = () => {
@@ -98,6 +99,16 @@ export default function GamesPage() {
     { label: 'Best Streak', value: '23', icon: Zap }
   ]
 
+  // Handle category selection
+  const handleCategoryClick = (categoryLabel: string) => {
+    setSelectedCategory(selectedCategory === categoryLabel ? null : categoryLabel)
+  }
+
+  // Filter games based on selected category
+  const filteredGames = selectedCategory 
+    ? featuredGames.filter(game => game.category === selectedCategory)
+    : featuredGames
+
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden">
       {/* Interactive Background */}
@@ -146,6 +157,7 @@ export default function GamesPage() {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => handleCategoryClick(category.label)}
               >
                 {/* Glow effect */}
                 <motion.div
@@ -156,7 +168,11 @@ export default function GamesPage() {
                 />
                 
                 {/* Category Card */}
-                <div className={`relative p-6 bg-black/90 border border-white/30 rounded-lg backdrop-blur-sm h-32 flex flex-col items-center justify-center text-center group-hover:border-white/60 group-hover:bg-black/95 transition-all duration-300 bg-gradient-to-br ${category.color}`}>
+                <div className={`relative p-6 bg-black/90 border rounded-lg backdrop-blur-sm h-32 flex flex-col items-center justify-center text-center transition-all duration-300 bg-gradient-to-br ${category.color} ${
+                  selectedCategory === category.label 
+                    ? 'border-white/80 bg-black/95 shadow-[0_0_20px_rgba(255,255,255,0.3)]' 
+                    : 'border-white/30 group-hover:border-white/60 group-hover:bg-black/95'
+                }`}>
                   <category.icon className="w-8 h-8 text-white mb-2" />
                   <h3 className="text-sm font-medium text-white mb-1">{category.label}</h3>
                   <p className="text-xs text-white/60">{category.count} games</p>
@@ -164,7 +180,11 @@ export default function GamesPage() {
 
                 {/* Pulse effect */}
                 <motion.div
-                  className="absolute inset-0 rounded-lg border border-white/20 opacity-0 group-hover:opacity-40"
+                  className={`absolute inset-0 rounded-lg border opacity-0 ${
+                    selectedCategory === category.label 
+                      ? 'border-white/40 opacity-60' 
+                      : 'border-white/20 group-hover:opacity-40'
+                  }`}
                   animate={{ scale: [1, 1.1, 1] }}
                   transition={{ 
                     duration: 2,
@@ -189,11 +209,18 @@ export default function GamesPage() {
             <div className="bg-black/90 border border-white/30 rounded-lg backdrop-blur-sm p-6">
               <div className="flex items-center gap-3 mb-6">
                 <Star className="w-5 h-5 text-white" />
-                <h2 className="text-lg font-light text-white tracking-wide">Featured Games</h2>
+                <h2 className="text-lg font-light text-white tracking-wide">
+                  Featured Games
+                  {selectedCategory && (
+                    <span className="ml-2 text-sm text-white/60">
+                      - {selectedCategory}
+                    </span>
+                  )}
+                </h2>
               </div>
               
               <div className="space-y-4">
-                {featuredGames.map((game, index) => (
+                {filteredGames.map((game, index) => (
                   <motion.div
                     key={game.title}
                     className="group p-4 bg-black/50 border border-white/20 rounded-lg hover:border-white/40 hover:bg-black/70 transition-all duration-300 cursor-pointer"
