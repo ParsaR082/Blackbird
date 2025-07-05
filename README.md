@@ -1,4 +1,4 @@
-# 🐦 Blackbird Portal
+#  Blackbird Portal
 
 A comprehensive full-stack Next.js web portal designed for tech-oriented communities. Built with modern technologies and a modular architecture for scalability and extensibility.
 
@@ -7,9 +7,9 @@ A comprehensive full-stack Next.js web portal designed for tech-oriented communi
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.3-cyan)
 ![Supabase](https://img.shields.io/badge/Supabase-2.38-green)
 
-## 🚀 Features
+##  Features
 
-### 🧠 Core Modules
+###  Core Modules
 - **AI Tools & Experiments** - Machine learning models, AI experiments, and automation
 - **Robotics & Engineering** - Hardware projects, robotics development, and engineering logs
 - **Scientific Community** - Discussion forums for research and collaboration
@@ -20,7 +20,7 @@ A comprehensive full-stack Next.js web portal designed for tech-oriented communi
 - **Secure Archives** - Encrypted file storage and historical records
 - **Admin Panel** - System administration and user management
 
-### ⚡ Technical Features
+###  Technical Features
 - **Modern UI/UX** - Built with Tailwind CSS and ShadCN UI components
 - **Responsive Design** - Optimized for mobile and desktop
 - **Authentication** - NextAuth.js with Supabase integration
@@ -31,7 +31,7 @@ A comprehensive full-stack Next.js web portal designed for tech-oriented communi
 - **Animations** - Framer Motion and GSAP integration
 - **Type Safety** - Full TypeScript implementation
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 - **Framework**: Next.js 14 (App Router)
 - **Language**: TypeScript
@@ -43,7 +43,7 @@ A comprehensive full-stack Next.js web portal designed for tech-oriented communi
 - **State Management**: Zustand
 - **Icons**: Lucide React
 
-## 📦 Installation
+##  Installation
 
 ### Prerequisites
 - Node.js 18+ 
@@ -149,7 +149,7 @@ yarn dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## 🏗️ Project Structure
+##  Project Structure
 
 ```
 blackbird-portal/
@@ -183,7 +183,7 @@ blackbird-portal/
 └── public/               # Static assets
 ```
 
-## 🎯 Usage
+##  Usage
 
 ### Adding New Modules
 1. Create a new directory in `app/`
@@ -201,7 +201,7 @@ blackbird-portal/
 2. Add provider credentials to environment variables
 3. Update `lib/auth.ts` with new providers
 
-## 🔒 Security Features
+##  Security Features
 
 - **Row Level Security** - Database-level security policies
 - **Role-Based Access Control** - Granular permission system
@@ -209,7 +209,7 @@ blackbird-portal/
 - **CSRF Protection** - NextAuth.js built-in protection
 - **Secure Headers** - Next.js security headers
 
-## 📚 Module Documentation
+##  Module Documentation
 
 ### AI Tools Module (`/ai`)
 - Chat interface with AI assistants
@@ -229,7 +229,7 @@ blackbird-portal/
 - Real-time updates
 - User reputation system
 
-## 🚀 Deployment
+##  Deployment
 
 ### Vercel (Recommended)
 1. Connect your GitHub repository to Vercel
@@ -242,7 +242,7 @@ npm run build
 npm start
 ```
 
-## 🤝 Contributing
+##  Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -250,11 +250,11 @@ npm start
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
+##  License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+##  Acknowledgments
 
 - [Next.js](https://nextjs.org/) - The React framework
 - [Supabase](https://supabase.com/) - Backend as a Service
