@@ -39,10 +39,10 @@ export default function GamesPage() {
   }, [])
 
   const gameCategories = [
-    { icon: Brain, label: 'Strategy', count: 12, color: 'from-purple-500/20 to-pink-500/20' },
-    { icon: Target, label: 'Arcade', count: 8, color: 'from-blue-500/20 to-cyan-500/20' },
-    { icon: Puzzle, label: 'Puzzle', count: 15, color: 'from-green-500/20 to-emerald-500/20' },
-    { icon: Swords, label: 'Action', count: 6, color: 'from-red-500/20 to-orange-500/20' }
+    { icon: Brain, label: 'Strategy', color: 'from-purple-500/20 to-pink-500/20' },
+    { icon: Target, label: 'Arcade', color: 'from-blue-500/20 to-cyan-500/20' },
+    { icon: Puzzle, label: 'Puzzle', color: 'from-green-500/20 to-emerald-500/20' },
+    { icon: Swords, label: 'Action', color: 'from-red-500/20 to-orange-500/20' }
   ]
 
   const featuredGames = [
@@ -102,6 +102,11 @@ export default function GamesPage() {
   // Handle category selection
   const handleCategoryClick = (categoryLabel: string) => {
     setSelectedCategory(selectedCategory === categoryLabel ? null : categoryLabel)
+  }
+
+  // Calculate count for each category
+  const getCategoryCount = (categoryLabel: string) => {
+    return featuredGames.filter(game => game.category === categoryLabel).length
   }
 
   // Filter games based on selected category
@@ -175,7 +180,7 @@ export default function GamesPage() {
                 }`}>
                   <category.icon className="w-8 h-8 text-white mb-2" />
                   <h3 className="text-sm font-medium text-white mb-1">{category.label}</h3>
-                  <p className="text-xs text-white/60">{category.count} games</p>
+                  <p className="text-xs text-white/60">{getCategoryCount(category.label)} games</p>
                 </div>
 
                 {/* Pulse effect */}
