@@ -262,10 +262,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [ShadCN UI](https://ui.shadcn.com/) - Re-usable components
 - [Lucide](https://lucide.dev/) - Beautiful icons
 
-## 📞 Support
+##  Support
 
 For support, email support@blackbird-portal.com or join our [Discord community](https://discord.gg/blackbird).
 
 ---
 
-Built with ❤️ by the Blackbird Team 
+Built with Love by the Blackbird Team 
