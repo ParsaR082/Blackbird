@@ -1,9 +1,11 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
-import BackgroundNodes from '@/components/BackgroundNodes'
+
+// Lazy load BackgroundNodes for better performance
+const BackgroundNodes = lazy(() => import('@/components/BackgroundNodes'))
 import { 
   Gamepad2,
   Trophy,
@@ -22,8 +24,8 @@ import {
   Clock,
   ChevronLeft,
   ChevronRight,
-  Sun,
-  Moon
+  Users,
+  Dices
 } from 'lucide-react'
 
 // TypeScript interfaces for better type safety
@@ -57,42 +59,35 @@ export default function GamesPage() {
   const [isMobile, setIsMobile] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
-  const [isDarkMode, setIsDarkMode] = useState(true)
+  const [isRandomMatchLoading, setIsRandomMatchLoading] = useState(false)
 
   // Pagination configuration
   const gamesPerPage = 3
 
+  // Consolidated effects for better performance
   useEffect(() => {
+    // Mobile detection with debounced resize handler
+    let resizeTimeout: NodeJS.Timeout
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
+      clearTimeout(resizeTimeout)
+      resizeTimeout = setTimeout(() => {
+        setIsMobile(window.innerWidth < 768)
+      }, 100)
     }
     
+    // Initialize
     checkMobile()
-    window.addEventListener('resize', checkMobile)
+    document.documentElement.classList.add('dark')
     
-    return () => window.removeEventListener('resize', checkMobile)
-  }, [])
-
-  // Theme detection and persistence
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme')
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    // Add resize listener
+    window.addEventListener('resize', checkMobile, { passive: true })
     
-    if (savedTheme) {
-      setIsDarkMode(savedTheme === 'dark')
-    } else {
-      setIsDarkMode(systemPrefersDark)
+    // Cleanup function
+    return () => {
+      window.removeEventListener('resize', checkMobile)
+      clearTimeout(resizeTimeout)
     }
   }, [])
-
-  useEffect(() => {
-    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light')
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-  }, [isDarkMode])
 
   const gameCategories: GameCategory[] = [
     { icon: Brain, label: 'Strategy', color: 'from-purple-500/20 to-pink-500/20' },
@@ -167,82 +162,99 @@ export default function GamesPage() {
     { label: 'Best Streak', value: '23', icon: Zap }
   ]
 
-  // Handle category selection with pagination reset
-  const handleCategoryClick = (categoryLabel: string) => {
-    setSelectedCategory(selectedCategory === categoryLabel ? null : categoryLabel)
+  // Memoized category counts for performance
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    featuredGames.forEach(game => {
+      counts[game.category] = (counts[game.category] || 0) + 1
+    })
+    return counts
+  }, [featuredGames])
+
+  // Memoized filtered games
+  const filteredGames = useMemo(() => {
+    return selectedCategory 
+      ? featuredGames.filter(game => game.category === selectedCategory)
+      : featuredGames
+  }, [featuredGames, selectedCategory])
+
+  // Memoized pagination logic
+  const paginationData = useMemo(() => {
+    const totalPages = Math.ceil(filteredGames.length / gamesPerPage)
+    const currentGames = filteredGames.slice(
+      (currentPage - 1) * gamesPerPage,
+      currentPage * gamesPerPage
+    )
+    return { totalPages, currentGames }
+  }, [filteredGames, currentPage, gamesPerPage])
+
+  // Optimized handlers with useCallback
+  const handleCategoryClick = useCallback((categoryLabel: string) => {
+    setSelectedCategory(prev => prev === categoryLabel ? null : categoryLabel)
     setCurrentPage(1) // Reset to first page when category changes
-  }
+  }, [])
 
-  // Toggle category with keyboard support
-  const toggleCategory = (categoryLabel: string) => {
+  const toggleCategory = useCallback((categoryLabel: string) => {
     handleCategoryClick(categoryLabel)
-  }
+  }, [handleCategoryClick])
 
-  // Handle theme toggle
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode)
-  }
+  const getCategoryCount = useCallback((categoryLabel: string) => {
+    return categoryCounts[categoryLabel] || 0
+  }, [categoryCounts])
 
-  // Calculate count for each category
-  const getCategoryCount = (categoryLabel: string) => {
-    return featuredGames.filter(game => game.category === categoryLabel).length
-  }
+  const goToNextPage = useCallback(() => {
+    setCurrentPage(prev => prev < paginationData.totalPages ? prev + 1 : prev)
+  }, [paginationData.totalPages])
 
-  // Filter games based on selected category
-  const filteredGames = selectedCategory 
-    ? featuredGames.filter(game => game.category === selectedCategory)
-    : featuredGames
+  const goToPreviousPage = useCallback(() => {
+    setCurrentPage(prev => prev > 1 ? prev - 1 : prev)
+  }, [])
 
-  // Pagination logic
-  const totalPages = Math.ceil(filteredGames.length / gamesPerPage)
-  const currentGames = filteredGames.slice(
-    (currentPage - 1) * gamesPerPage,
-    currentPage * gamesPerPage
-  )
-
-  // Pagination handlers
-  const goToNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1)
+  // Quick Actions handlers with error handling
+  const handleRandomMatch = useCallback(async () => {
+    if (featuredGames.length === 0) return
+    
+    setIsRandomMatchLoading(true)
+    
+    try {
+      // Brief loading animation for 300ms
+      setTimeout(() => {
+        const randomIndex = Math.floor(Math.random() * featuredGames.length)
+        const game = featuredGames[randomIndex]
+        const opened = window.open(game.link, '_blank')
+        
+        // Fallback if popup was blocked
+        if (!opened) {
+          window.location.href = game.link
+        }
+        
+        setIsRandomMatchLoading(false)
+      }, 300)
+    } catch (error) {
+      console.error('Failed to open game:', error)
+      setIsRandomMatchLoading(false)
+      alert('Failed to open game. Please try again.')
     }
-  }
+  }, [featuredGames])
 
-  const goToPreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1)
-    }
-  }
+  const handlePlayWithFriends = useCallback(() => {
+    alert('Multiplayer features coming soon!')
+  }, [])
 
   return (
-    <div className={`min-h-screen overflow-hidden transition-colors duration-300 ${
-      isDarkMode 
-        ? 'bg-black text-white' 
-        : 'bg-gray-50 text-gray-900'
-    }`}>
+    <div className="min-h-screen overflow-hidden transition-colors duration-300 bg-black text-white">
       {/* Interactive Background */}
-      <BackgroundNodes isMobile={isMobile} />
-      
-      {/* Theme Toggle Button */}
-      <motion.button
-        onClick={toggleTheme}
-        className={`fixed top-8 right-8 z-20 p-3 rounded-full border backdrop-blur-sm transition-all duration-300 ${
-          isDarkMode 
-            ? 'bg-black/90 border-white/30 text-white hover:bg-black/95 hover:border-white/60' 
-            : 'bg-white/90 border-gray-300 text-gray-900 hover:bg-white hover:border-gray-400'
-        }`}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
-        aria-label={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
-      >
-        {isDarkMode ? (
-          <Sun className="w-5 h-5" />
-        ) : (
-          <Moon className="w-5 h-5" />
-        )}
-      </motion.button>
+      <Suspense fallback={<div className="fixed inset-0 bg-black" />}>
+        <BackgroundNodes isMobile={isMobile} />
+      </Suspense>
       
       {/* Main Content */}
-      <div className="relative z-10 min-h-screen px-4 py-8">
+      <div className="relative z-10 min-h-screen px-4 py-8" role="main">
+        {/* Accessibility: Live region for dynamic content updates */}
+        <div aria-live="polite" aria-atomic="true" className="sr-only">
+          {selectedCategory ? `Filtered by ${selectedCategory}` : 'Showing all games'}
+          {filteredGames.length === 0 ? '. No games found.' : `, ${filteredGames.length} games found.`}
+        </div>
         {/* Header */}
         <motion.div 
           className="text-center mb-12"
@@ -252,32 +264,20 @@ export default function GamesPage() {
         >
           <div className="flex items-center justify-center gap-4 mb-4">
             <motion.div 
-              className={`p-4 rounded-full border backdrop-blur-sm ${
-                isDarkMode 
-                  ? 'bg-black/90 border-white/30' 
-                  : 'bg-white/90 border-gray-300'
-              }`}
+              className="p-4 rounded-full border backdrop-blur-sm bg-black/90 border-white/30"
               whileHover={{ 
                 scale: 1.1, 
-                boxShadow: isDarkMode 
-                  ? '0 0 25px rgba(255,255,255,0.4)' 
-                  : '0 0 25px rgba(0,0,0,0.2)'
+                boxShadow: '0 0 25px rgba(255,255,255,0.4)'
               }}
               transition={{ duration: 0.3 }}
             >
-              <Gamepad2 className={`w-8 h-8 ${
-                isDarkMode ? 'text-white' : 'text-gray-900'
-              }`} />
+              <Gamepad2 className="w-8 h-8 text-white" />
             </motion.div>
           </div>
-          <h1 className={`text-3xl font-light tracking-wide mb-2 ${
-            isDarkMode ? 'text-white' : 'text-gray-900'
-          }`}>
+          <h1 className="text-3xl font-light tracking-wide mb-2 text-white">
             Gaming Portal
           </h1>
-          <p className={`text-sm max-w-md mx-auto ${
-            isDarkMode ? 'text-white/60' : 'text-gray-600'
-          }`}>
+          <p className="text-sm max-w-md mx-auto text-white/60">
             Immersive neural gaming experiences and competitive digital arenas
           </p>
         </motion.div>
@@ -313,47 +313,29 @@ export default function GamesPage() {
               >
                 {/* Glow effect */}
                 <motion.div
-                  className={`absolute inset-0 rounded-lg opacity-0 blur-lg group-hover:opacity-10 ${
-                    isDarkMode ? 'bg-white' : 'bg-gray-900'
-                  }`}
+                  className="absolute inset-0 rounded-lg opacity-0 blur-lg group-hover:opacity-10 bg-white"
                   initial={{ scale: 0.8 }}
                   whileHover={{ scale: 1.1 }}
                   transition={{ duration: 0.3 }}
                 />
                 
                 {/* Category Card */}
-                <div className={`relative p-6 border rounded-lg backdrop-blur-sm h-32 flex flex-col items-center justify-center text-center transition-all duration-300 bg-gradient-to-br ${category.color} ${
-                  isDarkMode ? 'bg-black/90' : 'bg-white/90'
-                } ${
+                <div className={`relative p-6 border rounded-lg backdrop-blur-sm h-32 flex flex-col items-center justify-center text-center transition-all duration-300 bg-gradient-to-br ${category.color} bg-black/90 ${
                   selectedCategory === category.label 
-                    ? isDarkMode 
-                      ? 'border-white/80 bg-black/95 shadow-[0_0_20px_rgba(255,255,255,0.3)]' 
-                      : 'border-gray-600 bg-white shadow-[0_0_20px_rgba(0,0,0,0.2)]'
-                    : isDarkMode 
-                      ? 'border-white/30 group-hover:border-white/60 group-hover:bg-black/95' 
-                      : 'border-gray-300 group-hover:border-gray-400 group-hover:bg-white'
+                    ? 'border-white/80 bg-black/95 shadow-[0_0_20px_rgba(255,255,255,0.3)]' 
+                    : 'border-white/30 group-hover:border-white/60 group-hover:bg-black/95'
                 }`}>
-                  <category.icon className={`w-8 h-8 mb-2 ${
-                    isDarkMode ? 'text-white' : 'text-gray-900'
-                  }`} />
-                  <h3 className={`text-sm font-medium mb-1 ${
-                    isDarkMode ? 'text-white' : 'text-gray-900'
-                  }`}>{category.label}</h3>
-                  <p className={`text-xs ${
-                    isDarkMode ? 'text-white/60' : 'text-gray-600'
-                  }`}>{getCategoryCount(category.label)} games</p>
+                  <category.icon className="w-8 h-8 mb-2 text-white" />
+                  <h3 className="text-sm font-medium mb-1 text-white">{category.label}</h3>
+                  <p className="text-xs text-white/60">{getCategoryCount(category.label)} games</p>
                 </div>
 
                 {/* Pulse effect */}
                 <motion.div
                   className={`absolute inset-0 rounded-lg border opacity-0 ${
                     selectedCategory === category.label 
-                      ? isDarkMode 
-                        ? 'border-white/40 opacity-60' 
-                        : 'border-gray-500/40 opacity-60'
-                      : isDarkMode 
-                        ? 'border-white/20 group-hover:opacity-40' 
-                        : 'border-gray-400/20 group-hover:opacity-40'
+                      ? 'border-white/40 opacity-60' 
+                      : 'border-white/20 group-hover:opacity-40'
                   }`}
                   animate={{ scale: [1, 1.1, 1] }}
                   transition={{ 
@@ -376,23 +358,13 @@ export default function GamesPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
           >
-            <div className={`border rounded-lg backdrop-blur-sm p-6 ${
-              isDarkMode 
-                ? 'bg-black/90 border-white/30' 
-                : 'bg-white/90 border-gray-300'
-            }`}>
+            <div className="border rounded-lg backdrop-blur-sm p-6 bg-black/90 border-white/30">
               <div className="flex items-center gap-3 mb-6">
-                <Star className={`w-5 h-5 ${
-                  isDarkMode ? 'text-white' : 'text-gray-900'
-                }`} />
-                <h2 className={`text-lg font-light tracking-wide ${
-                  isDarkMode ? 'text-white' : 'text-gray-900'
-                }`}>
+                <Star className="w-5 h-5 text-white" />
+                <h2 className="text-lg font-light tracking-wide text-white">
                   Featured Games
                   {selectedCategory && (
-                    <span className={`ml-2 text-sm ${
-                      isDarkMode ? 'text-white/60' : 'text-gray-600'
-                    }`}>
+                    <span className="ml-2 text-sm text-white/60">
                       - {selectedCategory}
                     </span>
                   )}
@@ -410,12 +382,8 @@ export default function GamesPage() {
                     transition={{ duration: 0.4 }}
                   >
                     <div>
-                      <div className={`text-4xl mb-4 ${
-                        isDarkMode ? 'text-white/30' : 'text-gray-300'
-                      }`}>🎮</div>
-                      <p className={`text-lg ${
-                        isDarkMode ? 'text-white/60' : 'text-gray-600'
-                      }`}>
+                      <div className="text-4xl mb-4 text-white/30">🎮</div>
+                      <p className="text-lg text-white/60">
                         No games available in this category.
                       </p>
                     </div>
@@ -432,14 +400,10 @@ export default function GamesPage() {
                         exit={{ opacity: 0, x: -20 }}
                         transition={{ duration: 0.3 }}
                       >
-                        {currentGames.map((game, index) => (
+                        {paginationData.currentGames.map((game: FeaturedGame, index: number) => (
                           <motion.div
                             key={game.title}
-                            className={`group p-4 border rounded-lg transition-all duration-300 cursor-pointer ${
-                              isDarkMode 
-                                ? 'bg-black/50 border-white/20 hover:border-white/40 hover:bg-black/70' 
-                                : 'bg-white/50 border-gray-200 hover:border-gray-300 hover:bg-white/80'
-                            }`}
+                            className="group p-4 border rounded-lg transition-all duration-300 cursor-pointer bg-black/50 border-white/20 hover:border-white/40 hover:bg-black/70"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.4, delay: index * 0.1 }}
@@ -448,22 +412,14 @@ export default function GamesPage() {
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-2">
-                                  <h3 className={`text-base font-medium ${
-                                    isDarkMode ? 'text-white' : 'text-gray-900'
-                                  }`}>{game.title}</h3>
-                                  <span className={`px-2 py-1 border rounded-full text-xs ${
-                                    isDarkMode 
-                                      ? 'bg-white/10 border-white/20 text-white/70' 
-                                      : 'bg-gray-50 border-gray-200 text-gray-600'
-                                  }`}>
+                                  <h3 className="text-base font-medium text-white">{game.title}</h3>
+                                  <span className="px-2 py-1 border rounded-full text-xs bg-white/10 border-white/20 text-white/70">
                                     {game.category}
                                   </span>
                                 </div>
-                                <p className={`text-sm mb-3 ${
-                                  isDarkMode ? 'text-white/70' : 'text-gray-700'
-                                }`}>{game.description}</p>
+                                <p className="text-sm mb-3 text-white/70">{game.description}</p>
                               </div>
-                              {/* Enhanced Play Button with Lazy Loading */}
+                              {/* Enhanced Play Button with Prefetching */}
                               {game.link.startsWith('http') ? (
                                 <a
                                   href={game.link}
@@ -471,33 +427,34 @@ export default function GamesPage() {
                                   rel="noopener noreferrer"
                                   className="ml-4"
                                   aria-label={`Play ${game.title} in new tab`}
+                                  onMouseEnter={() => {
+                                    // Prefetch external link on hover
+                                    const link = document.createElement('link')
+                                    link.rel = 'prefetch'
+                                    link.href = game.link
+                                    document.head.appendChild(link)
+                                  }}
                                 >
                                   <motion.button
-                                    className={`px-6 py-3 border rounded-lg transition-all duration-300 flex items-center gap-2 ${
-                                      isDarkMode 
-                                        ? 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60' 
-                                        : 'bg-gray-100 border-gray-300 text-gray-900 hover:bg-gray-200 hover:border-gray-400'
-                                    }`}
+                                    className="px-6 py-3 border rounded-lg transition-all duration-300 flex items-center gap-2 bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-black"
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
+                                    tabIndex={-1}
                                   >
-                                    <Play className="w-4 h-4" />
+                                    <Play className="w-4 h-4" aria-hidden="true" />
                                     Play
                                   </motion.button>
                                 </a>
                               ) : (
-                                <Link href={game.link} className="ml-4">
+                                <Link href={game.link} className="ml-4" prefetch={true}>
                                   <motion.button
-                                    className={`px-6 py-3 border rounded-lg transition-all duration-300 flex items-center gap-2 ${
-                                      isDarkMode 
-                                        ? 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60' 
-                                        : 'bg-gray-100 border-gray-300 text-gray-900 hover:bg-gray-200 hover:border-gray-400'
-                                    }`}
+                                    className="px-6 py-3 border rounded-lg transition-all duration-300 flex items-center gap-2 bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-black"
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     aria-label={`Play ${game.title}`}
+                                    tabIndex={-1}
                                   >
-                                    <Play className="w-4 h-4" />
+                                    <Play className="w-4 h-4" aria-hidden="true" />
                                     Play
                                   </motion.button>
                                 </Link>
@@ -509,11 +466,9 @@ export default function GamesPage() {
                     </AnimatePresence>
 
                     {/* Pagination Controls */}
-                    {totalPages > 1 && (
+                    {paginationData.totalPages > 1 && (
                       <motion.div
-                        className={`flex items-center justify-between mt-6 pt-4 border-t ${
-                          isDarkMode ? 'border-white/20' : 'border-gray-300'
-                        }`}
+                        className="flex items-center justify-between mt-6 pt-4 border-t border-white/20"
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4, delay: 0.2 }}
@@ -523,12 +478,8 @@ export default function GamesPage() {
                           disabled={currentPage === 1}
                           className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-all duration-300 ${
                             currentPage === 1 
-                              ? isDarkMode 
-                                ? 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed' 
-                                : 'bg-gray-50 border-gray-200 text-gray-300 cursor-not-allowed'
-                              : isDarkMode 
-                                ? 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60' 
-                                : 'bg-gray-100 border-gray-300 text-gray-900 hover:bg-gray-200 hover:border-gray-400'
+                              ? 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed' 
+                              : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60'
                           }`}
                           whileHover={currentPage !== 1 ? { scale: 1.05 } : {}}
                           whileTap={currentPage !== 1 ? { scale: 0.95 } : {}}
@@ -539,27 +490,21 @@ export default function GamesPage() {
                         </motion.button>
 
                         <div className="flex items-center gap-2">
-                          <span className={`text-sm ${
-                            isDarkMode ? 'text-white/60' : 'text-gray-600'
-                          }`}>
-                            Page {currentPage} of {totalPages}
+                          <span className="text-sm text-white/60">
+                            Page {currentPage} of {paginationData.totalPages}
                           </span>
                         </div>
 
                         <motion.button
                           onClick={goToNextPage}
-                          disabled={currentPage === totalPages}
+                          disabled={currentPage === paginationData.totalPages}
                           className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-all duration-300 ${
-                            currentPage === totalPages 
-                              ? isDarkMode 
-                                ? 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed' 
-                                : 'bg-gray-50 border-gray-200 text-gray-300 cursor-not-allowed'
-                              : isDarkMode 
-                                ? 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60' 
-                                : 'bg-gray-100 border-gray-300 text-gray-900 hover:bg-gray-200 hover:border-gray-400'
+                            currentPage === paginationData.totalPages 
+                              ? 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed' 
+                              : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60'
                           }`}
-                          whileHover={currentPage !== totalPages ? { scale: 1.05 } : {}}
-                          whileTap={currentPage !== totalPages ? { scale: 0.95 } : {}}
+                          whileHover={currentPage !== paginationData.totalPages ? { scale: 1.05 } : {}}
+                          whileTap={currentPage !== paginationData.totalPages ? { scale: 0.95 } : {}}
                           aria-label="Next page"
                         >
                           Next
@@ -581,18 +526,10 @@ export default function GamesPage() {
             transition={{ duration: 0.8, delay: 0.6 }}
           >
             {/* Player Stats */}
-            <div className={`border rounded-lg backdrop-blur-sm p-6 ${
-              isDarkMode 
-                ? 'bg-black/90 border-white/30' 
-                : 'bg-white/90 border-gray-300'
-            }`}>
+            <div className="border rounded-lg backdrop-blur-sm p-6 bg-black/90 border-white/30">
               <div className="flex items-center gap-3 mb-4">
-                <Trophy className={`w-5 h-5 ${
-                  isDarkMode ? 'text-white' : 'text-gray-900'
-                }`} />
-                <h3 className={`text-lg font-light tracking-wide ${
-                  isDarkMode ? 'text-white' : 'text-gray-900'
-                }`}>Player Stats</h3>
+                <Trophy className="w-5 h-5 text-white" />
+                <h3 className="text-lg font-light tracking-wide text-white">Player Stats</h3>
               </div>
               <div className="space-y-3">
                 {playerStats.map((stat, index) => (
@@ -604,69 +541,39 @@ export default function GamesPage() {
                     transition={{ duration: 0.4, delay: index * 0.1 }}
                   >
                     <div className="flex items-center gap-2">
-                      <stat.icon className={`w-4 h-4 ${
-                        isDarkMode ? 'text-white/70' : 'text-gray-600'
-                      }`} />
-                      <span className={`text-sm ${
-                        isDarkMode ? 'text-white/70' : 'text-gray-600'
-                      }`}>{stat.label}</span>
+                      <stat.icon className="w-4 h-4 text-white/70" />
+                      <span className="text-sm text-white/70">{stat.label}</span>
                     </div>
-                    <span className={`text-sm font-light ${
-                      isDarkMode ? 'text-white' : 'text-gray-900'
-                    }`}>{stat.value}</span>
+                    <span className="text-sm font-light text-white">{stat.value}</span>
                   </motion.div>
                 ))}
               </div>
             </div>
 
             {/* Global Leaderboard */}
-            <div className={`border rounded-lg backdrop-blur-sm p-6 ${
-              isDarkMode 
-                ? 'bg-black/90 border-white/30' 
-                : 'bg-white/90 border-gray-300'
-            }`}>
+            <div className="border rounded-lg backdrop-blur-sm p-6 bg-black/90 border-white/30">
               <div className="flex items-center gap-3 mb-4">
-                <Award className={`w-5 h-5 ${
-                  isDarkMode ? 'text-white' : 'text-gray-900'
-                }`} />
-                <h3 className={`text-lg font-light tracking-wide ${
-                  isDarkMode ? 'text-white' : 'text-gray-900'
-                }`}>Global Leaderboard</h3>
+                <Award className="w-5 h-5 text-white" />
+                <h3 className="text-lg font-light tracking-wide text-white">Global Leaderboard</h3>
               </div>
               <div className="space-y-3">
                 {leaderboardData.map((player, index) => (
                   <motion.div 
                     key={player.player}
-                    className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all duration-300 ${
-                      isDarkMode 
-                        ? 'hover:bg-white/5' 
-                        : 'hover:bg-gray-100'
-                    }`}
+                    className="flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all duration-300 hover:bg-white/5"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: index * 0.1 }}
                   >
-                    <div className={`flex items-center justify-center w-6 h-6 rounded-full border text-xs font-bold ${
-                      isDarkMode 
-                        ? 'bg-white/20 border-white/30 text-white' 
-                        : 'bg-gray-100 border-gray-300 text-gray-900'
-                    }`}>
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full border text-xs font-bold bg-white/20 border-white/30 text-white">
                       {player.rank}
                     </div>
-                    <div className={`w-8 h-8 rounded-full border flex items-center justify-center font-bold text-xs ${
-                      isDarkMode 
-                        ? 'bg-white/20 border-white/30 text-white' 
-                        : 'bg-gray-100 border-gray-300 text-gray-900'
-                    }`}>
+                    <div className="w-8 h-8 rounded-full border flex items-center justify-center font-bold text-xs bg-white/20 border-white/30 text-white">
                       {player.avatar}
                     </div>
                     <div className="flex-1">
-                      <p className={`text-sm font-light ${
-                        isDarkMode ? 'text-white' : 'text-gray-900'
-                      }`}>{player.player}</p>
-                      <p className={`text-xs ${
-                        isDarkMode ? 'text-white/50' : 'text-gray-500'
-                      }`}>{player.score.toLocaleString()} pts</p>
+                      <p className="text-sm font-light text-white">{player.player}</p>
+                      <p className="text-xs text-white/50">{player.score.toLocaleString()} pts</p>
                     </div>
                   </motion.div>
                 ))}
@@ -674,56 +581,75 @@ export default function GamesPage() {
             </div>
 
             {/* Quick Actions */}
-            <div className={`border rounded-lg backdrop-blur-sm p-6 ${
-              isDarkMode 
-                ? 'bg-black/90 border-white/30' 
-                : 'bg-white/90 border-gray-300'
-            }`}>
+            <div className="border rounded-lg backdrop-blur-sm p-6 bg-black/90 border-white/30">
               <div className="flex items-center gap-3 mb-4">
-                <Zap className={`w-5 h-5 ${
-                  isDarkMode ? 'text-white' : 'text-gray-900'
-                }`} />
-                <h3 className={`text-lg font-light tracking-wide ${
-                  isDarkMode ? 'text-white' : 'text-gray-900'
-                }`}>Quick Actions</h3>
+                <Zap className="w-5 h-5 text-white" />
+                <h3 className="text-lg font-light tracking-wide text-white">Quick Actions</h3>
               </div>
               <div className="space-y-3">
+                {/* Join Random Match Button */}
                 <motion.button
-                  className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm ${
-                    isDarkMode 
-                      ? 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60' 
-                      : 'bg-gray-100 border-gray-300 text-gray-900 hover:bg-gray-200 hover:border-gray-400'
+                  className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-black ${
+                    featuredGames.length === 0 
+                      ? 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed' 
+                      : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60'
                   }`}
+                  whileHover={featuredGames.length > 0 && !isRandomMatchLoading ? { scale: 1.05 } : {}}
+                  whileTap={featuredGames.length > 0 && !isRandomMatchLoading ? { scale: 0.95 } : {}}
+                  transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                  onClick={handleRandomMatch}
+                  disabled={featuredGames.length === 0 || isRandomMatchLoading}
+                  aria-label="Join a random game from our collection"
+                  aria-describedby={featuredGames.length === 0 ? "no-games-warning" : undefined}
+                  title={featuredGames.length === 0 ? "No games available" : "Join a random game"}
+                >
+                  <motion.div
+                    animate={isRandomMatchLoading ? { 
+                      rotate: [0, 90, 180, 270, 360],
+                      scale: [1, 1.1, 1]
+                    } : {}}
+                    transition={{ 
+                      duration: 0.3, 
+                      ease: "easeInOut",
+                      times: [0, 0.25, 0.5, 0.75, 1]
+                    }}
+                  >
+                    <Dices className={`w-5 h-5 ${
+                      featuredGames.length === 0 
+                        ? 'text-white/30' 
+                        : 'text-white'
+                    }`} />
+                  </motion.div>
+                  <span className="flex-1 text-left">
+                    {isRandomMatchLoading ? 'Selecting Game...' : 'Join Random Match'}
+                  </span>
+                </motion.button>
+
+                {/* Play with Friends Button */}
+                <motion.button
+                  className="w-full p-3 border rounded-lg transition-all duration-300 text-sm flex items-center gap-3 bg-white/10 border-white/30 text-white hover:bg-white/15 hover:border-white/40 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-black"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  aria-label="Join a random multiplayer match"
+                  onClick={handlePlayWithFriends}
+                  aria-label="Play with friends (coming soon)"
+                  aria-describedby="friends-feature-info"
                 >
-                  Join Random Match
+                  <Users className="w-5 h-5 text-white/70" aria-hidden="true" />
+                  <span className="flex-1 text-left">Play with Friends</span>
+                  <div className="text-xs px-2 py-1 rounded-full bg-white/20 text-white/70">
+                    SOON
+                  </div>
                 </motion.button>
-                <motion.button
-                  className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm ${
-                    isDarkMode 
-                      ? 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60' 
-                      : 'bg-gray-100 border-gray-300 text-gray-900 hover:bg-gray-200 hover:border-gray-400'
-                  }`}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  aria-label="Create a new tournament"
-                >
-                  Create Tournament
-                </motion.button>
-                <motion.button
-                  className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm ${
-                    isDarkMode 
-                      ? 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60' 
-                      : 'bg-gray-100 border-gray-300 text-gray-900 hover:bg-gray-200 hover:border-gray-400'
-                  }`}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  aria-label="Browse available challenges"
-                >
-                  Browse Challenges
-                </motion.button>
+                
+                {/* Hidden accessibility helpers */}
+                {featuredGames.length === 0 && (
+                  <div id="no-games-warning" className="sr-only">
+                    No games are currently available. Please try again later.
+                  </div>
+                )}
+                <div id="friends-feature-info" className="sr-only">
+                  Multiplayer functionality is coming soon. Check back for updates.
+                </div>
               </div>
             </div>
           </motion.div>
@@ -736,17 +662,11 @@ export default function GamesPage() {
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 1 }}
         >
-          <div className={`flex items-center space-x-2 text-xs ${
-            isDarkMode ? 'text-white/40' : 'text-gray-500'
-          }`}>
-            <div className={`w-2 h-2 rounded-full animate-pulse ${
-              isDarkMode ? 'bg-white/40' : 'bg-gray-400'
-            }`} />
+          <div className="flex items-center space-x-2 text-xs text-white/40">
+            <div className="w-2 h-2 rounded-full animate-pulse bg-white/40" />
             <span>Gaming Network Online</span>
             <div 
-              className={`w-2 h-2 rounded-full animate-pulse ${
-                isDarkMode ? 'bg-white/40' : 'bg-gray-400'
-              }`} 
+              className="w-2 h-2 rounded-full animate-pulse bg-white/40" 
               style={{ animationDelay: '0.5s' }} 
             />
           </div>
