@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import Link from 'next/link'
 import BackgroundNodes from '@/components/BackgroundNodes'
 import { 
   Gamepad2,
@@ -50,15 +51,17 @@ export default function GamesPage() {
       players: 1247,
       rating: 4.8,
       status: 'active',
-      category: 'Strategy'
+      category: 'Strategy',
+      link: '/games/neural-chess'
     },
     {
-      title: 'Cosmic Defender',
-      description: 'Protect the galaxy from interdimensional threats',
-      players: 892,
+      title: 'Shadow Net',
+      description: 'You are the hired Agent, you have to protecet the galexy from the enemy, hack the system and help Dr.Tenebris',
+      players: 24,
       rating: 4.6,
       status: 'active',
-      category: 'Action'
+      category: 'Puzzle',
+      link: 'https://shadow-net-production.up.railway.app'
     },
     {
       title: 'Code Breaker Matrix',
@@ -66,7 +69,8 @@ export default function GamesPage() {
       players: 634,
       rating: 4.9,
       status: 'new',
-      category: 'Puzzle'
+      category: 'Puzzle',
+      link: '/games/code-breaker-matrix'
     },
     {
       title: 'Quantum Battles',
@@ -74,7 +78,8 @@ export default function GamesPage() {
       players: 445,
       rating: 4.7,
       status: 'active',
-      category: 'Strategy'
+      category: 'Strategy',
+      link: 'https://quantum-battles.example.com'
     }
   ]
 
@@ -222,14 +227,34 @@ export default function GamesPage() {
                           </span>
                         </div>
                       </div>
-                      <motion.button
-                        className="ml-4 px-6 py-3 bg-white/10 border border-white/30 rounded-lg text-white hover:bg-white/20 hover:border-white/60 transition-all duration-300 flex items-center gap-2"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <Play className="w-4 h-4" />
-                        Play
-                      </motion.button>
+                      {game.link.startsWith('http') ? (
+                        <a
+                          href={game.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-4"
+                        >
+                          <motion.button
+                            className="px-6 py-3 bg-white/10 border border-white/30 rounded-lg text-white hover:bg-white/20 hover:border-white/60 transition-all duration-300 flex items-center gap-2"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <Play className="w-4 h-4" />
+                            Play
+                          </motion.button>
+                        </a>
+                      ) : (
+                        <Link href={game.link} className="ml-4">
+                          <motion.button
+                            className="px-6 py-3 bg-white/10 border border-white/30 rounded-lg text-white hover:bg-white/20 hover:border-white/60 transition-all duration-300 flex items-center gap-2"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            <Play className="w-4 h-4" />
+                            Play
+                          </motion.button>
+                        </Link>
+                      )}
                     </div>
                   </motion.div>
                 ))}
@@ -348,4 +373,4 @@ export default function GamesPage() {
       </div>
     </div>
   )
-} 
+}
