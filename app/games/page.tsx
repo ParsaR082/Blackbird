@@ -7,7 +7,6 @@ import BackgroundNodes from '@/components/BackgroundNodes'
 import { 
   Gamepad2,
   Trophy,
-  Users,
   Zap,
   Star,
   Timer,
@@ -37,9 +36,6 @@ interface GameCategory {
 interface FeaturedGame {
   title: string
   description: string
-  players: number
-  rating: number
-  status: string
   category: string
   link: string
 }
@@ -107,40 +103,52 @@ export default function GamesPage() {
 
   const featuredGames: FeaturedGame[] = [
     {
-      title: 'Neural Chess',
-      description: 'AI-powered chess with quantum mechanics',
-      players: 1247,
-      rating: 4.8,
-      status: 'active',
-      category: 'Strategy',
-      link: '/games/neural-chess'
-    },
-    {
       title: 'Shadow Net',
-      description: 'You are the hired Agent, you have to protecet the galexy from the enemy, hack the system and help Dr.Tenebris',
-      players: 24,
-      rating: 4.6,
-      status: 'active',
+      description: 'You are the hired Agent, you have to protect the galaxy from the enemy, hack the system and help Dr.Tenebris',
       category: 'Puzzle',
       link: 'https://shadow-net-production.up.railway.app'
     },
     {
-      title: 'Code Breaker Matrix',
-      description: 'Decrypt alien algorithms and save humanity',
-      players: 634,
-      rating: 4.9,
-      status: 'new',
-      category: 'Puzzle',
-      link: '/games/code-breaker-matrix'
+      title: 'Chess Masters',
+      description: 'The ultimate online chess experience with players worldwide',
+      category: 'Strategy',
+      link: 'https://www.chess.com/'
     },
     {
-      title: 'Quantum Battles',
-      description: 'Strategic warfare in parallel dimensions',
-      players: 445,
-      rating: 4.7,
-      status: 'active',
-      category: 'Strategy',
-      link: 'https://quantum-battles.example.com'
+      title: 'ZType - Typing Game',
+      description: 'Space shooter where you type words to destroy incoming enemies',
+      category: 'Arcade',
+      link: 'https://zty.pe/'
+    },
+    {
+      title: 'Coding Game',
+      description: 'Learn programming through fun coding challenges and games',
+      category: 'Puzzle',
+      link: 'https://www.codingame.com/start/'
+    },
+    {
+      title: 'Blackbird Game',
+      description: 'A unique puzzle adventure with mysterious mechanics',
+      category: 'Puzzle',
+      link: 'https://blackbird-production.up.railway.app/'
+    },
+    {
+      title: '2048 Puzzle',
+      description: 'Combine tiles to reach the 2048 tile in this addictive numbers game',
+      category: 'Puzzle',
+      link: 'https://play2048.co/'
+    },
+    {
+      title: 'Slither.io',
+      description: 'Massive multiplayer online snake game with competitive gameplay',
+      category: 'Arcade',
+      link: 'https://slither.io/'
+    },
+    {
+      title: 'Wordle',
+      description: 'The popular daily word guessing game that took the world by storm',
+      category: 'Puzzle',
+      link: 'https://www.nytimes.com/games/wordle/index.html'
     }
   ]
 
@@ -443,15 +451,6 @@ export default function GamesPage() {
                                   <h3 className={`text-base font-medium ${
                                     isDarkMode ? 'text-white' : 'text-gray-900'
                                   }`}>{game.title}</h3>
-                                  {game.status === 'new' && (
-                                    <span className={`px-2 py-1 border rounded-full text-xs ${
-                                      isDarkMode 
-                                        ? 'bg-white/20 border-white/30 text-white' 
-                                        : 'bg-gray-100 border-gray-300 text-gray-900'
-                                    }`}>
-                                      NEW
-                                    </span>
-                                  )}
                                   <span className={`px-2 py-1 border rounded-full text-xs ${
                                     isDarkMode 
                                       ? 'bg-white/10 border-white/20 text-white/70' 
@@ -463,18 +462,6 @@ export default function GamesPage() {
                                 <p className={`text-sm mb-3 ${
                                   isDarkMode ? 'text-white/70' : 'text-gray-700'
                                 }`}>{game.description}</p>
-                                <div className={`flex items-center gap-4 text-xs ${
-                                  isDarkMode ? 'text-white/60' : 'text-gray-600'
-                                }`}>
-                                  <span className="flex items-center gap-1">
-                                    <Users className="w-3 h-3" />
-                                    {game.players} players
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <Star className="w-3 h-3" />
-                                    {game.rating}
-                                  </span>
-                                </div>
                               </div>
                               {/* Enhanced Play Button with Lazy Loading */}
                               {game.link.startsWith('http') ? (
