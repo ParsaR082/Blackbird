@@ -295,7 +295,7 @@ export default function EventsPage() {
 
           {/* What You'll Learn */}
           <div className="mb-6">
-            <h3 className="text-lg font-light text-white mb-3">What You'll Learn</h3>
+            <h3 className="text-lg font-light text-white mb-3">What You&apos;ll Learn</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {selectedEvent.whatYouWillLearn.map((item: string, index: number) => (
                 <div key={index} className="flex items-center gap-2">
