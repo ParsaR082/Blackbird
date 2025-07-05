@@ -19,12 +19,15 @@ import {
   BookOpen,
   Coffee,
   Mic,
-  Video
+  Video,
+  X
 } from 'lucide-react'
 
 export default function EventsPage() {
   const [isMobile, setIsMobile] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const [selectedEvent, setSelectedEvent] = useState<any>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   useEffect(() => {
     const checkMobile = () => {
@@ -50,6 +53,7 @@ export default function EventsPage() {
       id: 1,
       title: 'Neural Network Workshop',
       description: 'Deep dive into advanced neural network architectures and implementation',
+      detailDescription: 'Join us for an intensive hands-on workshop where you\'ll build neural networks from scratch. We\'ll cover everything from basic perceptrons to complex deep learning architectures. Perfect for developers looking to understand the fundamentals behind modern AI systems.',
       date: '2024-01-15',
       time: '14:00',
       duration: '3 hours',
@@ -58,12 +62,15 @@ export default function EventsPage() {
       attendees: 124,
       maxAttendees: 150,
       status: 'upcoming',
-      featured: true
+      featured: true,
+      prerequisites: ['Basic Python knowledge', 'Understanding of linear algebra'],
+      whatYouWillLearn: ['Neural network fundamentals', 'Backpropagation algorithm', 'TensorFlow implementation', 'Model optimization techniques']
     },
     {
       id: 2,
       title: 'Quantum Computing Hackathon',
       description: '48-hour intensive hackathon exploring quantum algorithms',
+      detailDescription: 'Ready to dive into the quantum realm? This hackathon brings together brilliant minds to tackle real-world problems using quantum computing. Teams will work on cutting-edge quantum algorithms and compete for amazing prizes.',
       date: '2024-01-20',
       time: '09:00',
       duration: '48 hours',
@@ -72,12 +79,15 @@ export default function EventsPage() {
       attendees: 89,
       maxAttendees: 100,
       status: 'registration-open',
-      featured: true
+      featured: true,
+      prerequisites: ['Basic quantum mechanics understanding', 'Programming experience'],
+      whatYouWillLearn: ['Quantum algorithm design', 'Qiskit framework', 'Quantum error correction', 'Real quantum hardware access']
     },
     {
       id: 3,
       title: 'AI Ethics Conference',
       description: 'Exploring the ethical implications of artificial intelligence',
+      detailDescription: 'As AI becomes more prevalent, ethical considerations become crucial. This conference brings together ethicists, technologists, and policy makers to discuss responsible AI development and deployment in our society.',
       date: '2024-01-25',
       time: '10:00',
       duration: '6 hours',
@@ -86,21 +96,26 @@ export default function EventsPage() {
       attendees: 267,
       maxAttendees: 300,
       status: 'upcoming',
-      featured: false
+      featured: false,
+      prerequisites: ['None - open to all'],
+      whatYouWillLearn: ['AI bias detection', 'Ethical AI frameworks', 'Policy implications', 'Industry best practices']
     },
     {
       id: 4,
       title: 'Tech Startup Mixer',
       description: 'Connect with fellow entrepreneurs and innovators',
+      detailDescription: 'Network with like-minded entrepreneurs, investors. Share ideas, find co-founders, and discover opportunities in the thriving tech startup ecosystem.',
       date: '2024-01-30',
       time: '18:00',
       duration: '2 hours',
-      location: 'Rooftop Lounge',
+      location: 'not determined',
       category: 'networking',
       attendees: 156,
       maxAttendees: 200,
       status: 'registration-open',
-      featured: false
+      featured: false,
+      prerequisites: ['None - all welcome'],
+      whatYouWillLearn: ['Networking strategies', 'Pitch techniques', 'Funding insights', 'Industry connections']
     }
   ]
 
@@ -134,14 +149,192 @@ export default function EventsPage() {
     }
   }
 
+  const openModal = (event: any) => {
+    setSelectedEvent(event)
+    setIsModalOpen(true)
+  }
+
+  const closeModal = () => {
+    setIsModalOpen(false)
+    setSelectedEvent(null)
+  }
+
   const filteredEvents = selectedCategory === 'all' 
     ? upcomingEvents 
     : upcomingEvents.filter(event => event.category === selectedCategory)
+
+  // Modal Component
+  const EventModal = () => {
+    if (!selectedEvent) return null
+
+    const getCategoryIcon = (category: string) => {
+      switch (category) {
+        case 'workshops': return Code
+        case 'hackathons': return Zap
+        case 'conferences': return Mic
+        case 'networking': return Users
+        default: return Globe
+      }
+    }
+
+    const CategoryIcon = getCategoryIcon(selectedEvent.category)
+
+    return (
+      <motion.div
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        {/* Overlay */}
+        <motion.div
+          className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={closeModal}
+        />
+        
+        {/* Modal Content */}
+        <motion.div
+          className="relative bg-[#111111] border border-[#1F1F1F] rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.8, opacity: 0 }}
+          transition={{ type: "spring", damping: 20, stiffness: 300 }}
+        >
+          {/* Close Button */}
+          <motion.button
+            onClick={closeModal}
+            className="absolute top-4 right-4 w-8 h-8 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-all duration-200"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+          >
+            <X className="w-4 h-4 text-white" />
+          </motion.button>
+
+          {/* Event Header */}
+          <div className="mb-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-[#2D8EFF]/20 rounded-lg">
+                <CategoryIcon className="w-5 h-5 text-[#2D8EFF]" />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {selectedEvent.featured && (
+                  <span className="px-2 py-1 bg-[#5C4B00] rounded-full text-xs text-[#FFD700] font-medium">
+                    FEATURED
+                  </span>
+                )}
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  selectedEvent.status === 'registration-open' 
+                    ? 'bg-[#033D1D] text-[#3AB54B]' 
+                    : 'bg-[#2D8EFF]/20 text-[#2D8EFF]'
+                }`}>
+                  {selectedEvent.status.replace('-', ' ').toUpperCase()}
+                </span>
+              </div>
+            </div>
+            <h2 className="text-2xl font-light text-white mb-2">{selectedEvent.title}</h2>
+            <p className="text-[#CCCCCC] text-sm leading-relaxed">{selectedEvent.detailDescription}</p>
+          </div>
+
+          {/* Event Details Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="bg-[#1F1F1F] rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="w-4 h-4 text-[#2D8EFF]" />
+                <span className="text-sm font-medium text-white">Date & Time</span>
+              </div>
+              <p className="text-[#CCCCCC] text-sm">{new Date(selectedEvent.date).toLocaleDateString()}</p>
+              <p className="text-[#CCCCCC] text-sm">{selectedEvent.time} ({selectedEvent.duration})</p>
+            </div>
+
+            <div className="bg-[#1F1F1F] rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <MapPin className="w-4 h-4 text-[#2D8EFF]" />
+                <span className="text-sm font-medium text-white">Location</span>
+              </div>
+              <p className="text-[#CCCCCC] text-sm">{selectedEvent.location}</p>
+            </div>
+
+            <div className="bg-[#1F1F1F] rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Users className="w-4 h-4 text-[#2D8EFF]" />
+                <span className="text-sm font-medium text-white">Attendees</span>
+              </div>
+              <p className="text-[#CCCCCC] text-sm">{selectedEvent.attendees} / {selectedEvent.maxAttendees}</p>
+              <div className="w-full bg-[#333333] rounded-full h-2 mt-2">
+                <div 
+                  className="bg-[#3AB54B] h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${(selectedEvent.attendees / selectedEvent.maxAttendees) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="bg-[#1F1F1F] rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Rocket className="w-4 h-4 text-[#2D8EFF]" />
+                <span className="text-sm font-medium text-white">Category</span>
+              </div>
+              <p className="text-[#CCCCCC] text-sm capitalize">{selectedEvent.category}</p>
+            </div>
+          </div>
+
+          {/* Prerequisites */}
+          <div className="mb-6">
+            <h3 className="text-lg font-light text-white mb-3">Prerequisites</h3>
+            <div className="flex flex-wrap gap-2">
+              {selectedEvent.prerequisites.map((prereq: string, index: number) => (
+                <span key={index} className="px-3 py-1 bg-[#1F1F1F] text-[#CCCCCC] text-sm rounded-full">
+                  {prereq}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* What You'll Learn */}
+          <div className="mb-6">
+            <h3 className="text-lg font-light text-white mb-3">What You'll Learn</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {selectedEvent.whatYouWillLearn.map((item: string, index: number) => (
+                <div key={index} className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-[#3AB54B] rounded-full flex-shrink-0" />
+                  <span className="text-[#CCCCCC] text-sm">{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            <motion.button
+              className="flex-1 bg-[#2D8EFF] hover:bg-[#2D8EFF]/90 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              Register Now
+            </motion.button>
+            <motion.button
+              className="px-6 py-3 bg-[#1F1F1F] hover:bg-[#333333] text-[#CCCCCC] rounded-lg font-medium transition-all duration-200"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              Add to Calendar
+            </motion.button>
+          </div>
+        </motion.div>
+      </motion.div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden">
       {/* Interactive Background */}
       <BackgroundNodes isMobile={isMobile} />
+      
+      {/* Modal */}
+      {isModalOpen && <EventModal />}
       
       {/* Main Content */}
       <div className="relative z-10 min-h-screen px-4 py-8">
@@ -171,12 +364,12 @@ export default function EventsPage() {
 
         {/* Event Categories */}
         <motion.div 
-          className="max-w-4xl mx-auto mb-12"
+          className="max-w-6xl mx-auto mb-12 px-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
         >
-          <div className="flex flex-wrap justify-center gap-4">
+          <div className="flex flex-wrap sm:flex-nowrap justify-center sm:justify-center gap-3 sm:gap-4 overflow-x-auto scrollbar-hide">
             {eventCategories.map((category, index) => (
               <motion.button
                 key={category.id}
@@ -274,6 +467,7 @@ export default function EventsPage() {
                           className="px-6 py-2 bg-white/5 border border-white/20 rounded-lg text-white/70 hover:bg-white/10 hover:border-white/40 transition-all duration-300 text-sm"
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
+                          onClick={() => openModal(event)}
                         >
                           Details
                         </motion.button>
