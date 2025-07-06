@@ -165,6 +165,29 @@ export default function EventsPage() {
     ? upcomingEvents 
     : upcomingEvents.filter(event => event.category === selectedCategory)
 
+  // Helper function to calculate time until event
+  const getTimeUntilEvent = (eventDate: string, eventTime: string) => {
+    const now = new Date()
+    const eventDateTime = new Date(`${eventDate}T${eventTime}`)
+    const timeDiff = eventDateTime.getTime() - now.getTime()
+    
+    if (timeDiff <= 0) {
+      return "Event has started"
+    }
+    
+    const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24))
+    const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+    const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60))
+    
+    if (days > 0) {
+      return `Starts in ${days} day${days > 1 ? 's' : ''}, ${hours} hour${hours > 1 ? 's' : ''}`
+    } else if (hours > 0) {
+      return `Starts in ${hours} hour${hours > 1 ? 's' : ''}, ${minutes} minute${minutes > 1 ? 's' : ''}`
+    } else {
+      return `Starts in ${minutes} minute${minutes > 1 ? 's' : ''}`
+    }
+  }
+
   // Modal Component
   const EventModal = () => {
     if (!selectedEvent) return null
@@ -455,6 +478,9 @@ export default function EventsPage() {
                             <Users className="w-3 h-3" />
                             {event.attendees}/{event.maxAttendees}
                           </span>
+                        </div>
+                        <div className="text-xs text-white/50 mt-2">
+                          {getTimeUntilEvent(event.date, event.time)}
                         </div>
                       </div>
                       <div className="flex flex-col gap-2">
