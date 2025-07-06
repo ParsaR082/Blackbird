@@ -1,17 +1,14 @@
 import { Database } from '@/lib/supabase'
 
 // User types
-export type User = Database['public']['Tables']['profiles']['Row']
-export type UserRole = 'admin' | 'moderator' | 'member' | 'guest'
+export type User = Database['public']['Tables']['users']['Row']
+export type UserRole = 'admin' | 'user' | 'guest'
 
 // Navigation types
 export interface NavItem {
   title: string
   href: string
-  description?: string
-  icon?: string
-  disabled?: boolean
-  external?: boolean
+  icon: string
 }
 
 export interface NavItemWithChildren extends NavItem {
@@ -96,12 +93,17 @@ export interface PaginationData {
 // Notification types
 export interface Notification {
   id: string
-  type: 'info' | 'success' | 'warning' | 'error'
   title: string
   message: string
+  type: 'info' | 'success' | 'warning' | 'error'
   read: boolean
   createdAt: Date
-  actionUrl?: string
+}
+
+export interface NotificationContextType {
+  notifications: Notification[]
+  addNotification: (notification: Omit<Notification, 'id' | 'createdAt'>) => void
+  markNotificationRead: (id: string) => void
 }
 
 // Theme types
@@ -124,4 +126,21 @@ export interface UIStore {
   toggleSidebar: () => void
   addNotification: (notification: Omit<Notification, 'id' | 'createdAt'>) => void
   markNotificationRead: (id: string) => void
+}
+
+// User authentication types
+export interface UserAuth {
+  id: string
+  student_id: string
+  username: string
+  full_name: string
+  role: UserRole
+  is_verified: boolean
+  avatar_url?: string | null
+}
+
+// Session type
+export interface Session {
+  user: UserAuth
+  expires: string
 } 

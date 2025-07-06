@@ -96,20 +96,6 @@ export default function HomePage() {
           </motion.div>
         </div>
       </div>
-      
-      {/* Bottom decoration */}
-      <motion.div 
-        className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-10"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1, delay: 2 }}
-      >
-        <div className="flex items-center space-x-2 text-white/40 text-xs">
-          <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse" />
-          <span>Portal Active</span>
-          <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }} />
-        </div>
-      </motion.div>
 
       {/* Auth Modal */}
       <AuthModal 

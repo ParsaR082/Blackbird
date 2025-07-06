@@ -1,4 +1,3 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
@@ -22,8 +21,8 @@ const adminRoutes = [
   '/admin'
 ]
 
-// Member+ routes (requires member or higher role)
-const memberRoutes = [
+// Routes requiring verification
+const verifiedRoutes = [
   '/archives',
   '/training'
 ]
@@ -31,17 +30,6 @@ const memberRoutes = [
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
   
-  // Check if Supabase environment variables are configured
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('Supabase environment variables not configured. Middleware will skip authentication checks.')
-    return res
-  }
-
-  const supabase = createMiddlewareClient({ req, res })
-
   // Get the pathname
   const pathname = req.nextUrl.pathname
 
@@ -56,53 +44,50 @@ export async function middleware(req: NextRequest) {
   }
 
   try {
-    // Get the session
-    const {
-      data: { session },
-      error
-    } = await supabase.auth.getSession()
-
-    // If there's an error getting the session, log it and continue
-    if (error) {
-      console.error('Error getting session:', error)
-      return res
-    }
-
-    // If no session and trying to access protected route, redirect to sign in
-    if (!session && isProtectedRoute) {
-      const redirectUrl = new URL('/auth/signin', req.url)
+    // Get session token from cookie
+    const sessionToken = req.cookies.get('session_token')?.value
+    
+    // If no session and trying to access protected route, redirect to login
+    if (!sessionToken && isProtectedRoute) {
+      const redirectUrl = new URL('/?showAuth=login', req.url)
       redirectUrl.searchParams.set('redirectTo', pathname)
       return NextResponse.redirect(redirectUrl)
     }
 
-    // If session exists, check role-based permissions
-    if (session) {
-      try {
-        // Get user profile to check role
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single()
-
-        const userRole = profile?.role || 'guest'
-
-        // Check admin routes
-        if (adminRoutes.some(route => pathname.startsWith(route))) {
-          if (userRole !== 'admin') {
-            return NextResponse.redirect(new URL('/dashboard', req.url))
-          }
+    if (sessionToken) {
+      // Make API request to validate session and get user
+      const validateResponse = await fetch(`${req.nextUrl.origin}/api/auth/validate`, {
+        headers: {
+          'Cookie': `session_token=${sessionToken}`
         }
+      })
 
-        // Check member+ routes
-        if (memberRoutes.some(route => pathname.startsWith(route))) {
-          if (!['admin', 'moderator', 'member'].includes(userRole)) {
-            return NextResponse.redirect(new URL('/dashboard', req.url))
-          }
+      if (!validateResponse.ok) {
+        // Session is invalid, clear cookie and redirect to login
+        const response = NextResponse.redirect(new URL('/?showAuth=login', req.url))
+        response.cookies.delete('session_token')
+        return response
+      }
+
+      const userData = await validateResponse.json()
+
+      // Check admin routes
+      if (adminRoutes.some(route => pathname.startsWith(route))) {
+        if (userData.role !== 'admin') {
+          return NextResponse.redirect(new URL('/dashboard', req.url))
         }
-      } catch (profileError) {
-        console.error('Error fetching user profile:', profileError)
-        // Continue without role checking if there's an error
+      }
+
+      // Check verified routes
+      if (verifiedRoutes.some(route => pathname.startsWith(route))) {
+        if (!userData.is_verified) {
+          return NextResponse.redirect(new URL('/dashboard?needVerification=true', req.url))
+        }
+      }
+
+      // User is trying to access login/signup page but is already logged in
+      if (pathname === '/' && req.nextUrl.searchParams.has('showAuth')) {
+        return NextResponse.redirect(new URL('/dashboard', req.url))
       }
     }
   } catch (middlewareError) {
