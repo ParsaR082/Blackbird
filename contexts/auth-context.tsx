@@ -13,7 +13,7 @@ type AuthContextType = {
   user: UserAuth | null
   isLoading: boolean
   isAuthenticated: boolean
-  login: (identifier: string, password: string) => Promise<{ success: boolean, error?: string }>
+  login: (identifier: string, password: string) => Promise<{ success: boolean, error?: string, user?: UserAuth }>
   register: (userData: RegisterData) => Promise<{ success: boolean, error?: string }>
   logout: () => Promise<void>
   checkAuth: () => Promise<boolean>
@@ -35,7 +35,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Check if user is authenticated on mount
   useEffect(() => {
-    checkAuth()
+    let isMounted = true
+    
+    const runAuthCheck = async () => {
+      try {
+        setIsLoading(true)
+        const response = await fetch('/api/auth/validate')
+        
+        if (!isMounted) return
+        
+        if (response.ok) {
+          const userData = await response.json()
+          setUser(userData)
+        } else {
+          setUser(null)
+        }
+      } catch (error) {
+        console.error('Auth check error:', error)
+        if (isMounted) setUser(null)
+      } finally {
+        if (isMounted) setIsLoading(false)
+      }
+    }
+    
+    runAuthCheck()
+    
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   // Function to check authentication status
@@ -63,12 +90,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   // Login function
-  const login = async (identifier: string, password: string): Promise<{ success: boolean, error?: string }> => {
+  const login = async (identifier: string, password: string): Promise<{ success: boolean, error?: string, user?: UserAuth }> => {
     try {
       setIsLoading(true)
+      
+      // Get CSRF token from header
+      const csrfResponse = await fetch('/api/auth/csrf')
+      const csrfToken = csrfResponse.headers.get('x-csrf-token')
+      
       const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-csrf-token': csrfToken || ''
+        },
         body: JSON.stringify({ identifier, password })
       })
 
@@ -82,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Update user state after successful login
       setUser(data.user)
       setIsLoading(false)
-      return { success: true }
+      return { success: true, user: data.user }
     } catch (error) {
       console.error('Login error:', error)
       setIsLoading(false)
@@ -94,9 +129,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (userData: RegisterData): Promise<{ success: boolean, error?: string }> => {
     try {
       setIsLoading(true)
+      
+      // Get CSRF token from header
+      const csrfResponse = await fetch('/api/auth/csrf')
+      const csrfToken = csrfResponse.headers.get('x-csrf-token')
+      
       const response = await fetch('/api/auth/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-csrf-token': csrfToken || ''
+        },
         body: JSON.stringify(userData)
       })
 
@@ -120,9 +163,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async (): Promise<void> => {
     try {
       setIsLoading(true)
+      
+      // Get CSRF token from header
+      const csrfResponse = await fetch('/api/auth/csrf')
+      const csrfToken = csrfResponse.headers.get('x-csrf-token')
+      
       await fetch('/api/auth/logout', {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+          'x-csrf-token': csrfToken || ''
+        }
       })
+      
       setUser(null)
     } catch (error) {
       console.error('Logout error:', error)

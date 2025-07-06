@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { AuthModal } from '@/components/auth/AuthModal'
+import { UserAuth } from '@/types'
 import { 
   User, 
   Settings,
@@ -45,6 +46,17 @@ export function UserMenu() {
   const handleRegister = () => {
     setAuthMode('register')
     setShowAuthModal(true)
+  }
+
+  const handleAuthComplete = (user: UserAuth) => {
+    setShowAuthModal(false)
+    
+    // Redirect based on user role
+    if (user.role === 'admin') {
+      router.push('/admin')
+    } else {
+      router.push('/dashboard')
+    }
   }
 
   // User's initials for avatar fallback
@@ -103,6 +115,7 @@ export function UserMenu() {
           isOpen={showAuthModal}
           onClose={() => setShowAuthModal(false)}
           initialMode={authMode}
+          onAuthComplete={handleAuthComplete}
         />
       </>
     )

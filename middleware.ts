@@ -1,113 +1,83 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { generateCsrfToken } from './lib/csrf'
 
 // Protected routes that require authentication
 const protectedRoutes = [
   '/dashboard',
-  '/ai',
-  '/robotics',
-  '/forum',
-  '/projects',
-  '/competitions',
-  '/training',
-  '/languages',
-  '/archives',
   '/admin',
-  '/users'
-]
-
-// Admin-only routes
-const adminRoutes = [
-  '/admin'
-]
-
-// Routes requiring verification
-const verifiedRoutes = [
-  '/archives',
+  '/profile',
+  '/settings',
   '/training'
 ]
 
 export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
+  const { pathname } = req.nextUrl
+
+  // CSRF Protection
+  // Skip CSRF for non-mutation methods
+  if (!(req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS')) {
+    // For API routes, we'll validate the token in the route handler
+    if (pathname.startsWith('/api/auth/')) {
+      // Just continue to the route handler which will validate the token
+    }
+  }
   
-  // Get the pathname
-  const pathname = req.nextUrl.pathname
-
-  // Check if the route needs protection
-  const isProtectedRoute = protectedRoutes.some(route => 
-    pathname.startsWith(route)
-  )
-
-  // If not a protected route, continue
-  if (!isProtectedRoute) {
-    return res
+  // Generate CSRF token for page requests
+  if (
+    req.method === 'GET' &&
+    !pathname.startsWith('/api/') &&
+    !pathname.startsWith('/_next/') &&
+    !pathname.includes('.')
+  ) {
+    const csrfToken = generateCsrfToken()
+    const response = NextResponse.next()
+    response.headers.set('x-csrf-token', csrfToken)
+    return response
   }
 
-  try {
-    // Get session token from cookie
+  // Authentication Check for Protected Routes
+  if (protectedRoutes.some(route => pathname.startsWith(route))) {
+    // Get the session token from cookie
     const sessionToken = req.cookies.get('session_token')?.value
     
-    // If no session and trying to access protected route, redirect to login
-    if (!sessionToken && isProtectedRoute) {
-      const redirectUrl = new URL('/?showAuth=login', req.url)
-      redirectUrl.searchParams.set('redirectTo', pathname)
-      return NextResponse.redirect(redirectUrl)
+    if (!sessionToken) {
+      // Redirect to login if no session token
+      const url = new URL('/auth/login', req.url)
+      url.searchParams.set('redirectTo', pathname)
+      return NextResponse.redirect(url)
     }
-
-    if (sessionToken) {
-      // Make API request to validate session and get user
-      const validateResponse = await fetch(`${req.nextUrl.origin}/api/auth/validate`, {
+    
+    // Validate session token by calling the API
+    try {
+      const validateRes = await fetch(new URL('/api/auth/validate', req.url), {
         headers: {
-          'Cookie': `session_token=${sessionToken}`
+          Cookie: `session_token=${sessionToken}`
         }
       })
-
-      if (!validateResponse.ok) {
-        // Session is invalid, clear cookie and redirect to login
-        const response = NextResponse.redirect(new URL('/?showAuth=login', req.url))
-        response.cookies.delete('session_token')
-        return response
+      
+      if (!validateRes.ok) {
+        // Session is invalid, redirect to login
+        const url = new URL('/auth/login', req.url)
+        url.searchParams.set('redirectTo', pathname)
+        return NextResponse.redirect(url)
       }
-
-      const userData = await validateResponse.json()
-
-      // Check admin routes
-      if (adminRoutes.some(route => pathname.startsWith(route))) {
-        if (userData.role !== 'admin') {
-          return NextResponse.redirect(new URL('/dashboard', req.url))
-        }
-      }
-
-      // Check verified routes
-      if (verifiedRoutes.some(route => pathname.startsWith(route))) {
-        if (!userData.is_verified) {
-          return NextResponse.redirect(new URL('/dashboard?needVerification=true', req.url))
-        }
-      }
-
-      // User is trying to access login/signup page but is already logged in
-      if (pathname === '/' && req.nextUrl.searchParams.has('showAuth')) {
-        return NextResponse.redirect(new URL('/dashboard', req.url))
-      }
+    } catch (error) {
+      console.error('Session validation error:', error)
+      // On error, redirect to login
+      const url = new URL('/auth/login', req.url)
+      url.searchParams.set('redirectTo', pathname)
+      return NextResponse.redirect(url)
     }
-  } catch (middlewareError) {
-    console.error('Middleware error:', middlewareError)
-    // Continue without authentication if there's an error
   }
 
-  return res
+  return NextResponse.next()
 }
 
+// Configure middleware to run on specific paths
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico|public/).*)',
+    // Apply to all routes except static assets
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 } 
