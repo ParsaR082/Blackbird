@@ -1,11 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-import { createHash } from 'crypto'
+import * as bcrypt from 'bcrypt'
 import { cookies } from 'next/headers'
 import { v4 as uuidv4 } from 'uuid'
+import { validateCsrfToken } from '@/lib/csrf'
+import { loginLimiter } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
   try {
+    // Get IP for rate limiting
+    const ip = request.headers.get('x-forwarded-for') || 
+               request.headers.get('x-real-ip') || 
+               'anonymous'
+    
+    // Check rate limit
+    const rateLimit = await loginLimiter.limit(ip)
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: 'Too many login attempts. Please try again later.' },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.floor((rateLimit.reset - Date.now()) / 1000)),
+            'X-RateLimit-Limit': String(rateLimit.limit),
+            'X-RateLimit-Remaining': String(rateLimit.remaining),
+          }
+        }
+      )
+    }
+    
+    // Validate CSRF token
+    const csrfToken = request.headers.get('x-csrf-token')
+    if (!validateCsrfToken(csrfToken)) {
+      return NextResponse.json(
+        { error: 'Invalid CSRF token' },
+        { status: 403 }
+      )
+    }
+
     const { identifier, password } = await request.json()
     
     // Validate required fields
@@ -30,12 +62,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify password
-    const passwordHash = createHash('sha256')
-      .update(password)
-      .digest('hex')
-
-    if (user.password_hash !== passwordHash) {
+    // Verify password using bcrypt
+    const isValidPassword = await bcrypt.compare(password, user.password_hash)
+    if (!isValidPassword) {
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
