@@ -2,7 +2,7 @@ import { Database } from '@/lib/supabase'
 
 // User types
 export type User = Database['public']['Tables']['users']['Row']
-export type UserRole = 'admin' | 'user' | 'guest'
+export type UserRole = 'admin' | 'user' | 'guest' | 'member'
 
 // Navigation types
 export interface NavItem {
