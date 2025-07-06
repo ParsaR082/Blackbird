@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { useRouter } from 'next/navigation'
 import BackgroundNodes from '@/components/BackgroundNodes'
 import { 
   Calendar,
@@ -24,6 +25,7 @@ import {
 } from 'lucide-react'
 
 export default function EventsPage() {
+  const router = useRouter()
   const [isMobile, setIsMobile] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedEvent, setSelectedEvent] = useState<any>(null)
@@ -54,7 +56,7 @@ export default function EventsPage() {
       title: 'Neural Network Workshop',
       description: 'Deep dive into advanced neural network architectures and implementation',
       detailDescription: 'Join us for an intensive hands-on workshop where you\'ll build neural networks from scratch. We\'ll cover everything from basic perceptrons to complex deep learning architectures. Perfect for developers looking to understand the fundamentals behind modern AI systems.',
-      date: '2024-01-15',
+      date: '2026-01-15',
       time: '14:00',
       duration: '3 hours',
       location: 'Virtual Reality Lab',
@@ -71,7 +73,7 @@ export default function EventsPage() {
       title: 'Quantum Computing Hackathon',
       description: '48-hour intensive hackathon exploring quantum algorithms',
       detailDescription: 'Ready to dive into the quantum realm? This hackathon brings together brilliant minds to tackle real-world problems using quantum computing. Teams will work on cutting-edge quantum algorithms and compete for amazing prizes.',
-      date: '2024-01-20',
+      date: '2026-01-20',
       time: '09:00',
       duration: '48 hours',
       location: 'Innovation Center',
@@ -88,7 +90,7 @@ export default function EventsPage() {
       title: 'AI Ethics Conference',
       description: 'Exploring the ethical implications of artificial intelligence',
       detailDescription: 'As AI becomes more prevalent, ethical considerations become crucial. This conference brings together ethicists, technologists, and policy makers to discuss responsible AI development and deployment in our society.',
-      date: '2024-01-25',
+      date: '2026-01-25',
       time: '10:00',
       duration: '6 hours',
       location: 'Main Auditorium',
@@ -105,7 +107,7 @@ export default function EventsPage() {
       title: 'Tech Startup Mixer',
       description: 'Connect with fellow entrepreneurs and innovators',
       detailDescription: 'Network with like-minded entrepreneurs, investors. Share ideas, find co-founders, and discover opportunities in the thriving tech startup ecosystem.',
-      date: '2024-01-30',
+      date: '2026-01-30',
       time: '18:00',
       duration: '2 hours',
       location: 'not determined',
@@ -122,19 +124,19 @@ export default function EventsPage() {
   const pastEvents = [
     {
       title: 'Blockchain Fundamentals',
-      date: '2024-01-05',
+      date: '2026-01-05',
       attendees: 142,
       rating: 4.8
     },
     {
       title: 'React Masterclass',
-      date: '2024-01-10',
+      date: '2026-01-10',
       attendees: 98,
       rating: 4.9
     },
     {
       title: 'Cybersecurity Summit',
-      date: '2023-12-20',
+      date: '2026-12-20',
       attendees: 234,
       rating: 4.7
     }
@@ -561,6 +563,7 @@ export default function EventsPage() {
                   className="w-full p-3 bg-white/10 border border-white/30 rounded-lg text-white hover:bg-white/20 hover:border-white/60 transition-all duration-300 text-sm"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
+                  onClick={() => router.push('/calendar')}
                 >
                   My Calendar
                 </motion.button>
