@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import BackgroundNodes from '@/components/BackgroundNodes'
+import CreateEventModal from './CreateEventModal'
 import { 
   Calendar,
   Clock,
@@ -30,6 +31,7 @@ export default function EventsPage() {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedEvent, setSelectedEvent] = useState<any>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
   useEffect(() => {
     const checkMobile = () => {
@@ -361,6 +363,17 @@ export default function EventsPage() {
       {/* Modal */}
       {isModalOpen && <EventModal />}
       
+      {/* Create Event Modal */}
+      <CreateEventModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={(eventData) => {
+          console.log('New event created:', eventData)
+          // TODO: Add event creation logic here
+          setIsCreateModalOpen(false)
+        }}
+      />
+      
       {/* Main Content */}
       <div className="relative z-10 min-h-screen px-4 py-8">
         {/* Header */}
@@ -582,6 +595,7 @@ export default function EventsPage() {
                   className="w-full p-3 bg-white/10 border border-white/30 rounded-lg text-white hover:bg-white/20 hover:border-white/60 transition-all duration-300 text-sm"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
+                  onClick={() => setIsCreateModalOpen(true)}
                 >
                   Create Event
                 </motion.button>
