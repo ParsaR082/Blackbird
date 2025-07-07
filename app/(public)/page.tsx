@@ -6,7 +6,7 @@ import { motion } from 'framer-motion'
 import CategoryRing from '@/components/CategoryRing'
 import LogoBird from '@/components/LogoBird'
 import BackgroundNodes from '@/components/BackgroundNodes'
-import { AuthModal } from '@/components/auth/AuthModal'
+import { AuthModalWrapper } from '@/components/auth/AuthModalWrapper'
 
 export default function HomePage() {
   const [isMobile, setIsMobile] = useState(false)
@@ -98,7 +98,7 @@ export default function HomePage() {
       </div>
 
       {/* Auth Modal */}
-      <AuthModal 
+      <AuthModalWrapper 
         isOpen={showAuthModal} 
         onClose={() => setShowAuthModal(false)} 
         initialMode={authMode}
