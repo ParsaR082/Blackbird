@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { AuthModal } from '@/components/auth/AuthModal'
+import { AuthModalWrapper } from '@/components/auth/AuthModalWrapper'
 import { UserAuth } from '@/types'
 import { 
   User, 
@@ -111,7 +111,7 @@ export function UserMenu() {
         </Button>
 
         {/* Auth Modal */}
-        <AuthModal
+        <AuthModalWrapper
           isOpen={showAuthModal}
           onClose={() => setShowAuthModal(false)}
           initialMode={authMode}
