@@ -1,9 +1,12 @@
 import { NextAuthOptions } from 'next-auth'
-import { SupabaseAdapter } from '@next-auth/supabase-adapter'
+import { MongoDBAdapter } from '@next-auth/mongodb-adapter'
 import GitHubProvider from 'next-auth/providers/github'
 import GoogleProvider from 'next-auth/providers/google'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { supabase } from './supabase'
+import { clientPromise } from './mongodb'
+import bcrypt from 'bcrypt'
+import connectToDatabase from './mongodb'
+import mongoose from 'mongoose'
 
 // Extend NextAuth types
 declare module 'next-auth' {
@@ -29,10 +32,7 @@ declare module 'next-auth/jwt' {
 }
 
 export const authOptions: NextAuthOptions = {
-  adapter: SupabaseAdapter({
-    url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    secret: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  }),
+  adapter: MongoDBAdapter(clientPromise),
   providers: [
     GitHubProvider({
       clientId: process.env.GITHUB_CLIENT_ID!,
@@ -53,21 +53,45 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: credentials.email,
-          password: credentials.password,
-        })
+        try {
+          await connectToDatabase()
+          
+          // Define User schema for MongoDB query
+          const UserSchema = new mongoose.Schema({
+            email: String,
+            password: String,
+            fullName: String,
+            role: String,
+            avatarUrl: String,
+            isVerified: Boolean
+          })
+          
+          const User = mongoose.models.User || mongoose.model('User', UserSchema)
+          
+          // Find user by email
+          const user = await User.findOne({ email: credentials.email })
+          
+          if (!user) {
+            return null
+          }
 
-        if (error || !data.user) {
+          // Verify password
+          const isValidPassword = await bcrypt.compare(credentials.password, user.password)
+          
+          if (!isValidPassword) {
+            return null
+          }
+
+          return {
+            id: user._id.toString(),
+            email: user.email,
+            name: user.fullName || null,
+            image: user.avatarUrl || null,
+            role: user.role || 'guest',
+          }
+        } catch (error) {
+          console.error('Authentication error:', error)
           return null
-        }
-
-        return {
-          id: data.user.id,
-          email: data.user.email!,
-          name: data.user.user_metadata?.full_name || null,
-          image: data.user.user_metadata?.avatar_url || null,
-          role: 'guest', // Default role
         }
       }
     }),

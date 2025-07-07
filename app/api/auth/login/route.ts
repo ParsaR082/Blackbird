@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import connectToDatabase from '@/lib/mongodb'
 import * as bcrypt from 'bcrypt'
 import { cookies } from 'next/headers'
 import { v4 as uuidv4 } from 'uuid'
 import { validateCsrfToken } from '@/lib/csrf'
 import { loginLimiter } from '@/lib/rate-limit'
+import mongoose from 'mongoose'
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
     
     // Validate CSRF token
     const csrfToken = request.headers.get('x-csrf-token')
-    if (!validateCsrfToken(csrfToken)) {
+    if (!(await validateCsrfToken(csrfToken))) {
       return NextResponse.json(
         { error: 'Invalid CSRF token' },
         { status: 403 }
@@ -48,14 +49,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Find user by student_id, username, or mobile_phone
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('*')
-      .or(`student_id.eq.${identifier},username.eq.${identifier},mobile_phone.eq.${identifier}`)
-      .single()
+    await connectToDatabase()
+    
+    // Define User schema
+    const UserSchema = new mongoose.Schema({
+      email: String,
+      password: String,
+      fullName: String,
+      role: String,
+      isVerified: Boolean,
+      avatarUrl: String,
+      createdAt: Date,
+      updatedAt: Date
+    })
+    
+    const User = mongoose.models.User || mongoose.model('User', UserSchema)
+    
+    // Find user by email (since we're using email-based auth now)
+    const user = await User.findOne({ email: identifier })
 
-    if (userError || !user) {
+    if (!user) {
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
@@ -63,7 +76,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify password using bcrypt
-    const isValidPassword = await bcrypt.compare(password, user.password_hash)
+    const isValidPassword = await bcrypt.compare(password, user.password)
     if (!isValidPassword) {
       return NextResponse.json(
         { error: 'Invalid credentials' },
@@ -76,16 +89,25 @@ export async function POST(request: NextRequest) {
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 7) // Token expires in 7 days
 
-    // Store session in database
-    const { error: sessionError } = await supabase
-      .from('sessions')
-      .insert({
-        user_id: user.id,
-        token: sessionToken,
-        expires_at: expiresAt.toISOString()
-      })
+    // Define Session schema
+    const SessionSchema = new mongoose.Schema({
+      userId: String,
+      token: String,
+      expiresAt: Date,
+      createdAt: Date
+    })
+    
+    const Session = mongoose.models.Session || mongoose.model('Session', SessionSchema)
 
-    if (sessionError) {
+    // Store session in database
+    try {
+      await Session.create({
+        userId: user._id.toString(),
+        token: sessionToken,
+        expiresAt: expiresAt,
+        createdAt: new Date()
+      })
+    } catch (sessionError) {
       console.error('Session creation error:', sessionError)
       return NextResponse.json(
         { error: 'Failed to create session' },
@@ -94,10 +116,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Update last login timestamp
-    await supabase
-      .from('users')
-      .update({ last_login: new Date().toISOString() })
-      .eq('id', user.id)
+    await User.findByIdAndUpdate(user._id, { 
+      updatedAt: new Date() 
+    })
 
     // Set session cookie
     cookies().set({
@@ -113,15 +134,14 @@ export async function POST(request: NextRequest) {
     // Return user data
     return NextResponse.json({
       user: {
-        id: user.id,
-        student_id: user.student_id,
-        username: user.username,
-        full_name: user.full_name,
+        id: user._id.toString(),
+        email: user.email,
+        fullName: user.fullName,
         role: user.role,
-        is_verified: user.is_verified,
-        avatar_url: user.avatar_url
+        isVerified: user.isVerified,
+        avatarUrl: user.avatarUrl
       },
-      redirect: user.role === 'admin' ? '/admin' : '/dashboard'
+      redirect: user.role === 'ADMIN' ? '/admin' : '/dashboard'
     })
   } catch (error) {
     console.error('Login error:', error)

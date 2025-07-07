@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import connectToDatabase from '@/lib/mongodb'
 import { getUserFromRequest } from '@/lib/server-utils'
+import mongoose from 'mongoose'
 
 export async function POST(request: NextRequest) {
   try {
     // Verify the current user is an admin
     const currentUser = await getUserFromRequest(request)
-    if (!currentUser || currentUser.role !== 'admin') {
+    if (!currentUser || currentUser.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 403 }
@@ -22,21 +23,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    await connectToDatabase()
+    
+    // Define User schema
+    const UserSchema = new mongoose.Schema({
+      email: String,
+      password: String,
+      fullName: String,
+      role: String,
+      isVerified: Boolean,
+      avatarUrl: String,
+      createdAt: Date,
+      updatedAt: Date
+    })
+    
+    const User = mongoose.models.User || mongoose.model('User', UserSchema)
+    
     // Check if user exists
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('id, role')
-      .eq('id', user_id)
-      .single()
+    const user = await User.findById(user_id)
 
-    if (userError || !user) {
+    if (!user) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
       )
     }
 
-    if (user.role === 'admin') {
+    if (user.role === 'ADMIN') {
       return NextResponse.json(
         { error: 'User is already an admin' },
         { status: 400 }
@@ -44,12 +57,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Update user role to admin
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ role: 'admin' })
-      .eq('id', user_id)
-
-    if (updateError) {
+    try {
+      await User.findByIdAndUpdate(user_id, { 
+        role: 'ADMIN',
+        updatedAt: new Date()
+      })
+    } catch (updateError) {
       console.error('Admin promotion error:', updateError)
       return NextResponse.json(
         { error: 'Failed to promote user to admin' },

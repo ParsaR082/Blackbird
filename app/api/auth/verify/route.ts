@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import connectToDatabase from '@/lib/mongodb'
 import { getUserFromRequest } from '@/lib/server-utils'
+import mongoose from 'mongoose'
 
 export async function POST(request: NextRequest) {
   try {
     // Verify the current user is an admin
     const currentUser = await getUserFromRequest(request)
-    if (!currentUser || currentUser.role !== 'admin') {
+    if (!currentUser || currentUser.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 403 }
@@ -22,12 +23,32 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    await connectToDatabase()
+    
+    // Define schemas
+    const UserSchema = new mongoose.Schema({
+      email: String,
+      password: String,
+      fullName: String,
+      role: String,
+      isVerified: Boolean,
+      avatarUrl: String,
+      createdAt: Date,
+      updatedAt: Date
+    })
+    
+    const UserVerificationSchema = new mongoose.Schema({
+      userId: String,
+      verifiedBy: String,
+      verificationNotes: String,
+      verifiedAt: Date
+    })
+    
+    const User = mongoose.models.User || mongoose.model('User', UserSchema)
+    const UserVerification = mongoose.models.UserVerification || mongoose.model('UserVerification', UserVerificationSchema)
+
     // Check if user exists
-    const { data: userExists } = await supabase
-      .from('users')
-      .select('id, is_verified')
-      .eq('id', user_id)
-      .single()
+    const userExists = await User.findById(user_id)
 
     if (!userExists) {
       return NextResponse.json(
@@ -36,7 +57,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (userExists.is_verified) {
+    if (userExists.isVerified) {
       return NextResponse.json(
         { error: 'User is already verified' },
         { status: 400 }
@@ -44,12 +65,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Update user verified status
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ is_verified: true })
-      .eq('id', user_id)
-
-    if (updateError) {
+    try {
+      await User.findByIdAndUpdate(user_id, { 
+        isVerified: true,
+        updatedAt: new Date()
+      })
+    } catch (updateError) {
       console.error('User verification error:', updateError)
       return NextResponse.json(
         { error: 'Failed to verify user' },
@@ -58,15 +79,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Add verification record
-    const { error: verificationError } = await supabase
-      .from('user_verifications')
-      .insert({
-        user_id: user_id,
-        verified_by: currentUser.id,
-        verification_notes: verification_notes || null
+    try {
+      await UserVerification.create({
+        userId: user_id,
+        verifiedBy: currentUser.id,
+        verificationNotes: verification_notes || null,
+        verifiedAt: new Date()
       })
-
-    if (verificationError) {
+    } catch (verificationError) {
       console.error('Verification record error:', verificationError)
       // Don't return error here as the user is already verified
     }

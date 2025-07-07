@@ -1,0 +1,295 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
+import { useAuth } from '@/contexts/auth-context'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+
+import { 
+  BookOpen, 
+  Calendar, 
+  Target, 
+  TrendingUp,
+  Users,
+  Award,
+  Clock,
+  Plus,
+  ArrowRight,
+  GraduationCap,
+  Loader2
+} from 'lucide-react'
+
+interface DashboardStats {
+  totalCourses: number
+  completedCourses: number
+  activePlans: number
+  overallProgress: number
+  upcomingDeadlines: number
+  currentGPA: number
+}
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      duration: 0.6,
+      staggerChildren: 0.1
+    }
+  }
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5 }
+  }
+}
+
+export default function UniversityPage() {
+  const { user, isAuthenticated, isLoading } = useAuth()
+  const router = useRouter()
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/auth/login?redirectTo=/university')
+      return
+    }
+
+    if (isAuthenticated) {
+      // Simulate loading dashboard data
+      setTimeout(() => {
+        setStats({
+          totalCourses: 6,
+          completedCourses: 2,
+          activePlans: 3,
+          overallProgress: 67,
+          upcomingDeadlines: 4,
+          currentGPA: 3.75
+        })
+        setLoading(false)
+      }, 1000)
+    }
+  }, [isAuthenticated, isLoading, router])
+
+  if (isLoading || loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-white/60 mx-auto mb-4" />
+          <p className="text-white/60">Loading university portal...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return null
+  }
+
+  return (
+    <div className="min-h-screen bg-black text-white">
+      {/* Background Effects */}
+      <div className="fixed inset-0 bg-gradient-to-br from-black via-gray-900 to-black" />
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.1),transparent_50%)]" />
+      
+      <motion.div 
+        className="relative z-10 container mx-auto px-4 pt-24 pb-8"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {/* Header */}
+        <motion.div variants={itemVariants} className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
+                University Portal
+              </h1>
+              <p className="text-white/60 mt-2">
+                Welcome back, {user?.fullName || 'Student'}
+              </p>
+            </div>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <GraduationCap className="h-12 w-12 text-white/40" />
+            </motion.div>
+          </div>
+        </motion.div>
+
+        {/* Stats Cards */}
+        <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-white/80">Total Courses</CardTitle>
+              <BookOpen className="h-4 w-4 text-blue-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{stats?.totalCourses}</div>
+              <p className="text-xs text-white/60">
+                {stats?.completedCourses} completed
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-white/80">Overall Progress</CardTitle>
+              <TrendingUp className="h-4 w-4 text-green-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{stats?.overallProgress}%</div>
+              <div className="w-full bg-white/20 rounded-full h-2 mt-2">
+                <div 
+                  className="bg-green-400 h-2 rounded-full transition-all duration-300" 
+                  style={{ width: `${stats?.overallProgress || 0}%` }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-white/80">Current GPA</CardTitle>
+              <Award className="h-4 w-4 text-yellow-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{stats?.currentGPA}</div>
+              <p className="text-xs text-white/60">
+                Out of 4.0
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-white/80">Upcoming Deadlines</CardTitle>
+              <Clock className="h-4 w-4 text-red-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{stats?.upcomingDeadlines}</div>
+              <p className="text-xs text-white/60">
+                This week
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Quick Actions */}
+        <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="bg-white/5 border-white/10 backdrop-blur-sm hover:bg-white/10 transition-all duration-300 cursor-pointer group">
+            <CardHeader>
+              <CardTitle className="flex items-center text-white group-hover:text-blue-400 transition-colors">
+                <BookOpen className="h-5 w-5 mr-2" />
+                My Courses
+                <ArrowRight className="h-4 w-4 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+              </CardTitle>
+              <CardDescription className="text-white/60">
+                View and manage your enrolled courses
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                variant="ghost" 
+                className="w-full text-white/80 hover:text-white hover:bg-white/10"
+                onClick={() => router.push('/university/courses')}
+              >
+                View Courses
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white/5 border-white/10 backdrop-blur-sm hover:bg-white/10 transition-all duration-300 cursor-pointer group">
+            <CardHeader>
+              <CardTitle className="flex items-center text-white group-hover:text-green-400 transition-colors">
+                <Target className="h-5 w-5 mr-2" />
+                Study Plans
+                <ArrowRight className="h-4 w-4 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+              </CardTitle>
+              <CardDescription className="text-white/60">
+                Create and track your study plans
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                variant="ghost" 
+                className="w-full text-white/80 hover:text-white hover:bg-white/10"
+                onClick={() => router.push('/university/study-plans')}
+              >
+                Manage Plans
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white/5 border-white/10 backdrop-blur-sm hover:bg-white/10 transition-all duration-300 cursor-pointer group">
+            <CardHeader>
+              <CardTitle className="flex items-center text-white group-hover:text-purple-400 transition-colors">
+                <TrendingUp className="h-5 w-5 mr-2" />
+                Progress Report
+                <ArrowRight className="h-4 w-4 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+              </CardTitle>
+              <CardDescription className="text-white/60">
+                Track your academic progress
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                variant="ghost" 
+                className="w-full text-white/80 hover:text-white hover:bg-white/10"
+                onClick={() => router.push('/university/progress')}
+              >
+                View Progress
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Recent Activity */}
+        <motion.div variants={itemVariants}>
+          <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="text-white">Recent Activity</CardTitle>
+              <CardDescription className="text-white/60">
+                Your latest academic activities
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-2 h-2 bg-green-400 rounded-full" />
+                  <div className="flex-1">
+                    <p className="text-white/80">Completed assignment for Data Structures</p>
+                    <p className="text-xs text-white/50">2 hours ago</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full" />
+                  <div className="flex-1">
+                    <p className="text-white/80">Started new study plan for Algorithms</p>
+                    <p className="text-xs text-white/50">1 day ago</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-2 h-2 bg-yellow-400 rounded-full" />
+                  <div className="flex-1">
+                    <p className="text-white/80">Enrolled in Machine Learning course</p>
+                    <p className="text-xs text-white/50">3 days ago</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </motion.div>
+    </div>
+  )
+}

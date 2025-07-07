@@ -5,7 +5,7 @@ A comprehensive full-stack Next.js web portal designed for tech-oriented communi
 ![Next.js](https://img.shields.io/badge/Next.js-14-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.3-cyan)
-![Supabase](https://img.shields.io/badge/Supabase-2.38-green)
+![MongoDB](https://img.shields.io/badge/MongoDB-7.6-green)
 
 ##  Features
 
@@ -23,20 +23,20 @@ A comprehensive full-stack Next.js web portal designed for tech-oriented communi
 ###  Technical Features
 - **Modern UI/UX** - Built with Tailwind CSS and ShadCN UI components
 - **Responsive Design** - Optimized for mobile and desktop
-- **Authentication** - NextAuth.js with Supabase integration
-- **Real-time Updates** - Supabase real-time subscriptions
-- **File Storage** - Supabase Storage for file uploads
-- **Role-Based Access** - Admin, moderator, member, and guest roles
+- **Authentication** - NextAuth.js with MongoDB integration
+- **Database** - MongoDB with Mongoose ODM
+- **Role-Based Access** - Admin, moderator, user, and guest roles
 - **Dark Mode** - System-aware theme switching
 - **Animations** - Framer Motion and GSAP integration
 - **Type Safety** - Full TypeScript implementation
+- **Session Management** - Secure session handling with NextAuth
 
 ##  Tech Stack
 
 - **Framework**: Next.js 14 (App Router)
 - **Language**: TypeScript
-- **Database**: Supabase (PostgreSQL)
-- **Authentication**: NextAuth.js + Supabase Auth
+- **Database**: MongoDB with Mongoose ODM
+- **Authentication**: NextAuth.js + MongoDB Adapter
 - **Styling**: Tailwind CSS + ShadCN UI
 - **Animations**: Framer Motion + GSAP
 - **Forms**: React Hook Form + Zod validation
@@ -48,7 +48,7 @@ A comprehensive full-stack Next.js web portal designed for tech-oriented communi
 ### Prerequisites
 - Node.js 18+ 
 - npm or yarn
-- Supabase account (free tier available)
+- MongoDB Atlas account (free tier available) or local MongoDB installation
 
 ### 1. Clone the Repository
 ```bash
@@ -69,75 +69,63 @@ Copy the environment template and fill in your values:
 cp .env.local.example .env.local
 ```
 
-### 4. Supabase Setup
+### 4. MongoDB Setup
 
-#### Create a Supabase Project
-1. Go to [supabase.com](https://supabase.com)
-2. Create a new project
-3. Copy your project URL and anon key
+#### Using MongoDB Atlas (Recommended)
+1. Go to [mongodb.com](https://mongodb.com)
+2. Create a free MongoDB Atlas account
+3. Create a new cluster
+4. Get your connection string from the "Connect" button
+5. Replace `<username>`, `<password>`, and `<cluster-url>` with your credentials
 
-#### Database Schema
-Run the following SQL in your Supabase SQL editor:
+#### Using Local MongoDB
+If you prefer to run MongoDB locally:
+```bash
+# Install MongoDB Community Edition
+# For macOS with Homebrew:
+brew install mongodb-community
 
-```sql
--- Create profiles table
-CREATE TABLE profiles (
-  id UUID REFERENCES auth.users(id) PRIMARY KEY,
-  email TEXT UNIQUE NOT NULL,
-  full_name TEXT,
-  avatar_url TEXT,
-  role TEXT DEFAULT 'guest' CHECK (role IN ('admin', 'moderator', 'member', 'guest')),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+# For Ubuntu:
+sudo apt-get install mongodb
 
--- Enable RLS
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-
--- Create policies
-CREATE POLICY "Public profiles are viewable by everyone" ON profiles
-  FOR SELECT USING (true);
-
-CREATE POLICY "Users can insert their own profile" ON profiles
-  FOR INSERT WITH CHECK (auth.uid() = id);
-
-CREATE POLICY "Users can update their own profile" ON profiles
-  FOR UPDATE USING (auth.uid() = id);
-
--- Create function to handle new user registration
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO public.profiles (id, email, full_name, avatar_url)
-  VALUES (new.id, new.email, new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'avatar_url');
-  RETURN new;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Create trigger for new user registration
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+# Start MongoDB service
+sudo service mongod start
 ```
 
+#### Database Setup
+After configuring your MongoDB connection, run the setup script:
+```bash
+npm run setup-db
+```
+
+This will:
+- Create the necessary collections and indexes
+- Set up a default admin user
+- Configure the database schema
+
 ### 5. Configure Environment Variables
-Update your `.env.local` file:
+Create a `.env.local` file in the root directory:
 
 ```env
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+# MongoDB Configuration
+MONGODB_URI=mongodb+srv://Avestami:@Amir@7270@blackbird.3qpqiyp.mongodb.net/?retryWrites=true&w=majority&appName=blackbird
+DATABASE_URL=mongodb+srv://Avestami:@Amir@7270@blackbird.3qpqiyp.mongodb.net/?retryWrites=true&w=majority&appName=blackbird
 
 # NextAuth Configuration
 NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your-nextauth-secret
+NEXTAUTH_SECRET=your-nextauth-secret-change-in-production
+
+# Security
+CSRF_SECRET=your-csrf-secret-change-in-production
 
 # Optional: OAuth Providers
 GITHUB_CLIENT_ID=your-github-client-id
 GITHUB_CLIENT_SECRET=your-github-client-secret
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# Environment
+NODE_ENV=development
 ```
 
 ### 6. Run the Development Server
@@ -173,7 +161,7 @@ blackbird-portal/
 │   ├── layout/           # Layout components
 │   └── forms/            # Form components
 ├── lib/                  # Utility libraries
-│   ├── supabase.ts       # Supabase client
+│   ├── mongodb.ts        # MongoDB client and types
 │   ├── auth.ts           # NextAuth configuration
 │   └── utils.ts          # Utility functions
 ├── types/                # TypeScript type definitions
@@ -197,17 +185,20 @@ blackbird-portal/
 - Add new color schemes to the theme system
 
 ### Setting Up Authentication
-1. Configure OAuth providers in Supabase Auth settings
+1. Configure OAuth providers in their respective developer consoles
 2. Add provider credentials to environment variables
 3. Update `lib/auth.ts` with new providers
+4. The MongoDB adapter will automatically handle user sessions
 
 ##  Security Features
 
-- **Row Level Security** - Database-level security policies
+- **Secure Authentication** - NextAuth.js with MongoDB adapter
 - **Role-Based Access Control** - Granular permission system
+- **Password Hashing** - bcrypt for secure password storage
 - **Input Validation** - Zod schema validation
 - **CSRF Protection** - NextAuth.js built-in protection
 - **Secure Headers** - Next.js security headers
+- **Database Indexes** - Optimized queries with proper indexing
 
 ##  Module Documentation
 
@@ -257,7 +248,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ##  Acknowledgments
 
 - [Next.js](https://nextjs.org/) - The React framework
-- [Supabase](https://supabase.com/) - Backend as a Service
+- [MongoDB](https://mongodb.com/) - Document database
+- [NextAuth.js](https://next-auth.js.org/) - Authentication for Next.js
 - [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
 - [ShadCN UI](https://ui.shadcn.com/) - Re-usable components
 - [Lucide](https://lucide.dev/) - Beautiful icons

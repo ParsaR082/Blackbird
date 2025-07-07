@@ -1,8 +1,8 @@
-import { Database } from '@/lib/supabase'
+import { Database, UserDocument } from '@/lib/mongodb'
 
 // User types
-export type User = Database['public']['Tables']['users']['Row']
-export type UserRole = 'admin' | 'user' | 'guest'
+export type User = UserDocument
+export type UserRole = 'ADMIN' | 'MODERATOR' | 'USER' | 'GUEST'
 
 // Navigation types
 export interface NavItem {
@@ -131,12 +131,11 @@ export interface UIStore {
 // User authentication types
 export interface UserAuth {
   id: string
-  student_id: string
-  username: string
-  full_name: string
+  email: string
+  fullName?: string
   role: UserRole
-  is_verified: boolean
-  avatar_url?: string | null
+  isVerified: boolean
+  avatarUrl?: string | null
 }
 
 // Session type
