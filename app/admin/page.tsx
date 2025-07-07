@@ -20,6 +20,8 @@ import {
   UserX,
   Loader2
 } from 'lucide-react'
+import { motion } from 'framer-motion'
+import BackgroundNodes from '@/components/BackgroundNodes'
 
 interface User {
   id: string
@@ -44,7 +46,7 @@ export default function AdminPage() {
   
   useEffect(() => {
     // Redirect if user is not admin
-    if (user && user.role !== 'admin') {
+    if (user && user.role !== 'ADMIN') {
       router.push('/dashboard')
     }
     
@@ -142,36 +144,66 @@ export default function AdminPage() {
   })
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Shield className="w-8 h-8" />
-              Admin Panel
-            </h1>
-            <p className="text-muted-foreground mt-1">Manage users and system settings</p>
+    <div className="min-h-screen bg-black text-white">
+      {/* Background Effects */}
+      <div className="fixed inset-0 bg-gradient-to-br from-black via-gray-900 to-black" />
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.1),transparent_50%)]" />
+      <BackgroundNodes isMobile={false} />
+      
+      <motion.div 
+        className="relative z-10 container mx-auto pt-24 pb-8 px-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6 }}
+      >
+        {/* Header */}
+        <motion.div 
+          className="mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent flex items-center gap-2">
+                <Shield className="w-8 h-8 text-white/40" />
+                Admin Panel
+              </h1>
+              <p className="text-white/60 mt-2">Manage users and system settings</p>
+            </div>
+            <Button 
+              onClick={fetchUsers} 
+              variant="ghost" 
+              className="gap-2 bg-white/10 hover:bg-white/20 text-white border-white/20"
+            >
+              <RefreshCcw className="w-4 h-4" />
+              Refresh
+            </Button>
           </div>
-          <Button onClick={fetchUsers} variant="outline" className="gap-2">
-            <RefreshCcw className="w-4 h-4" />
-            Refresh
-          </Button>
-        </div>
-      </div>
-      
-      {/* Error Display */}
-      {error && (
-        <div className="mb-6 p-4 bg-red-500/20 border border-red-500 rounded-md text-red-200">
-          <p className="flex items-center gap-2">
-            <XCircle className="w-5 h-5" />
-            {error}
-          </p>
-        </div>
-      )}
-      
-      {/* User Management */}
-      <Card>
+        </motion.div>
+        
+        {/* Error Display */}
+        {error && (
+          <motion.div 
+            className="mb-6 p-4 bg-red-500/20 border border-red-500 rounded-md text-red-200"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <p className="flex items-center gap-2">
+              <XCircle className="w-5 h-5" />
+              {error}
+            </p>
+          </motion.div>
+        )}
+        
+        {/* User Management */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <div>
             <CardTitle className="text-xl font-bold">User Management</CardTitle>
@@ -287,8 +319,10 @@ export default function AdminPage() {
               </table>
             </div>
           )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </motion.div>
     </div>
   )
 } 

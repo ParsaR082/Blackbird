@@ -1,4 +1,3 @@
-import { createHash, randomBytes } from 'crypto'
 import { cookies } from 'next/headers'
 
 const CSRF_SECRET = process.env.CSRF_SECRET || 'default-csrf-secret-change-in-production'
@@ -6,16 +5,33 @@ const CSRF_COOKIE_NAME = 'csrf_token'
 const CSRF_HEADER_NAME = 'x-csrf-token'
 
 /**
- * Generates a new CSRF token and sets it as a cookie
+ * Generate random bytes using Web Crypto API (Edge Runtime compatible)
  */
-export function generateCsrfToken(): string {
+function generateRandomToken(): string {
+  const array = new Uint8Array(32)
+  crypto.getRandomValues(array)
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('')
+}
+
+/**
+ * Create SHA-256 hash using Web Crypto API (Edge Runtime compatible)
+ */
+async function createHash(data: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(data))
+  const hashArray = new Uint8Array(hashBuffer)
+  return Array.from(hashArray, byte => byte.toString(16).padStart(2, '0')).join('')
+}
+
+/**
+ * Generates a new CSRF token and sets it as a cookie (only for route handlers)
+ */
+export async function generateCsrfTokenWithCookie(): Promise<string> {
   // Generate a random token
-  const token = randomBytes(32).toString('hex')
+  const token = generateRandomToken()
   
   // Create a hash of the token with a secret
-  const hash = createHash('sha256')
-    .update(`${token}${CSRF_SECRET}`)
-    .digest('hex')
+  const hash = await createHash(`${token}${CSRF_SECRET}`)
   
   // Set the token as a cookie
   cookies().set({
@@ -34,9 +50,18 @@ export function generateCsrfToken(): string {
 }
 
 /**
+ * Generates a CSRF token pair (token and hash) without setting cookies
+ */
+export async function generateCsrfTokenPair(): Promise<{ token: string; hash: string }> {
+  const token = generateRandomToken()
+  const hash = await createHash(`${token}${CSRF_SECRET}`)
+  return { token, hash }
+}
+
+/**
  * Validates a CSRF token against the stored cookie
  */
-export function validateCsrfToken(token?: string | null): boolean {
+export async function validateCsrfToken(token?: string | null): Promise<boolean> {
   if (!token) {
     return false
   }
@@ -49,9 +74,7 @@ export function validateCsrfToken(token?: string | null): boolean {
   }
   
   // Recreate the hash from the cookie value
-  const expectedHash = createHash('sha256')
-    .update(`${cookieToken}${CSRF_SECRET}`)
-    .digest('hex')
+  const expectedHash = await createHash(`${cookieToken}${CSRF_SECRET}`)
   
   // Compare in constant time to prevent timing attacks
   return timingSafeEqual(token, expectedHash)
@@ -78,7 +101,7 @@ function timingSafeEqual(a: string, b: string): boolean {
  */
 export function withCsrf(handler: Function) {
   return async (req: Request, ...args: any[]) => {
-    const csrfToken = generateCsrfToken()
+    const { hash: csrfToken } = await generateCsrfTokenPair()
     // Add CSRF token to response headers
     const response = await handler(req, ...args)
     response.headers.set(CSRF_HEADER_NAME, csrfToken)

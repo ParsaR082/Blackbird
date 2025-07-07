@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generateCsrfToken } from '@/lib/csrf'
+import { generateCsrfTokenWithCookie } from '@/lib/csrf'
 
 export async function GET(request: NextRequest) {
   try {
     // Generate a new CSRF token
-    const csrfToken = generateCsrfToken()
+    const csrfToken = await generateCsrfTokenWithCookie()
     
     // Return an empty response with the CSRF token in the header
     const response = new NextResponse(JSON.stringify({ success: true }), {

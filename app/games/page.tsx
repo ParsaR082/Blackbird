@@ -96,7 +96,7 @@ export default function GamesPage() {
     { icon: Swords, label: 'Action', color: 'from-red-500/20 to-orange-500/20' }
   ]
 
-  const featuredGames: FeaturedGame[] = [
+  const featuredGames: FeaturedGame[] = useMemo(() => [
     {
       title: 'Shadow Net',
       description: 'You are the hired Agent, you have to protect the galaxy from the enemy, hack the system and help Dr.Tenebris',
@@ -145,7 +145,7 @@ export default function GamesPage() {
       category: 'Puzzle',
       link: 'https://www.nytimes.com/games/wordle/index.html'
     }
-  ]
+  ], [])
 
   const leaderboardData: LeaderboardEntry[] = [
     { rank: 1, player: 'NeuralMaster', score: 15420, avatar: 'NM' },

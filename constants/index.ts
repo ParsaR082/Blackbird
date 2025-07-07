@@ -67,7 +67,7 @@ export const PORTAL_MODULES: PortalModule[] = [
     gradient: 'bg-gradient-to-br from-red-500 to-rose-500',
     features: ['Workout Plans', 'Progress Tracking', 'Performance Analytics', 'Goal Setting'],
     status: 'beta',
-    requiredRole: 'member',
+    requiredRole: 'USER',
   },
   {
     id: 'languages',
@@ -90,7 +90,7 @@ export const PORTAL_MODULES: PortalModule[] = [
     gradient: 'bg-gradient-to-br from-gray-500 to-slate-600',
     features: ['Encrypted Storage', 'Version Control', 'Access Logs', 'Backup Management'],
     status: 'active',
-    requiredRole: 'member',
+    requiredRole: 'USER',
   },
   {
     id: 'admin',
@@ -102,7 +102,7 @@ export const PORTAL_MODULES: PortalModule[] = [
     gradient: 'bg-gradient-to-br from-slate-600 to-gray-800',
     features: ['User Management', 'System Monitoring', 'Content Moderation', 'Analytics'],
     status: 'active',
-    requiredRole: 'admin',
+    requiredRole: 'ADMIN',
   },
 ]
 

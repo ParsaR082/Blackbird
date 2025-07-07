@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import connectToDatabase from '@/lib/mongodb'
 import * as bcrypt from 'bcrypt'
 import { z } from 'zod'
 import { validateCsrfToken } from '@/lib/csrf'
 import { registerLimiter } from '@/lib/rate-limit'
+import mongoose from 'mongoose'
 
 // Input validation schema
 const registerSchema = z.object({
-  student_id: z.string().min(3).max(50),
-  username: z.string().min(3).max(50).regex(/^[a-zA-Z0-9_]+$/),
-  mobile_phone: z.string().regex(/^\+?[0-9]{8,15}$/),
-  full_name: z.string().min(2).max(255),
+  email: z.string().email(),
+  fullName: z.string().min(2).max(255),
   password: z.string().min(8).max(100)
 })
 
@@ -39,7 +38,7 @@ export async function POST(request: NextRequest) {
     
     // Validate CSRF token
     const csrfToken = request.headers.get('x-csrf-token')
-    if (!validateCsrfToken(csrfToken)) {
+    if (!(await validateCsrfToken(csrfToken))) {
       return NextResponse.json(
         { error: 'Invalid CSRF token' },
         { status: 403 }
@@ -57,90 +56,70 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { student_id, username, mobile_phone, full_name, password } = result.data
+    const { email, fullName, password } = result.data
     
-    // Check if student ID already exists
-    const { data: existingStudentId } = await supabase
-      .from('users')
-      .select('student_id')
-      .eq('student_id', student_id)
-      .single()
+    await connectToDatabase()
+    
+    // Define User schema
+    const UserSchema = new mongoose.Schema({
+      email: String,
+      password: String,
+      fullName: String,
+      role: String,
+      isVerified: Boolean,
+      avatarUrl: String,
+      createdAt: Date,
+      updatedAt: Date
+    })
+    
+    const User = mongoose.models.User || mongoose.model('User', UserSchema)
+    
+    // Check if email already exists
+    const existingUser = await User.findOne({ email })
 
-    if (existingStudentId) {
+    if (existingUser) {
       return NextResponse.json(
-        { error: 'Student ID already registered' },
-        { status: 409 }
-      )
-    }
-
-    // Check if username already exists
-    const { data: existingUsername } = await supabase
-      .from('users')
-      .select('username')
-      .eq('username', username)
-      .single()
-
-    if (existingUsername) {
-      return NextResponse.json(
-        { error: 'Username already taken' },
-        { status: 409 }
-      )
-    }
-
-    // Check if mobile phone already exists
-    const { data: existingMobilePhone } = await supabase
-      .from('users')
-      .select('mobile_phone')
-      .eq('mobile_phone', mobile_phone)
-      .single()
-
-    if (existingMobilePhone) {
-      return NextResponse.json(
-        { error: 'Mobile phone already registered' },
+        { error: 'Email already registered' },
         { status: 409 }
       )
     }
 
     // Hash password with bcrypt
-    const passwordHash = await bcrypt.hash(password, 10)
+    const passwordHash = await bcrypt.hash(password, 12)
 
     // Insert new user
-    const { data: newUser, error } = await supabase
-      .from('users')
-      .insert({
-        student_id,
-        username,
-        mobile_phone,
-        full_name,
-        password_hash: passwordHash,
-        role: 'user',
-        is_verified: false
+    try {
+      const newUser = await User.create({
+        email,
+        password: passwordHash,
+        fullName,
+        role: 'USER',
+        isVerified: false,
+        avatarUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
       })
-      .select('id, student_id, username, full_name, role, is_verified')
-      .single()
 
-    if (error) {
+      return NextResponse.json(
+        { 
+          message: 'User registered successfully',
+          user: {
+            id: newUser._id.toString(),
+            email: newUser.email,
+            fullName: newUser.fullName,
+            role: newUser.role,
+            isVerified: newUser.isVerified
+          }
+        },
+        { status: 201 }
+      )
+    } catch (error) {
       console.error('Registration error:', error)
       return NextResponse.json(
         { error: 'Failed to register user' },
         { status: 500 }
       )
     }
-
-    return NextResponse.json(
-      { 
-        message: 'User registered successfully',
-        user: {
-          id: newUser.id,
-          student_id: newUser.student_id,
-          username: newUser.username,
-          full_name: newUser.full_name,
-          role: newUser.role,
-          is_verified: newUser.is_verified
-        }
-      },
-      { status: 201 }
-    )
   } catch (error) {
     console.error('Registration error:', error)
     return NextResponse.json(

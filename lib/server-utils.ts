@@ -1,7 +1,8 @@
 import { cookies } from "next/headers"
-import { supabase } from './supabase'
+import connectToDatabase from './mongodb'
 import { UserAuth } from '@/types'
 import { NextRequest } from 'next/server'
+import mongoose from 'mongoose'
 
 /**
  * Gets the authenticated user from a request - SERVER SIDE ONLY
@@ -15,41 +16,52 @@ export async function getUserFromRequest(request: NextRequest): Promise<UserAuth
       return null
     }
     
-    // Find session in database
-    const { data: session, error: sessionError } = await supabase
-      .from('sessions')
-      .select('user_id, expires_at')
-      .eq('token', sessionToken)
-      .single()
+    await connectToDatabase()
     
-    if (sessionError || !session) {
+    // Define schemas
+    const SessionSchema = new mongoose.Schema({
+      userId: String,
+      expiresAt: Date,
+      createdAt: Date
+    })
+    
+    const UserSchema = new mongoose.Schema({
+      email: String,
+      fullName: String,
+      role: String,
+      isVerified: Boolean,
+      avatarUrl: String
+    })
+    
+    const Session = mongoose.models.Session || mongoose.model('Session', SessionSchema)
+    const User = mongoose.models.User || mongoose.model('User', UserSchema)
+    
+    // Find session in database
+    const session = await Session.findOne({ token: sessionToken })
+    
+    if (!session) {
       return null
     }
     
     // Check if session is expired
-    if (new Date(session.expires_at) < new Date()) {
+    if (new Date(session.expiresAt) < new Date()) {
       return null
     }
     
     // Get user data
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('id, student_id, username, full_name, role, is_verified, avatar_url')
-      .eq('id', session.user_id)
-      .single()
+    const user = await User.findById(session.userId)
     
-    if (userError || !user) {
+    if (!user) {
       return null
     }
     
     return {
-      id: user.id,
-      student_id: user.student_id,
-      username: user.username,
-      full_name: user.full_name,
+      id: user._id.toString(),
+      email: user.email,
+      fullName: user.fullName,
       role: user.role,
-      is_verified: user.is_verified,
-      avatar_url: user.avatar_url
+      isVerified: user.isVerified,
+      avatarUrl: user.avatarUrl
     }
   } catch (error) {
     console.error('Error getting user from request:', error)

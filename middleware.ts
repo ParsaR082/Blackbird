@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { generateCsrfToken } from './lib/csrf'
 
 // Protected routes that require authentication
 const protectedRoutes = [
@@ -8,33 +7,12 @@ const protectedRoutes = [
   '/admin',
   '/profile',
   '/settings',
-  '/training'
+  '/training',
+  '/university'
 ]
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
-
-  // CSRF Protection
-  // Skip CSRF for non-mutation methods
-  if (!(req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS')) {
-    // For API routes, we'll validate the token in the route handler
-    if (pathname.startsWith('/api/auth/')) {
-      // Just continue to the route handler which will validate the token
-    }
-  }
-  
-  // Generate CSRF token for page requests
-  if (
-    req.method === 'GET' &&
-    !pathname.startsWith('/api/') &&
-    !pathname.startsWith('/_next/') &&
-    !pathname.includes('.')
-  ) {
-    const csrfToken = generateCsrfToken()
-    const response = NextResponse.next()
-    response.headers.set('x-csrf-token', csrfToken)
-    return response
-  }
 
   // Authentication Check for Protected Routes
   if (protectedRoutes.some(route => pathname.startsWith(route))) {
@@ -77,7 +55,7 @@ export async function middleware(req: NextRequest) {
 // Configure middleware to run on specific paths
 export const config = {
   matcher: [
-    // Apply to all routes except static assets
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    // Apply to all routes except static assets and API routes
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 } 

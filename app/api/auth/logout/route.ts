@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { supabase } from '@/lib/supabase'
+import connectToDatabase from '@/lib/mongodb'
+import mongoose from 'mongoose'
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,11 +9,20 @@ export async function POST(request: NextRequest) {
     const sessionToken = cookies().get('session_token')?.value
     
     if (sessionToken) {
+      await connectToDatabase()
+      
+      // Define Session schema
+      const SessionSchema = new mongoose.Schema({
+        userId: String,
+        token: String,
+        expiresAt: Date,
+        createdAt: Date
+      })
+      
+      const Session = mongoose.models.Session || mongoose.model('Session', SessionSchema)
+      
       // Delete session from database
-      await supabase
-        .from('sessions')
-        .delete()
-        .eq('token', sessionToken)
+      await Session.deleteOne({ token: sessionToken })
     }
     
     // Delete cookie

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
 import { getUserFromRequest } from '@/lib/server-utils'
 
 export async function GET(request: NextRequest) {
@@ -16,12 +15,11 @@ export async function GET(request: NextRequest) {
     // Return user data without sensitive information
     return NextResponse.json({
       id: user.id,
-      student_id: user.student_id,
-      username: user.username,
-      full_name: user.full_name,
+      email: user.email,
+      fullName: user.fullName,
       role: user.role,
-      is_verified: user.is_verified,
-      avatar_url: user.avatar_url
+      isVerified: user.isVerified,
+      avatarUrl: user.avatarUrl
     })
   } catch (error) {
     console.error('Session validation error:', error)

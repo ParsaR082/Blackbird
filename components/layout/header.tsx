@@ -119,6 +119,10 @@ export function Header() {
               variant="ghost" 
               size="icon" 
               className="hidden md:flex relative text-white/70 hover:text-white hover:bg-white/10"
+              onClick={() => {
+                // For now, show a simple alert. In a real app, this would open a notifications panel
+                alert('Notifications feature coming soon!')
+              }}
             >
               <Bell className="h-4 w-4" />
               <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
@@ -198,6 +202,9 @@ export function Header() {
                     variant="ghost" 
                     size="sm"
                     className="text-white/70 hover:text-white hover:bg-white/10"
+                    onClick={() => {
+                      alert('Notifications feature coming soon!')
+                    }}
                   >
                     <Bell className="h-4 w-4 mr-2" />
                     Notifications
