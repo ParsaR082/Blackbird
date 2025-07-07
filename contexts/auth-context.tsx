@@ -31,10 +31,19 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserAuth | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isClient, setIsClient] = useState(false)
 
-  // Check if user is authenticated on mount
+  // Set client flag on mount
   useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  // Check if user is authenticated on mount (client-side only)
+  useEffect(() => {
+    // Only run on client side after hydration
+    if (!isClient) return
+    
     let isMounted = true
     
     const runAuthCheck = async () => {

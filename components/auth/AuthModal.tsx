@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useSearchParams } from 'next/navigation'
+
 import { X, User, Phone, School, Lock, UserCheck, Github, Mail } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -19,17 +19,16 @@ interface AuthModalProps {
   onClose: () => void;
   initialMode?: AuthMode;
   onAuthComplete?: (user: UserAuth) => void;
+  redirectTo?: string;
 }
 
-export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthComplete }: AuthModalProps) {
+export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthComplete, redirectTo = '/dashboard' }: AuthModalProps) {
   const [mode, setMode] = useState<AuthMode>(initialMode)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [passwordStrength, setPasswordStrength] = useState(0)
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
-  const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirectTo') || '/dashboard'
   const { login, register } = useAuth()
   
   // Refs for focus management
@@ -51,17 +50,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthComple
     confirm_password: ''
   })
 
-  // Check for OAuth errors
-  useEffect(() => {
-    const errorParam = searchParams.get('error')
-    if (errorParam) {
-      setError(
-        errorParam === 'OAuthAccountNotLinked'
-          ? 'This email is already associated with another account'
-          : 'Authentication failed. Please try again.'
-      )
-    }
-  }, [searchParams])
+  // OAuth errors can be handled by parent component if needed
 
   // Password strength check
   const checkPasswordStrength = useCallback((password: string) => {
