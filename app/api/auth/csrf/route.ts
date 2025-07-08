@@ -6,8 +6,8 @@ export async function GET(request: NextRequest) {
     // Generate a new CSRF token
     const csrfToken = await generateCsrfTokenWithCookie()
     
-    // Return an empty response with the CSRF token in the header
-    const response = new NextResponse(JSON.stringify({ success: true }), {
+    // Return the CSRF token in the response body
+    const response = new NextResponse(JSON.stringify({ token: csrfToken }), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',

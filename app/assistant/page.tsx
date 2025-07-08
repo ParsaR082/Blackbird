@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import BackgroundNodes from '@/components/BackgroundNodes'
+import { useTheme } from '@/contexts/theme-context'
 import { 
   Bot, 
   MessageSquare, 
@@ -23,6 +24,7 @@ import {
 export default function AssistantPage() {
   const [isMobile, setIsMobile] = useState(false)
   const [message, setMessage] = useState('')
+  const { theme } = useTheme()
 
   useEffect(() => {
     const checkMobile = () => {
@@ -59,7 +61,7 @@ export default function AssistantPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-hidden">
+    <div className="min-h-screen overflow-hidden transition-colors duration-300" style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}>
       {/* Interactive Background */}
       <BackgroundNodes isMobile={isMobile} />
       
@@ -74,17 +76,24 @@ export default function AssistantPage() {
         >
           <div className="flex items-center justify-center gap-4 mb-4">
             <motion.div 
-              className="p-4 rounded-full bg-black/90 border border-white/30 backdrop-blur-sm"
-              whileHover={{ scale: 1.1, boxShadow: '0 0 25px rgba(255,255,255,0.4)' }}
+              className="p-4 rounded-full border backdrop-blur-sm transition-colors duration-300"
+              style={{
+                backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+                borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+              }}
+              whileHover={{ 
+                scale: 1.1, 
+                boxShadow: theme === 'light' ? '0 0 25px rgba(0,0,0,0.2)' : '0 0 25px rgba(255,255,255,0.4)'
+              }}
               transition={{ duration: 0.3 }}
             >
-              <Bot className="w-8 h-8 text-white" />
+              <Bot className={`w-8 h-8 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
             </motion.div>
           </div>
-          <h1 className="text-3xl font-light text-white tracking-wide mb-2">
+          <h1 className={`text-3xl font-light tracking-wide mb-2 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>
             AI Assistant Portal
           </h1>
-          <p className="text-sm text-white/60 max-w-md mx-auto">
+          <p className={`text-sm max-w-md mx-auto transition-colors duration-300 ${theme === 'light' ? 'text-gray-600' : 'text-white/60'}`}>
             Intelligent automation and neural network integration for enhanced productivity
           </p>
         </motion.div>
@@ -116,15 +125,21 @@ export default function AssistantPage() {
                 />
                 
                 {/* Action Card */}
-                <div className="relative p-6 bg-black/90 border border-white/30 rounded-lg backdrop-blur-sm h-32 flex flex-col items-center justify-center text-center group-hover:border-white/60 group-hover:bg-black/95 transition-all duration-300">
-                  <action.icon className="w-8 h-8 text-white mb-3" />
-                  <h3 className="text-sm font-medium text-white mb-1">{action.label}</h3>
-                  <p className="text-xs text-white/60">{action.description}</p>
+                <div className="relative p-6 border rounded-lg backdrop-blur-sm h-32 flex flex-col items-center justify-center text-center transition-all duration-300" style={{
+                  backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+                  borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+                }}>
+                  <action.icon className={`w-8 h-8 mb-3 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
+                  <h3 className={`text-sm font-medium mb-1 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>{action.label}</h3>
+                  <p className={`text-xs transition-colors duration-300 ${theme === 'light' ? 'text-gray-600' : 'text-white/60'}`}>{action.description}</p>
                 </div>
 
                 {/* Pulse effect */}
                 <motion.div
-                  className="absolute inset-0 rounded-lg border border-white/20 opacity-0 group-hover:opacity-40"
+                  className="absolute inset-0 rounded-lg border opacity-0 group-hover:opacity-40 transition-colors duration-300"
+                  style={{
+                    borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'
+                  }}
                   animate={{ scale: [1, 1.1, 1] }}
                   transition={{ 
                     duration: 2,
@@ -146,38 +161,63 @@ export default function AssistantPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
           >
-            <div className="bg-black/90 border border-white/30 rounded-lg backdrop-blur-sm p-6">
+            <div className="border rounded-lg backdrop-blur-sm p-6 transition-colors duration-300" style={{
+              backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+              borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+            }}>
               <div className="flex items-center gap-3 mb-6">
-                <MessageSquare className="w-5 h-5 text-white" />
-                <h2 className="text-lg font-light text-white tracking-wide">Neural Interface</h2>
+                <MessageSquare className={`w-5 h-5 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
+                <h2 className={`text-lg font-light tracking-wide transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>Neural Interface</h2>
               </div>
               
               {/* Chat Messages */}
-              <div className="min-h-[400px] bg-black/50 border border-white/20 rounded-lg p-4 mb-4 space-y-4">
+              <div className="min-h-[400px] border rounded-lg p-4 mb-4 space-y-4 transition-colors duration-300" style={{
+                backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)',
+                borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'
+              }}>
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-white/20 border border-white/30 flex items-center justify-center">
-                    <Bot className="w-4 h-4 text-white" />
+                  <div className="w-8 h-8 rounded-full border flex items-center justify-center transition-colors duration-300" style={{
+                    backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)',
+                    borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+                  }}>
+                    <Bot className={`w-4 h-4 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
                   </div>
-                  <div className="flex-1 bg-black/80 border border-white/20 rounded-lg p-3">
-                    <p className="text-sm text-white/90">Neural interface initialized. Ready for advanced AI integration.</p>
+                  <div className="flex-1 border rounded-lg p-3 transition-colors duration-300" style={{
+                    backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)',
+                    borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'
+                  }}>
+                    <p className={`text-sm transition-colors duration-300 ${theme === 'light' ? 'text-gray-900' : 'text-white/90'}`}>Neural interface initialized. Ready for advanced AI integration.</p>
                   </div>
                 </div>
                 
                 <div className="flex items-start gap-3 justify-end">
-                  <div className="flex-1 max-w-[80%] bg-white/10 border border-white/30 rounded-lg p-3">
-                    <p className="text-sm text-white">Analyze my codebase architecture and suggest optimizations.</p>
+                  <div className="flex-1 max-w-[80%] border rounded-lg p-3 transition-colors duration-300" style={{
+                    backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)',
+                    borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+                  }}>
+                    <p className={`text-sm transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>Analyze my codebase architecture and suggest optimizations.</p>
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-white/20 border border-white/30 flex items-center justify-center text-white font-bold text-xs">
+                  <div className="w-8 h-8 rounded-full border flex items-center justify-center font-bold text-xs transition-colors duration-300" style={{
+                    backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)',
+                    borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)',
+                    color: theme === 'light' ? '#000000' : '#ffffff'
+                  }}>
                     U
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-white/20 border border-white/30 flex items-center justify-center">
-                    <Bot className="w-4 h-4 text-white" />
+                  <div className="w-8 h-8 rounded-full border flex items-center justify-center transition-colors duration-300" style={{
+                    backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)',
+                    borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+                  }}>
+                    <Bot className={`w-4 h-4 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
                   </div>
-                  <div className="flex-1 bg-black/80 border border-white/20 rounded-lg p-3">
-                    <p className="text-sm text-white/90">Initiating deep analysis protocols. Scanning file structure, dependencies, and performance patterns...</p>
+                  <div className="flex-1 border rounded-lg p-3 transition-colors duration-300" style={{
+                    backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)',
+                    borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'
+                  }}>
+                    <p className={`text-sm transition-colors duration-300 ${theme === 'light' ? 'text-gray-900' : 'text-white/90'}`}>Initiating deep analysis protocols. Scanning file structure, dependencies, and performance patterns...</p>
                   </div>
                 </div>
               </div>
@@ -189,10 +229,19 @@ export default function AssistantPage() {
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Enter neural command..."
-                  className="flex-1 bg-black/80 border border-white/30 rounded-lg px-4 py-3 text-white placeholder-white/50 focus:border-white/60 focus:outline-none transition-all duration-300"
+                  className="flex-1 border rounded-lg px-4 py-3 focus:outline-none transition-all duration-300"
+                  style={{
+                    backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)',
+                    borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)',
+                    color: theme === 'light' ? '#000000' : '#ffffff'
+                  }}
                 />
                 <motion.button
-                  className="px-6 py-3 bg-white/10 border border-white/30 rounded-lg text-white hover:bg-white/20 hover:border-white/60 transition-all duration-300"
+                  className={`px-6 py-3 border rounded-lg transition-all duration-300 ${
+                    theme === 'light' 
+                      ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60' 
+                      : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60'
+                  }`}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -210,50 +259,62 @@ export default function AssistantPage() {
             transition={{ duration: 0.8, delay: 0.6 }}
           >
             {/* System Status */}
-            <div className="bg-black/90 border border-white/30 rounded-lg backdrop-blur-sm p-6">
+            <div className="border rounded-lg backdrop-blur-sm p-6 transition-colors duration-300" style={{
+              backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+              borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+            }}>
               <div className="flex items-center gap-3 mb-4">
-                <Cpu className="w-5 h-5 text-white" />
-                <h3 className="text-lg font-light text-white tracking-wide">System Status</h3>
+                <Cpu className={`w-5 h-5 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
+                <h3 className={`text-lg font-light tracking-wide transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>System Status</h3>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-white/70">Neural Load</span>
-                  <span className="text-sm font-light text-white">47.3%</span>
+                  <span className={`text-sm transition-colors duration-300 ${theme === 'light' ? 'text-gray-700' : 'text-white/70'}`}>Neural Load</span>
+                  <span className={`text-sm font-light transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>47.3%</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-white/70">Processing Units</span>
-                  <span className="text-sm font-light text-white">8/12</span>
+                  <span className={`text-sm transition-colors duration-300 ${theme === 'light' ? 'text-gray-700' : 'text-white/70'}`}>Processing Units</span>
+                  <span className={`text-sm font-light transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>8/12</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-white/70">Uptime</span>
-                  <span className="text-sm font-light text-white">99.7%</span>
+                  <span className={`text-sm transition-colors duration-300 ${theme === 'light' ? 'text-gray-700' : 'text-white/70'}`}>Uptime</span>
+                  <span className={`text-sm font-light transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>99.7%</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-white/70">Quantum State</span>
-                  <span className="text-sm font-light text-white">Stable</span>
+                  <span className={`text-sm transition-colors duration-300 ${theme === 'light' ? 'text-gray-700' : 'text-white/70'}`}>Quantum State</span>
+                  <span className={`text-sm font-light transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>Stable</span>
                 </div>
               </div>
             </div>
 
             {/* Recent Sessions */}
-            <div className="bg-black/90 border border-white/30 rounded-lg backdrop-blur-sm p-6">
+            <div className="border rounded-lg backdrop-blur-sm p-6 transition-colors duration-300" style={{
+              backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+              borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+            }}>
               <div className="flex items-center gap-3 mb-4">
-                <History className="w-5 h-5 text-white" />
-                <h3 className="text-lg font-light text-white tracking-wide">Recent Sessions</h3>
+                <History className={`w-5 h-5 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
+                <h3 className={`text-lg font-light tracking-wide transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>Recent Sessions</h3>
               </div>
               <div className="space-y-3">
                 {recentSessions.map((session, index) => (
                   <motion.div 
                     key={session.title}
-                    className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg cursor-pointer transition-all duration-300"
+                    className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all duration-300 ${
+                      theme === 'light' ? 'hover:bg-black/5' : 'hover:bg-white/5'
+                    }`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: index * 0.1 }}
                   >
-                    <div className={`w-2 h-2 rounded-full ${session.status === 'completed' ? 'bg-white/60' : 'bg-white/30 animate-pulse'}`}></div>
+                    <div className={`w-2 h-2 rounded-full ${
+                      session.status === 'completed' 
+                        ? (theme === 'light' ? 'bg-gray-600' : 'bg-white/60')
+                        : (theme === 'light' ? 'bg-gray-400 animate-pulse' : 'bg-white/30 animate-pulse')
+                    }`}></div>
                     <div className="flex-1">
-                      <p className="text-sm font-light text-white">{session.title}</p>
-                      <p className="text-xs text-white/50">{session.time}</p>
+                      <p className={`text-sm font-light transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>{session.title}</p>
+                      <p className={`text-xs transition-colors duration-300 ${theme === 'light' ? 'text-gray-500' : 'text-white/50'}`}>{session.time}</p>
                     </div>
                   </motion.div>
                 ))}
@@ -261,16 +322,23 @@ export default function AssistantPage() {
             </div>
 
             {/* Capabilities */}
-            <div className="bg-black/90 border border-white/30 rounded-lg backdrop-blur-sm p-6">
+            <div className="border rounded-lg backdrop-blur-sm p-6 transition-colors duration-300" style={{
+              backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+              borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+            }}>
               <div className="flex items-center gap-3 mb-4">
-                <Sparkles className="w-5 h-5 text-white" />
-                <h3 className="text-lg font-light text-white tracking-wide">Capabilities</h3>
+                <Sparkles className={`w-5 h-5 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
+                <h3 className={`text-lg font-light tracking-wide transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>Capabilities</h3>
               </div>
               <div className="space-y-2">
                 {capabilities.map((capability, index) => (
                   <motion.div 
                     key={capability}
-                    className="px-3 py-1 bg-white/10 border border-white/20 rounded-full text-xs text-white/80 text-center"
+                    className={`px-3 py-1 border rounded-full text-xs text-center transition-colors duration-300 ${
+                      theme === 'light' 
+                        ? 'bg-black/10 border-black/20 text-gray-800' 
+                        : 'bg-white/10 border-white/20 text-white/80'
+                    }`}
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.4, delay: index * 0.05 }}
@@ -290,10 +358,10 @@ export default function AssistantPage() {
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 1 }}
         >
-          <div className="flex items-center space-x-2 text-white/40 text-xs">
-            <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse" />
+          <div className={`flex items-center space-x-2 text-xs transition-colors duration-300 ${theme === 'light' ? 'text-gray-500' : 'text-white/40'}`}>
+            <div className={`w-2 h-2 rounded-full animate-pulse transition-colors duration-300 ${theme === 'light' ? 'bg-gray-500' : 'bg-white/40'}`} />
             <span>Neural Network Active</span>
-            <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }} />
+            <div className={`w-2 h-2 rounded-full animate-pulse transition-colors duration-300 ${theme === 'light' ? 'bg-gray-500' : 'bg-white/40'}`} style={{ animationDelay: '0.5s' }} />
           </div>
         </motion.div>
       </div>

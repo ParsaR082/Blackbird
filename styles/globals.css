@@ -2,6 +2,74 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Default theme variables (dark theme) */
+  --bg-color: #000000;
+  --text-color: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --border-color: rgba(255, 255, 255, 0.2);
+  --node-color: #ffffff;
+  --node-line-color: #ffffff;
+  --header-bg: rgba(0, 0, 0, 0.95);
+  --header-border: rgba(255, 255, 255, 0.1);
+  --category-bg: rgba(0, 0, 0, 0.9);
+  --category-border: rgba(255, 255, 255, 0.3);
+  --category-text: #ffffff;
+  --category-hover-bg: rgba(17, 17, 17, 0.95);
+  --category-hover-border: #ffffff;
+  --category-hover-shadow: rgba(255, 255, 255, 0.4);
+  --glow-color: #ffffff;
+  --logo-color: #ffffff;
+}
+
+html.light {
+  --bg-color: #ffffff;
+  --text-color: #000000;
+  --text-secondary: #666666;
+  --border-color: #e5e7eb;
+  --node-color: #6b7280;
+  --node-line-color: #9ca3af;
+  --header-bg: rgba(255, 255, 255, 0.95);
+  --header-border: rgba(0, 0, 0, 0.1);
+  --category-bg: rgba(255, 255, 255, 0.9);
+  --category-border: rgba(0, 0, 0, 0.2);
+  --category-text: #000000;
+  --category-hover-bg: rgba(0, 0, 0, 0.05);
+  --category-hover-border: #000000;
+  --category-hover-shadow: rgba(0, 0, 0, 0.2);
+  --glow-color: #ffffff;
+  --logo-color: #000000;
+}
+
+html.dark {
+  --bg-color: #000000;
+  --text-color: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --border-color: rgba(255, 255, 255, 0.2);
+  --node-color: #ffffff;
+  --node-line-color: #ffffff;
+  --header-bg: rgba(0, 0, 0, 0.95);
+  --header-border: rgba(255, 255, 255, 0.1);
+  --category-bg: rgba(0, 0, 0, 0.9);
+  --category-border: rgba(255, 255, 255, 0.3);
+  --category-text: #ffffff;
+  --category-hover-bg: rgba(17, 17, 17, 0.95);
+  --category-hover-border: #ffffff;
+  --category-hover-shadow: rgba(255, 255, 255, 0.4);
+  --glow-color: #ffffff;
+  --logo-color: #ffffff;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+/* Smooth transitions for theme changes */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
 @layer base {
   :root {
     --background: 0 0% 0%;

@@ -3,25 +3,30 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import { useTheme } from '@/contexts/theme-context'
 
 const categories = [
+  { name: 'University', path: '/university' },
   { name: 'Hall of Fame', path: '/hall-of-fame' },
   { name: 'Games', path: '/games' },
   { name: 'Product Playground', path: '/product-playground' },
   { name: 'Roadmaps', path: '/roadmaps' },
   { name: 'Events', path: '/events' },
-  { name: 'Assistant', path: '/assistant' },
-  { name: 'University', path: '/university' }
+  { name: 'Assistant', path: '/assistant' }
 ]
 
 const CategoryRing = () => {
-  const radius = 250 // Distance from center
+  // Logo dimensions from LogoBird.tsx: 220x220 pixels
+  const logoRadius = 110 // Half of logo width/height (220/2)
+  const distanceFromLogoBorder = 140 // Space between logo edge and categories  
+  const radius = logoRadius + distanceFromLogoBorder // Total distance from center (250px)
+  const { theme } = useTheme()
   
   return (
     <div className="absolute inset-0 flex items-center justify-center">
       {categories.map((category, index) => {
-        // Calculate position in circle (starting from top and going clockwise)
-        const angle = (index * 51.43) - 90 // ~51.43 degrees apart (360/7), start from top
+        // Calculate position in perfect circle (starting from top and going clockwise)
+        const angle = (index * (360 / categories.length)) - 90 // Equal spacing, start from top
         const radians = (angle * Math.PI) / 180
         const x = radius * Math.cos(radians)
         const y = radius * Math.sin(radians)
@@ -51,7 +56,10 @@ const CategoryRing = () => {
               >
                 {/* Glow effect on hover */}
                 <motion.div
-                  className="absolute inset-0 rounded-full bg-white opacity-0 blur-lg group-hover:opacity-25"
+                  className="absolute inset-0 rounded-full opacity-0 blur-lg group-hover:opacity-25"
+                  style={{
+                    backgroundColor: theme === 'light' ? '#000000' : '#ffffff'
+                  }}
                   initial={{ scale: 0.8 }}
                   whileHover={{ scale: 1.5 }}
                   transition={{ duration: 0.3 }}
@@ -59,11 +67,17 @@ const CategoryRing = () => {
                 
                 {/* Category text */}
                 <motion.div
-                  className="relative px-6 py-3 text-white font-medium text-base text-center whitespace-nowrap bg-black/90 border border-white/30 rounded-full backdrop-blur-sm shadow-lg"
+                  className="relative px-6 py-3 font-medium text-base text-center whitespace-nowrap rounded-full backdrop-blur-sm shadow-lg transition-colors duration-300"
+                  style={{
+                    backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+                    borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.3)',
+                    color: theme === 'light' ? '#000000' : '#ffffff',
+                    border: '1px solid'
+                  }}
                   whileHover={{ 
-                    backgroundColor: 'rgba(17, 17, 17, 0.95)',
-                    borderColor: '#fff',
-                    boxShadow: '0 0 25px rgba(255,255,255,0.4)',
+                    backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(17, 17, 17, 0.95)',
+                    borderColor: theme === 'light' ? '#000000' : '#ffffff',
+                    boxShadow: theme === 'light' ? '0 0 25px rgba(0,0,0,0.2)' : '0 0 25px rgba(255,255,255,0.4)',
                     y: -2
                   }}
                   transition={{ duration: 0.3 }}
@@ -73,7 +87,10 @@ const CategoryRing = () => {
                 
                 {/* Pulse effect */}
                 <motion.div
-                  className="absolute inset-0 rounded-full border border-white/20 opacity-0 group-hover:opacity-60"
+                  className="absolute inset-0 rounded-full border opacity-0 group-hover:opacity-60"
+                  style={{
+                    borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'
+                  }}
                   animate={{ scale: [1, 1.3, 1] }}
                   transition={{ 
                     duration: 2,
@@ -84,31 +101,6 @@ const CategoryRing = () => {
               </motion.div>
             </Link>
           </motion.div>
-        )
-      })}
-      
-      {/* Connecting lines from center (subtle effect) */}
-      {categories.map((_, index) => {
-        const angle = (index * 51.43) - 90
-        
-        return (
-          <motion.div
-            key={`line-${index}`}
-            className="absolute left-1/2 top-1/2 origin-left"
-            initial={{ opacity: 0, scaleX: 0 }}
-            animate={{ opacity: 0.08, scaleX: 1 }}
-            transition={{ 
-              duration: 1.2,
-              delay: index * 0.1 + 0.8,
-              ease: "easeOut"
-            }}
-            style={{
-              width: `${radius - 60}px`,
-              height: '1px',
-              backgroundColor: 'white',
-              transform: `rotate(${angle}deg)`,
-            }}
-          />
         )
       })}
     </div>

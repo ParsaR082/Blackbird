@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Mail, Lock, Loader2 } from 'lucide-react'
 import { useAuth } from '@/contexts/auth-context'
+import { useTheme } from '@/contexts/theme-context'
 
 export function LoginForm() {
   const [email, setEmail] = useState('')
@@ -16,6 +17,7 @@ export function LoginForm() {
   const [error, setError] = useState('')
   
   const { login } = useAuth()
+  const { theme } = useTheme()
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirectTo') || '/dashboard'
@@ -47,53 +49,54 @@ export function LoginForm() {
       transition={{ duration: 0.5 }}
       className="w-full max-w-md mx-auto"
     >
-      <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+      <Card className="backdrop-blur-sm transition-colors duration-300" style={{
+        backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.05)',
+        borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)'
+      }}>
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-light text-white">Welcome Back</CardTitle>
-          <p className="text-white/60">Sign in to your account</p>
+          <CardTitle className="text-xl font-light transition-colors duration-300" style={{ color: 'var(--text-color)' }}>
+            Welcome Back
+          </CardTitle>
+          <p className="transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>
+            Sign in to your account
+          </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-                {error}
-              </div>
-            )}
-            
-            <div className="space-y-2">
-              <label className="text-sm text-white/70">Email</label>
+            <div className="grid grid-cols-1 gap-4">
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/40" />
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 transition-colors duration-300" style={{ color: 'var(--text-secondary)' }} />
                 <Input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
                   required
-                  className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/40"
+                  className="pl-10"
                 />
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <label className="text-sm text-white/70">Password</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/40" />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 transition-colors duration-300" style={{ color: 'var(--text-secondary)' }} />
                 <Input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   required
-                  className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/40"
+                  className="pl-10"
                 />
               </div>
             </div>
 
+            {error && (
+              <div className="text-red-500 text-sm text-center">{error}</div>
+            )}
+
             <Button 
               type="submit" 
               disabled={isLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              className="w-full"
             >
               {isLoading ? (
                 <>
@@ -105,6 +108,15 @@ export function LoginForm() {
               )}
             </Button>
           </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-sm transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>
+              Don&apos;t have an account?{' '}
+              <a href="/auth/register" className="text-blue-400 hover:text-blue-300 underline">
+                Sign up here
+              </a>
+            </p>
+          </div>
         </CardContent>
       </Card>
     </motion.div>

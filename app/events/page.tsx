@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import BackgroundNodes from '@/components/BackgroundNodes'
+import { useTheme } from '@/contexts/theme-context'
 import { 
   Calendar,
   Clock,
@@ -30,6 +31,7 @@ export default function EventsPage() {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedEvent, setSelectedEvent] = useState<any>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const { theme } = useTheme()
 
   useEffect(() => {
     const checkMobile = () => {
@@ -354,7 +356,7 @@ export default function EventsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-hidden">
+    <div className="min-h-screen overflow-hidden transition-colors duration-300" style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}>
       {/* Interactive Background */}
       <BackgroundNodes isMobile={isMobile} />
       
@@ -372,17 +374,24 @@ export default function EventsPage() {
         >
           <div className="flex items-center justify-center gap-4 mb-4">
             <motion.div 
-              className="p-4 rounded-full bg-black/90 border border-white/30 backdrop-blur-sm"
-              whileHover={{ scale: 1.1, boxShadow: '0 0 25px rgba(255,255,255,0.4)' }}
+              className="p-4 rounded-full border backdrop-blur-sm transition-colors duration-300"
+              style={{
+                backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+                borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+              }}
+              whileHover={{ 
+                scale: 1.1, 
+                boxShadow: theme === 'light' ? '0 0 25px rgba(0,0,0,0.2)' : '0 0 25px rgba(255,255,255,0.4)'
+              }}
               transition={{ duration: 0.3 }}
             >
-              <Calendar className="w-8 h-8 text-white" />
+              <Calendar className={`w-8 h-8 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
             </motion.div>
           </div>
-          <h1 className="text-3xl font-light text-white tracking-wide mb-2">
+          <h1 className={`text-3xl font-light tracking-wide mb-2 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>
             Event Portal
           </h1>
-          <p className="text-sm text-white/60 max-w-md mx-auto">
+          <p className={`text-sm max-w-md mx-auto transition-colors duration-300 ${theme === 'light' ? 'text-gray-600' : 'text-white/60'}`}>
             Immersive technology events and collaborative learning experiences
           </p>
         </motion.div>
@@ -398,22 +407,34 @@ export default function EventsPage() {
             {eventCategories.map((category, index) => (
               <motion.button
                 key={category.id}
-                className={`group relative cursor-pointer px-6 py-3 bg-black/90 border rounded-full backdrop-blur-sm transition-all duration-300 ${
-                  selectedCategory === category.id 
-                    ? 'border-white/60 bg-black/95' 
-                    : 'border-white/30 hover:border-white/50'
-                }`}
+                className="group relative cursor-pointer px-6 py-3 border rounded-full backdrop-blur-sm transition-all duration-300"
+                style={{
+                  backgroundColor: selectedCategory === category.id 
+                    ? (theme === 'light' ? 'rgba(255, 255, 255, 0.95)' : 'rgba(0, 0, 0, 0.95)')
+                    : (theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)'),
+                  borderColor: selectedCategory === category.id 
+                    ? (theme === 'light' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.6)')
+                    : (theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)')
+                }}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
-                whileHover={{ scale: 1.05, y: -2 }}
+                whileHover={{ 
+                  scale: 1.05, 
+                  y: -2,
+                  borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.5)'
+                }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setSelectedCategory(category.id)}
               >
                 <div className="flex items-center gap-2">
-                  <category.icon className="w-4 h-4 text-white" />
-                  <span className="text-sm text-white">{category.label}</span>
-                  <span className="text-xs text-white/60 bg-white/10 px-2 py-1 rounded-full">
+                  <category.icon className={`w-4 h-4 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
+                  <span className={`text-sm transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>{category.label}</span>
+                  <span className={`text-xs px-2 py-1 rounded-full transition-colors duration-300 ${
+                    theme === 'light' 
+                      ? 'text-gray-600 bg-black/10' 
+                      : 'text-white/60 bg-white/10'
+                  }`}>
                     {category.count}
                   </span>
                 </div>
@@ -431,26 +452,37 @@ export default function EventsPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
           >
-            <div className="bg-black/90 border border-white/30 rounded-lg backdrop-blur-sm p-6">
+            <div className="border rounded-lg backdrop-blur-sm p-6 transition-colors duration-300" style={{
+              backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+              borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+            }}>
               <div className="flex items-center gap-3 mb-6">
-                <Star className="w-5 h-5 text-white" />
-                <h2 className="text-lg font-light text-white tracking-wide">Upcoming Events</h2>
+                <Star className={`w-5 h-5 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
+                <h2 className={`text-lg font-light tracking-wide transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>Upcoming Events</h2>
               </div>
               
               <div className="space-y-4">
                 {filteredEvents.map((event, index) => (
                   <motion.div
                     key={event.id}
-                    className="group p-4 bg-black/50 border border-white/20 rounded-lg hover:border-white/40 hover:bg-black/70 transition-all duration-300 cursor-pointer"
+                    className="group p-4 border rounded-lg cursor-pointer transition-all duration-300"
+                    style={{
+                      backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)',
+                      borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'
+                    }}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: index * 0.1 }}
-                    whileHover={{ scale: 1.02 }}
+                    whileHover={{ 
+                      scale: 1.02,
+                      backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
+                      borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.4)' : 'rgba(255, 255, 255, 0.4)'
+                    }}
                   >
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-base font-medium text-white">{event.title}</h3>
+                          <h3 className={`text-base font-medium transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>{event.title}</h3>
                           {event.featured && (
                             <span className="px-2 py-1 bg-yellow-500/20 border border-yellow-500/40 rounded-full text-xs text-yellow-400">
                               FEATURED
@@ -460,8 +492,8 @@ export default function EventsPage() {
                             {event.status.replace('-', ' ').toUpperCase()}
                           </span>
                         </div>
-                        <p className="text-sm text-white/70 mb-3">{event.description}</p>
-                        <div className="flex flex-wrap items-center gap-4 text-xs text-white/60">
+                        <p className={`text-sm mb-3 transition-colors duration-300 ${theme === 'light' ? 'text-gray-700' : 'text-white/70'}`}>{event.description}</p>
+                        <div className={`flex flex-wrap items-center gap-4 text-xs transition-colors duration-300 ${theme === 'light' ? 'text-gray-600' : 'text-white/60'}`}>
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
                             {new Date(event.date).toLocaleDateString()}
@@ -479,20 +511,28 @@ export default function EventsPage() {
                             {event.attendees}/{event.maxAttendees}
                           </span>
                         </div>
-                        <div className="text-xs text-white/50 mt-2">
+                        <div className={`text-xs mt-2 transition-colors duration-300 ${theme === 'light' ? 'text-gray-500' : 'text-white/50'}`}>
                           {getTimeUntilEvent(event.date, event.time)}
                         </div>
                       </div>
                       <div className="flex flex-col gap-2">
                         <motion.button
-                          className="px-6 py-2 bg-white/10 border border-white/30 rounded-lg text-white hover:bg-white/20 hover:border-white/60 transition-all duration-300 text-sm"
+                          className={`px-6 py-2 border rounded-lg transition-all duration-300 text-sm ${
+                            theme === 'light' 
+                              ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60' 
+                              : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60'
+                          }`}
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                         >
                           Register
                         </motion.button>
                         <motion.button
-                          className="px-6 py-2 bg-white/5 border border-white/20 rounded-lg text-white/70 hover:bg-white/10 hover:border-white/40 transition-all duration-300 text-sm"
+                          className={`px-6 py-2 border rounded-lg transition-all duration-300 text-sm ${
+                            theme === 'light' 
+                              ? 'bg-black/5 border-black/20 text-gray-700 hover:bg-black/10 hover:border-black/40' 
+                              : 'bg-white/5 border-white/20 text-white/70 hover:bg-white/10 hover:border-white/40'
+                          }`}
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           onClick={() => openModal(event)}
@@ -515,52 +555,60 @@ export default function EventsPage() {
             transition={{ duration: 0.8, delay: 0.6 }}
           >
             {/* Event Stats */}
-            <div className="bg-black/90 border border-white/30 rounded-lg backdrop-blur-sm p-6">
+            <div className="border rounded-lg backdrop-blur-sm p-6 transition-colors duration-300" style={{
+              backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+              borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+            }}>
               <div className="flex items-center gap-3 mb-4">
-                <Trophy className="w-5 h-5 text-white" />
-                <h3 className="text-lg font-light text-white tracking-wide">Event Stats</h3>
+                <Trophy className={`w-5 h-5 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
+                <h3 className={`text-lg font-light tracking-wide transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>Event Stats</h3>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-white/70">Events Attended</span>
-                  <span className="text-sm font-light text-white">47</span>
+                  <span className={`text-sm transition-colors duration-300 ${theme === 'light' ? 'text-gray-700' : 'text-white/70'}`}>Events Attended</span>
+                  <span className={`text-sm font-light transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>47</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-white/70">Hours Learned</span>
-                  <span className="text-sm font-light text-white">156</span>
+                  <span className={`text-sm transition-colors duration-300 ${theme === 'light' ? 'text-gray-700' : 'text-white/70'}`}>Hours Learned</span>
+                  <span className={`text-sm font-light transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>156</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-white/70">Certificates</span>
-                  <span className="text-sm font-light text-white">23</span>
+                  <span className={`text-sm transition-colors duration-300 ${theme === 'light' ? 'text-gray-700' : 'text-white/70'}`}>Certificates</span>
+                  <span className={`text-sm font-light transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>23</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-white/70">Network Size</span>
-                  <span className="text-sm font-light text-white">234</span>
+                  <span className={`text-sm transition-colors duration-300 ${theme === 'light' ? 'text-gray-700' : 'text-white/70'}`}>Network Size</span>
+                  <span className={`text-sm font-light transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>234</span>
                 </div>
               </div>
             </div>
 
             {/* Past Events */}
-            <div className="bg-black/90 border border-white/30 rounded-lg backdrop-blur-sm p-6">
+            <div className="border rounded-lg backdrop-blur-sm p-6 transition-colors duration-300" style={{
+              backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+              borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+            }}>
               <div className="flex items-center gap-3 mb-4">
-                <BookOpen className="w-5 h-5 text-white" />
-                <h3 className="text-lg font-light text-white tracking-wide">Recent Events</h3>
+                <BookOpen className={`w-5 h-5 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
+                <h3 className={`text-lg font-light tracking-wide transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>Recent Events</h3>
               </div>
               <div className="space-y-3">
                 {pastEvents.map((event, index) => (
                   <motion.div 
                     key={event.title}
-                    className="flex items-center justify-between p-2 hover:bg-white/5 rounded-lg cursor-pointer transition-all duration-300"
+                    className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all duration-300 ${
+                      theme === 'light' ? 'hover:bg-black/5' : 'hover:bg-white/5'
+                    }`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: index * 0.1 }}
                   >
                     <div className="flex-1">
-                      <p className="text-sm font-light text-white">{event.title}</p>
-                      <p className="text-xs text-white/50">{new Date(event.date).toLocaleDateString()}</p>
+                      <p className={`text-sm font-light transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>{event.title}</p>
+                      <p className={`text-xs transition-colors duration-300 ${theme === 'light' ? 'text-gray-500' : 'text-white/50'}`}>{new Date(event.date).toLocaleDateString()}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-white/60">{event.attendees} attended</p>
+                      <p className={`text-xs transition-colors duration-300 ${theme === 'light' ? 'text-gray-600' : 'text-white/60'}`}>{event.attendees} attended</p>
                       <div className="flex items-center gap-1">
                         <Star className="w-3 h-3 text-yellow-400" />
                         <span className="text-xs text-yellow-400">{event.rating}</span>
@@ -572,21 +620,32 @@ export default function EventsPage() {
             </div>
 
             {/* Quick Actions */}
-            <div className="bg-black/90 border border-white/30 rounded-lg backdrop-blur-sm p-6">
+            <div className="border rounded-lg backdrop-blur-sm p-6 transition-colors duration-300" style={{
+              backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+              borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+            }}>
               <div className="flex items-center gap-3 mb-4">
-                <Zap className="w-5 h-5 text-white" />
-                <h3 className="text-lg font-light text-white tracking-wide">Quick Actions</h3>
+                <Zap className={`w-5 h-5 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
+                <h3 className={`text-lg font-light tracking-wide transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>Quick Actions</h3>
               </div>
               <div className="space-y-3">
                 <motion.button
-                  className="w-full p-3 bg-white/10 border border-white/30 rounded-lg text-white hover:bg-white/20 hover:border-white/60 transition-all duration-300 text-sm"
+                  className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm ${
+                    theme === 'light' 
+                      ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60' 
+                      : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60'
+                  }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
                   Create Event
                 </motion.button>
                 <motion.button
-                  className="w-full p-3 bg-white/10 border border-white/30 rounded-lg text-white hover:bg-white/20 hover:border-white/60 transition-all duration-300 text-sm"
+                  className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm ${
+                    theme === 'light' 
+                      ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60' 
+                      : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60'
+                  }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => router.push('/calendar')}
@@ -594,7 +653,11 @@ export default function EventsPage() {
                   My Calendar
                 </motion.button>
                 <motion.button
-                  className="w-full p-3 bg-white/10 border border-white/30 rounded-lg text-white hover:bg-white/20 hover:border-white/60 transition-all duration-300 text-sm"
+                  className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm ${
+                    theme === 'light' 
+                      ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60' 
+                      : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60'
+                  }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -612,10 +675,10 @@ export default function EventsPage() {
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 1 }}
         >
-          <div className="flex items-center space-x-2 text-white/40 text-xs">
-            <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse" />
+          <div className={`flex items-center space-x-2 text-xs transition-colors duration-300 ${theme === 'light' ? 'text-gray-500' : 'text-white/40'}`}>
+            <div className={`w-2 h-2 rounded-full animate-pulse transition-colors duration-300 ${theme === 'light' ? 'bg-gray-500' : 'bg-white/40'}`} />
             <span>Event Network Active</span>
-            <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }} />
+            <div className={`w-2 h-2 rounded-full animate-pulse transition-colors duration-300 ${theme === 'light' ? 'bg-gray-500' : 'bg-white/40'}`} style={{ animationDelay: '0.5s' }} />
           </div>
         </motion.div>
       </div>
