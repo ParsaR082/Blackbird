@@ -6,6 +6,8 @@ import mongoose from 'mongoose'
 import bcrypt from 'bcrypt'
 import { RateLimit } from '@/lib/rate-limit'
 
+export const dynamic = 'force-dynamic'
+
 // Rate limiting: 5 requests per minute
 const limiter = new RateLimit({
   interval: 60 * 1000, // 1 minute
