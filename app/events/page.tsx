@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import BackgroundNodes from '@/components/BackgroundNodes'
 import { useTheme } from '@/contexts/theme-context'
+import CreateEventModal from './CreateEventModal'
 import { 
   Calendar,
   Clock,
@@ -31,6 +32,7 @@ export default function EventsPage() {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedEvent, setSelectedEvent] = useState<any>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const { theme } = useTheme()
 
   useEffect(() => {
@@ -161,6 +163,20 @@ export default function EventsPage() {
   const closeModal = () => {
     setIsModalOpen(false)
     setSelectedEvent(null)
+  }
+
+  const openCreateModal = () => {
+    setIsCreateModalOpen(true)
+  }
+
+  const closeCreateModal = () => {
+    setIsCreateModalOpen(false)
+  }
+
+  const handleCreateEvent = (eventData: any) => {
+    console.log('New event created:', eventData)
+    // Here you would typically send the data to your backend API
+    setIsCreateModalOpen(false)
   }
 
   const filteredEvents = selectedCategory === 'all' 
@@ -360,8 +376,15 @@ export default function EventsPage() {
       {/* Interactive Background */}
       <BackgroundNodes isMobile={isMobile} />
       
-      {/* Modal */}
+      {/* Modals */}
       {isModalOpen && <EventModal />}
+      {isCreateModalOpen && (
+        <CreateEventModal
+          isOpen={isCreateModalOpen}
+          onClose={closeCreateModal}
+          onSubmit={handleCreateEvent}
+        />
+      )}
       
       {/* Main Content */}
       <div className="relative z-10 min-h-screen px-4 py-8">
@@ -637,6 +660,7 @@ export default function EventsPage() {
                   }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
+                  onClick={openCreateModal}
                 >
                   Create Event
                 </motion.button>
@@ -660,6 +684,7 @@ export default function EventsPage() {
                   }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
+                  onClick={() => router.push('/events/archive')}
                 >
                   Event Archive
                 </motion.button>
