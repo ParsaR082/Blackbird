@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import BackgroundNodes from '@/components/BackgroundNodes'
 import CreateEventModal from './CreateEventModal'
+import EventArchive from './EventArchive'
 import { 
   Calendar,
   Clock,
@@ -22,7 +23,8 @@ import {
   Coffee,
   Mic,
   Video,
-  X
+  X,
+  ArrowLeft
 } from 'lucide-react'
 
 export default function EventsPage() {
@@ -32,6 +34,7 @@ export default function EventsPage() {
   const [selectedEvent, setSelectedEvent] = useState<any>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [showArchive, setShowArchive] = useState(false)
 
   useEffect(() => {
     const checkMobile = () => {
@@ -355,6 +358,32 @@ export default function EventsPage() {
     )
   }
 
+  // Show Event Archive if requested
+  if (showArchive) {
+    return (
+      <div className="min-h-screen bg-black text-white overflow-hidden">
+        {/* Interactive Background */}
+        <BackgroundNodes isMobile={isMobile} />
+        
+        {/* Back Button */}
+        <div className="relative z-10 p-4">
+          <motion.button
+            className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/30 rounded-lg text-white hover:bg-white/20 hover:border-white/60 transition-all duration-300"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowArchive(false)}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Events</span>
+          </motion.button>
+        </div>
+        
+        {/* Event Archive Component */}
+        <EventArchive />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden">
       {/* Interactive Background */}
@@ -611,6 +640,7 @@ export default function EventsPage() {
                   className="w-full p-3 bg-white/10 border border-white/30 rounded-lg text-white hover:bg-white/20 hover:border-white/60 transition-all duration-300 text-sm"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
+                  onClick={() => setShowArchive(true)}
                 >
                   Event Archive
                 </motion.button>
