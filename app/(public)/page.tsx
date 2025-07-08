@@ -1,18 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import CategoryRing from '@/components/CategoryRing'
 import LogoBird from '@/components/LogoBird'
 import BackgroundNodes from '@/components/BackgroundNodes'
-import { AuthModalWrapper } from '@/components/auth/AuthModalWrapper'
 
 export default function HomePage() {
   const [isMobile, setIsMobile] = useState(false)
-  const [showAuthModal, setShowAuthModal] = useState(false)
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
-  const searchParams = useSearchParams()
 
   useEffect(() => {
     // Check mobile on mount
@@ -23,18 +18,6 @@ export default function HomePage() {
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
-
-  useEffect(() => {
-    // Check if URL has showAuth parameter
-    const showAuth = searchParams.get('showAuth')
-    if (showAuth === 'login') {
-      setShowAuthModal(true)
-      setAuthMode('login')
-    } else if (showAuth === 'register') {
-      setShowAuthModal(true)
-      setAuthMode('register')
-    }
-  }, [searchParams])
 
   return (
     <>
@@ -96,13 +79,6 @@ export default function HomePage() {
           </motion.div>
         </div>
       </div>
-
-      {/* Auth Modal */}
-      <AuthModalWrapper 
-        isOpen={showAuthModal} 
-        onClose={() => setShowAuthModal(false)} 
-        initialMode={authMode}
-      />
     </>
   )
 } 

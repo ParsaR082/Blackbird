@@ -1,70 +1,38 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import BackgroundNodes from '@/components/BackgroundNodes'
-import { UserPlus, ArrowLeft } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import Link from 'next/link'
+import { useTheme } from '@/contexts/theme-context'
+import { RegisterHeader } from './components/RegisterHeader'
+import { RegisterForm } from './components/RegisterForm'
 
 export default function RegisterPage() {
-  const router = useRouter()
+  const { theme } = useTheme()
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
+    <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}>
+      <div className="fixed inset-0 transition-colors duration-300" style={{ 
+        background: theme === 'light' 
+          ? 'linear-gradient(to bottom right, #ffffff, #f8fafc, #ffffff)' 
+          : 'linear-gradient(to bottom right, #000000, #1f2937, #000000)'
+      }} />
+      <div className="fixed inset-0" style={{
+        background: theme === 'light'
+          ? 'radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.1), transparent 50%)'
+          : 'radial-gradient(circle at 50% 50%, rgba(120, 119, 198, 0.1), transparent 50%)'
+      }} />
       <BackgroundNodes isMobile={false} />
       
-      <div className="relative z-10 w-full max-w-md">
+      <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-center mb-8"
+          className="w-full max-w-md"
         >
-          <div className="flex items-center justify-center mb-6">
-            <div className="p-3 rounded-full bg-black/90 border border-white/30 backdrop-blur-sm">
-              <UserPlus className="w-8 h-8 text-white" />
-            </div>
-          </div>
-          <h1 className="text-3xl font-light tracking-wide mb-2">Join Blackbird Portal</h1>
-          <p className="text-white/60">Create your account</p>
+          <RegisterHeader />
+          <RegisterForm />
         </motion.div>
-
-        <Link href="/" className="inline-block mb-6">
-          <Button variant="ghost" size="sm" className="text-white/60 hover:text-white">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Portal
-          </Button>
-        </Link>
-
-        <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
-          <CardHeader className="text-center">
-            <CardTitle className="text-xl font-light text-white">Registration Coming Soon</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center space-y-4">
-            <p className="text-white/60">
-              Registration is currently disabled. Please contact an administrator for access.
-            </p>
-            
-            <div className="space-y-3">
-              <Button 
-                onClick={() => router.push('/auth/login')}
-                className="w-full bg-blue-600 hover:bg-blue-700"
-              >
-                Sign In Instead
-              </Button>
-              
-              <p className="text-sm text-white/60">
-                Already have an account?{' '}
-                <Link href="/auth/login" className="text-blue-400 hover:text-blue-300 underline">
-                  Sign in here
-                </Link>
-              </p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   )

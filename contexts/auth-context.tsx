@@ -20,10 +20,8 @@ type AuthContextType = {
 }
 
 type RegisterData = {
-  student_id: string
-  username: string
-  mobile_phone: string
-  full_name: string
+  email: string
+  fullName: string
   password: string
 }
 

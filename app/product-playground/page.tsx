@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import BackgroundNodes from '@/components/BackgroundNodes'
 import LogoBird from '@/components/LogoBird'
+import { useTheme } from '@/contexts/theme-context'
 
 // Mock product data
 const PRODUCTS = [
@@ -167,6 +168,7 @@ export default function ProductPlaygroundPage() {
   const [isMobile, setIsMobile] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [filteredProducts, setFilteredProducts] = useState(PRODUCTS)
+  const { theme } = useTheme()
 
   // Check if mobile
   useEffect(() => {
@@ -193,7 +195,7 @@ export default function ProductPlaygroundPage() {
   const categories = ['All', 'Tech', 'Art', 'Tools']
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-hidden">
+    <div className="min-h-screen overflow-hidden transition-colors duration-300" style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}>
       {/* Interactive Background */}
       <BackgroundNodes isMobile={isMobile} />
       
@@ -217,7 +219,8 @@ export default function ProductPlaygroundPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-white/60 max-w-md mx-auto"
+            className="max-w-md mx-auto transition-colors duration-300"
+            style={{ color: 'var(--text-secondary)' }}
           >
             Explore our conceptual products in this interactive showcase
           </motion.p>
@@ -234,16 +237,21 @@ export default function ProductPlaygroundPage() {
             <motion.button
               key={category}
               onClick={() => setSelectedCategory(category)}
-              className={`px-6 py-2 rounded-full border border-white/20 relative ${
-                selectedCategory === category ? 'text-white' : 'text-white/60'
-              }`}
+              className={`px-6 py-2 rounded-full border relative transition-colors duration-300`}
+              style={{
+                borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)',
+                color: selectedCategory === category ? 'var(--text-color)' : 'var(--text-secondary)'
+              }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
               {selectedCategory === category && (
                 <motion.div
                   layoutId="categoryIndicator"
-                  className="absolute inset-0 bg-white/10 rounded-full"
+                  className="absolute inset-0 rounded-full transition-colors duration-300"
+                  style={{
+                    backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)'
+                  }}
                   transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                 />
               )}
@@ -259,23 +267,36 @@ export default function ProductPlaygroundPage() {
               {filteredProducts.map((product) => (
                 <motion.div
                   key={product.id}
-                  className="bg-white/5 backdrop-blur-sm rounded-lg overflow-hidden"
+                  className="backdrop-blur-sm rounded-lg overflow-hidden transition-colors duration-300"
+                  style={{
+                    backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.05)'
+                  }}
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.5 }}
-                  whileHover={{ scale: 1.02, boxShadow: '0 10px 30px -10px rgba(255,255,255,0.1)' }}
+                  whileHover={{ 
+                    scale: 1.02, 
+                    boxShadow: theme === 'light' 
+                      ? '0 10px 30px -10px rgba(0,0,0,0.1)' 
+                      : '0 10px 30px -10px rgba(255,255,255,0.1)' 
+                  }}
                 >
                   {/* Product Image */}
-                  <div className="bg-white/5">
+                  <div className="transition-colors duration-300" style={{
+                    backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)'
+                  }}>
                     <ProductShape type={product.image} />
                   </div>
                   
                   {/* Product Info */}
                   <div className="p-4">
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-lg font-medium">{product.title}</h3>
+                      <h3 className="text-lg font-medium transition-colors duration-300" style={{ color: 'var(--text-color)' }}>{product.title}</h3>
                       <motion.div 
-                        className="bg-white/10 px-2 py-1 rounded text-sm font-medium"
+                        className="px-2 py-1 rounded text-sm font-medium transition-colors duration-300"
+                        style={{
+                          backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)'
+                        }}
                         initial={{ y: 0 }}
                         animate={{ y: [0, -2, 0, -2, 0] }}
                         transition={{ 
@@ -285,19 +306,26 @@ export default function ProductPlaygroundPage() {
                           repeatDelay: 1
                         }}
                       >
-                        <span className="text-white">${product.price}</span>
+                        <span className="transition-colors duration-300" style={{ color: 'var(--text-color)' }}>${product.price}</span>
                       </motion.div>
                     </div>
-                    <p className="text-white/60 text-sm mb-4">
+                    <p className="text-sm mb-4 transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>
                       {product.category}
                     </p>
                     <motion.button
-                      className="w-full py-2 border border-white/30 rounded-md text-sm font-medium relative overflow-hidden group"
+                      className="w-full py-2 border rounded-md text-sm font-medium relative overflow-hidden group transition-colors duration-300"
+                      style={{
+                        borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+                      }}
                       whileHover="hover"
                       whileTap={{ scale: 0.98 }}
                     >
                       <motion.span 
-                        className="absolute inset-0 bg-white z-0"
+                        className="absolute inset-0 z-0"
+                        style={{
+                          backgroundColor: theme === 'light' ? '#000000' : '#ffffff',
+                          transformOrigin: 'left'
+                        }}
                         initial={{ scaleX: 0 }}
                         variants={{
                           hover: { 
@@ -305,9 +333,11 @@ export default function ProductPlaygroundPage() {
                             transition: { duration: 0.3 }
                           }
                         }}
-                        style={{ transformOrigin: 'left' }}
                       />
-                      <span className="relative z-10 group-hover:text-black transition-colors duration-300">
+                      <span className="relative z-10 transition-colors duration-300" 
+                        style={{
+                          color: 'var(--text-color)'
+                        }}>
                         Add to Portal
                       </span>
                     </motion.button>
@@ -327,7 +357,7 @@ export default function ProductPlaygroundPage() {
             <div className="mb-6 opacity-60">
               <LogoBird />
             </div>
-            <p className="text-white/60 text-lg">No products found</p>
+            <p className="text-lg transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>No products found</p>
           </motion.div>
         )}
       </div>
@@ -339,10 +369,10 @@ export default function ProductPlaygroundPage() {
         animate={{ opacity: 1 }}
         transition={{ duration: 1, delay: 1.5 }}
       >
-        <div className="flex items-center space-x-2 text-white/40 text-xs">
-          <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse" />
+        <div className="flex items-center space-x-2 text-xs transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>
+          <div className="w-2 h-2 rounded-full animate-pulse transition-colors duration-300" style={{ backgroundColor: 'var(--text-secondary)' }} />
           <span>Playground Active</span>
-          <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }} />
+          <div className="w-2 h-2 rounded-full animate-pulse transition-colors duration-300" style={{ backgroundColor: 'var(--text-secondary)', animationDelay: '0.5s' }} />
         </div>
       </motion.div>
     </div>

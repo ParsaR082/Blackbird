@@ -75,6 +75,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check if user has a password set
+    if (!user.password) {
+      return NextResponse.json(
+        { error: 'Account setup incomplete. Please contact support.' },
+        { status: 401 }
+      )
+    }
+
+    // Validate password input
+    if (!password || password.trim() === '') {
+      return NextResponse.json(
+        { error: 'Password is required' },
+        { status: 400 }
+      )
+    }
+
     // Verify password using bcrypt
     const isValidPassword = await bcrypt.compare(password, user.password)
     if (!isValidPassword) {

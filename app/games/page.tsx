@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
+import { useTheme } from '@/contexts/theme-context'
 
 // Lazy load BackgroundNodes for better performance
 const BackgroundNodes = lazy(() => import('@/components/BackgroundNodes'))
@@ -60,6 +61,7 @@ export default function GamesPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [isRandomMatchLoading, setIsRandomMatchLoading] = useState(false)
+  const { theme } = useTheme()
 
   // Pagination configuration
   const gamesPerPage = 3
@@ -77,7 +79,6 @@ export default function GamesPage() {
     
     // Initialize
     checkMobile()
-    document.documentElement.classList.add('dark')
     
     // Add resize listener
     window.addEventListener('resize', checkMobile, { passive: true })
@@ -242,9 +243,9 @@ export default function GamesPage() {
   }, [])
 
   return (
-    <div className="min-h-screen overflow-hidden transition-colors duration-300 bg-black text-white">
+    <div className="min-h-screen overflow-hidden transition-colors duration-300" style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}>
       {/* Interactive Background */}
-      <Suspense fallback={<div className="fixed inset-0 bg-black" />}>
+      <Suspense fallback={<div className="fixed inset-0 transition-colors duration-300" style={{ backgroundColor: 'var(--bg-color)' }} />}>
         <BackgroundNodes isMobile={isMobile} />
       </Suspense>
       
@@ -264,20 +265,24 @@ export default function GamesPage() {
         >
           <div className="flex items-center justify-center gap-4 mb-4">
             <motion.div 
-              className="p-4 rounded-full border backdrop-blur-sm bg-black/90 border-white/30"
+              className="p-4 rounded-full border backdrop-blur-sm transition-colors duration-300"
+              style={{
+                backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+                borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+              }}
               whileHover={{ 
                 scale: 1.1, 
-                boxShadow: '0 0 25px rgba(255,255,255,0.4)'
+                boxShadow: theme === 'light' ? '0 0 25px rgba(0,0,0,0.2)' : '0 0 25px rgba(255,255,255,0.4)'
               }}
               transition={{ duration: 0.3 }}
             >
-              <Gamepad2 className="w-8 h-8 text-white" />
+              <Gamepad2 className="w-8 h-8 transition-colors duration-300" style={{ color: 'var(--text-color)' }} />
             </motion.div>
           </div>
-          <h1 className="text-3xl font-light tracking-wide mb-2 text-white">
+          <h1 className="text-3xl font-light tracking-wide mb-2 transition-colors duration-300" style={{ color: 'var(--text-color)' }}>
             Gaming Portal
           </h1>
-          <p className="text-sm max-w-md mx-auto text-white/60">
+          <p className="text-sm max-w-md mx-auto transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>
             Immersive neural gaming experiences and competitive digital arenas
           </p>
         </motion.div>
@@ -320,23 +325,32 @@ export default function GamesPage() {
                 />
                 
                 {/* Category Card */}
-                <div className={`relative p-6 border rounded-lg backdrop-blur-sm h-32 flex flex-col items-center justify-center text-center transition-all duration-300 bg-gradient-to-br ${category.color} bg-black/90 ${
+                <div className={`relative p-6 border rounded-lg backdrop-blur-sm h-32 flex flex-col items-center justify-center text-center transition-all duration-300 bg-gradient-to-br ${category.color} ${
                   selectedCategory === category.label 
-                    ? 'border-white/80 bg-black/95 shadow-[0_0_20px_rgba(255,255,255,0.3)]' 
-                    : 'border-white/30 group-hover:border-white/60 group-hover:bg-black/95'
-                }`}>
-                  <category.icon className="w-8 h-8 mb-2 text-white" />
-                  <h3 className="text-sm font-medium mb-1 text-white">{category.label}</h3>
-                  <p className="text-xs text-white/60">{getCategoryCount(category.label)} games</p>
+                    ? 'shadow-lg' 
+                    : ''
+                }`}
+                style={{
+                  backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+                  borderColor: selectedCategory === category.label 
+                    ? (theme === 'light' ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)')
+                    : (theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'),
+                  boxShadow: selectedCategory === category.label 
+                    ? (theme === 'light' ? '0 0 20px rgba(0,0,0,0.2)' : '0 0 20px rgba(255,255,255,0.3)')
+                    : undefined
+                }}>
+                  <category.icon className={`w-8 h-8 mb-2 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
+                  <h3 className={`text-sm font-medium mb-1 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>{category.label}</h3>
+                  <p className={`text-xs transition-colors duration-300 ${theme === 'light' ? 'text-gray-600' : 'text-white/60'}`}>{getCategoryCount(category.label)} games</p>
                 </div>
 
                 {/* Pulse effect */}
                 <motion.div
-                  className={`absolute inset-0 rounded-lg border opacity-0 ${
-                    selectedCategory === category.label 
-                      ? 'border-white/40 opacity-60' 
-                      : 'border-white/20 group-hover:opacity-40'
-                  }`}
+                  className="absolute inset-0 rounded-lg border opacity-0 group-hover:opacity-40 transition-colors duration-300"
+                  style={{
+                    borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)',
+                    opacity: selectedCategory === category.label ? 0.6 : undefined
+                  }}
                   animate={{ scale: [1, 1.1, 1] }}
                   transition={{ 
                     duration: 2,
@@ -358,13 +372,16 @@ export default function GamesPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
           >
-            <div className="border rounded-lg backdrop-blur-sm p-6 bg-black/90 border-white/30">
+            <div className="border rounded-lg backdrop-blur-sm p-6 transition-colors duration-300" style={{
+              backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+              borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+            }}>
               <div className="flex items-center gap-3 mb-6">
-                <Star className="w-5 h-5 text-white" />
-                <h2 className="text-lg font-light tracking-wide text-white">
+                <Star className={`w-5 h-5 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
+                <h2 className={`text-lg font-light tracking-wide transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>
                   Featured Games
                   {selectedCategory && (
-                    <span className="ml-2 text-sm text-white/60">
+                    <span className={`ml-2 text-sm transition-colors duration-300 ${theme === 'light' ? 'text-gray-600' : 'text-white/60'}`}>
                       - {selectedCategory}
                     </span>
                   )}
@@ -382,8 +399,8 @@ export default function GamesPage() {
                     transition={{ duration: 0.4 }}
                   >
                     <div>
-                      <div className="text-4xl mb-4 text-white/30">🎮</div>
-                      <p className="text-lg text-white/60">
+                      <div className={`text-4xl mb-4 transition-colors duration-300 ${theme === 'light' ? 'text-gray-400' : 'text-white/30'}`}>🎮</div>
+                      <p className={`text-lg transition-colors duration-300 ${theme === 'light' ? 'text-gray-600' : 'text-white/60'}`}>
                         No games available in this category.
                       </p>
                     </div>
@@ -403,21 +420,33 @@ export default function GamesPage() {
                         {paginationData.currentGames.map((game: FeaturedGame, index: number) => (
                           <motion.div
                             key={game.title}
-                            className="group p-4 border rounded-lg transition-all duration-300 cursor-pointer bg-black/50 border-white/20 hover:border-white/40 hover:bg-black/70"
+                            className="group p-4 border rounded-lg transition-all duration-300 cursor-pointer"
+                            style={{
+                              backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)',
+                              borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'
+                            }}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.4, delay: index * 0.1 }}
-                            whileHover={{ scale: 1.02 }}
+                            whileHover={{ 
+                              scale: 1.02,
+                              backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
+                              borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.4)' : 'rgba(255, 255, 255, 0.4)'
+                            }}
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-2">
-                                  <h3 className="text-base font-medium text-white">{game.title}</h3>
-                                  <span className="px-2 py-1 border rounded-full text-xs bg-white/10 border-white/20 text-white/70">
+                                  <h3 className={`text-base font-medium transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>{game.title}</h3>
+                                  <span className={`px-2 py-1 border rounded-full text-xs transition-colors duration-300 ${
+                                    theme === 'light' 
+                                      ? 'bg-black/10 border-black/20 text-gray-700' 
+                                      : 'bg-white/10 border-white/20 text-white/70'
+                                  }`}>
                                     {game.category}
                                   </span>
                                 </div>
-                                <p className="text-sm mb-3 text-white/70">{game.description}</p>
+                                <p className={`text-sm mb-3 transition-colors duration-300 ${theme === 'light' ? 'text-gray-700' : 'text-white/70'}`}>{game.description}</p>
                               </div>
                               {/* Enhanced Play Button with Prefetching */}
                               {game.link.startsWith('http') ? (
@@ -436,7 +465,11 @@ export default function GamesPage() {
                                   }}
                                 >
                                   <motion.button
-                                    className="px-6 py-3 border rounded-lg transition-all duration-300 flex items-center gap-2 bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-black"
+                                    className={`px-6 py-3 border rounded-lg transition-all duration-300 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                      theme === 'light' 
+                                        ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60 focus:ring-black/50 focus:ring-offset-white' 
+                                        : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60 focus:ring-white/50 focus:ring-offset-black'
+                                    }`}
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     tabIndex={-1}
@@ -448,7 +481,11 @@ export default function GamesPage() {
                               ) : (
                                 <Link href={game.link} className="ml-4" prefetch={true}>
                                   <motion.button
-                                    className="px-6 py-3 border rounded-lg transition-all duration-300 flex items-center gap-2 bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-black"
+                                    className={`px-6 py-3 border rounded-lg transition-all duration-300 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                      theme === 'light' 
+                                        ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60 focus:ring-black/50 focus:ring-offset-white' 
+                                        : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60 focus:ring-white/50 focus:ring-offset-black'
+                                    }`}
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     aria-label={`Play ${game.title}`}
@@ -468,7 +505,10 @@ export default function GamesPage() {
                     {/* Pagination Controls */}
                     {paginationData.totalPages > 1 && (
                       <motion.div
-                        className="flex items-center justify-between mt-6 pt-4 border-t border-white/20"
+                        className={`flex items-center justify-between mt-6 pt-4 border-t transition-colors duration-300`}
+                        style={{
+                          borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'
+                        }}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4, delay: 0.2 }}
@@ -478,8 +518,12 @@ export default function GamesPage() {
                           disabled={currentPage === 1}
                           className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-all duration-300 ${
                             currentPage === 1 
-                              ? 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed' 
-                              : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60'
+                              ? (theme === 'light' 
+                                  ? 'bg-black/5 border-black/10 text-gray-400 cursor-not-allowed' 
+                                  : 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed')
+                              : (theme === 'light' 
+                                  ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60' 
+                                  : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60')
                           }`}
                           whileHover={currentPage !== 1 ? { scale: 1.05 } : {}}
                           whileTap={currentPage !== 1 ? { scale: 0.95 } : {}}
@@ -490,7 +534,7 @@ export default function GamesPage() {
                         </motion.button>
 
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-white/60">
+                          <span className={`text-sm transition-colors duration-300 ${theme === 'light' ? 'text-gray-600' : 'text-white/60'}`}>
                             Page {currentPage} of {paginationData.totalPages}
                           </span>
                         </div>
@@ -500,8 +544,12 @@ export default function GamesPage() {
                           disabled={currentPage === paginationData.totalPages}
                           className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-all duration-300 ${
                             currentPage === paginationData.totalPages 
-                              ? 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed' 
-                              : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60'
+                              ? (theme === 'light' 
+                                  ? 'bg-black/5 border-black/10 text-gray-400 cursor-not-allowed' 
+                                  : 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed')
+                              : (theme === 'light' 
+                                  ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60' 
+                                  : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60')
                           }`}
                           whileHover={currentPage !== paginationData.totalPages ? { scale: 1.05 } : {}}
                           whileTap={currentPage !== paginationData.totalPages ? { scale: 0.95 } : {}}
@@ -526,10 +574,13 @@ export default function GamesPage() {
             transition={{ duration: 0.8, delay: 0.6 }}
           >
             {/* Player Stats */}
-            <div className="border rounded-lg backdrop-blur-sm p-6 bg-black/90 border-white/30">
+            <div className="border rounded-lg backdrop-blur-sm p-6 transition-colors duration-300" style={{
+              backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+              borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+            }}>
               <div className="flex items-center gap-3 mb-4">
-                <Trophy className="w-5 h-5 text-white" />
-                <h3 className="text-lg font-light tracking-wide text-white">Player Stats</h3>
+                <Trophy className={`w-5 h-5 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
+                <h3 className={`text-lg font-light tracking-wide transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>Player Stats</h3>
               </div>
               <div className="space-y-3">
                 {playerStats.map((stat, index) => (
@@ -541,39 +592,52 @@ export default function GamesPage() {
                     transition={{ duration: 0.4, delay: index * 0.1 }}
                   >
                     <div className="flex items-center gap-2">
-                      <stat.icon className="w-4 h-4 text-white/70" />
-                      <span className="text-sm text-white/70">{stat.label}</span>
+                      <stat.icon className={`w-4 h-4 transition-colors duration-300 ${theme === 'light' ? 'text-gray-700' : 'text-white/70'}`} />
+                      <span className={`text-sm transition-colors duration-300 ${theme === 'light' ? 'text-gray-700' : 'text-white/70'}`}>{stat.label}</span>
                     </div>
-                    <span className="text-sm font-light text-white">{stat.value}</span>
+                    <span className={`text-sm font-light transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>{stat.value}</span>
                   </motion.div>
                 ))}
               </div>
             </div>
 
             {/* Global Leaderboard */}
-            <div className="border rounded-lg backdrop-blur-sm p-6 bg-black/90 border-white/30">
+            <div className="border rounded-lg backdrop-blur-sm p-6 transition-colors duration-300" style={{
+              backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+              borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+            }}>
               <div className="flex items-center gap-3 mb-4">
-                <Award className="w-5 h-5 text-white" />
-                <h3 className="text-lg font-light tracking-wide text-white">Global Leaderboard</h3>
+                <Award className={`w-5 h-5 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
+                <h3 className={`text-lg font-light tracking-wide transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>Global Leaderboard</h3>
               </div>
               <div className="space-y-3">
                 {leaderboardData.map((player, index) => (
                   <motion.div 
                     key={player.player}
-                    className="flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all duration-300 hover:bg-white/5"
+                    className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all duration-300 ${
+                      theme === 'light' ? 'hover:bg-black/5' : 'hover:bg-white/5'
+                    }`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: index * 0.1 }}
                   >
-                    <div className="flex items-center justify-center w-6 h-6 rounded-full border text-xs font-bold bg-white/20 border-white/30 text-white">
+                    <div className={`flex items-center justify-center w-6 h-6 rounded-full border text-xs font-bold transition-colors duration-300 ${
+                      theme === 'light' 
+                        ? 'bg-black/20 border-black/30 text-black' 
+                        : 'bg-white/20 border-white/30 text-white'
+                    }`}>
                       {player.rank}
                     </div>
-                    <div className="w-8 h-8 rounded-full border flex items-center justify-center font-bold text-xs bg-white/20 border-white/30 text-white">
+                    <div className={`w-8 h-8 rounded-full border flex items-center justify-center font-bold text-xs transition-colors duration-300 ${
+                      theme === 'light' 
+                        ? 'bg-black/20 border-black/30 text-black' 
+                        : 'bg-white/20 border-white/30 text-white'
+                    }`}>
                       {player.avatar}
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-light text-white">{player.player}</p>
-                      <p className="text-xs text-white/50">{player.score.toLocaleString()} pts</p>
+                      <p className={`text-sm font-light transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>{player.player}</p>
+                      <p className={`text-xs transition-colors duration-300 ${theme === 'light' ? 'text-gray-500' : 'text-white/50'}`}>{player.score.toLocaleString()} pts</p>
                     </div>
                   </motion.div>
                 ))}
@@ -581,18 +645,25 @@ export default function GamesPage() {
             </div>
 
             {/* Quick Actions */}
-            <div className="border rounded-lg backdrop-blur-sm p-6 bg-black/90 border-white/30">
+            <div className="border rounded-lg backdrop-blur-sm p-6 transition-colors duration-300" style={{
+              backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+              borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+            }}>
               <div className="flex items-center gap-3 mb-4">
-                <Zap className="w-5 h-5 text-white" />
-                <h3 className="text-lg font-light tracking-wide text-white">Quick Actions</h3>
+                <Zap className={`w-5 h-5 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
+                <h3 className={`text-lg font-light tracking-wide transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>Quick Actions</h3>
               </div>
               <div className="space-y-3">
                 {/* Join Random Match Button */}
                 <motion.button
-                  className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-black ${
+                  className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                     featuredGames.length === 0 
-                      ? 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed' 
-                      : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60'
+                      ? (theme === 'light' 
+                          ? 'bg-black/5 border-black/10 text-gray-400 cursor-not-allowed focus:ring-black/30 focus:ring-offset-white' 
+                          : 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed focus:ring-white/50 focus:ring-offset-black')
+                      : (theme === 'light' 
+                          ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60 focus:ring-black/50 focus:ring-offset-white' 
+                          : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60 focus:ring-white/50 focus:ring-offset-black')
                   }`}
                   whileHover={featuredGames.length > 0 && !isRandomMatchLoading ? { scale: 1.05 } : {}}
                   whileTap={featuredGames.length > 0 && !isRandomMatchLoading ? { scale: 0.95 } : {}}
@@ -614,10 +685,10 @@ export default function GamesPage() {
                       times: [0, 0.25, 0.5, 0.75, 1]
                     }}
                   >
-                    <Dices className={`w-5 h-5 ${
+                    <Dices className={`w-5 h-5 transition-colors duration-300 ${
                       featuredGames.length === 0 
-                        ? 'text-white/30' 
-                        : 'text-white'
+                        ? (theme === 'light' ? 'text-gray-400' : 'text-white/30')
+                        : (theme === 'light' ? 'text-black' : 'text-white')
                     }`} />
                   </motion.div>
                   <span className="flex-1 text-left">
@@ -627,16 +698,22 @@ export default function GamesPage() {
 
                 {/* Play with Friends Button */}
                 <motion.button
-                  className="w-full p-3 border rounded-lg transition-all duration-300 text-sm flex items-center gap-3 bg-white/10 border-white/30 text-white hover:bg-white/15 hover:border-white/40 focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-black"
+                  className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                    theme === 'light' 
+                      ? 'bg-black/10 border-black/30 text-black hover:bg-black/15 hover:border-black/40 focus:ring-black/50 focus:ring-offset-white' 
+                      : 'bg-white/10 border-white/30 text-white hover:bg-white/15 hover:border-white/40 focus:ring-white/50 focus:ring-offset-black'
+                  }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handlePlayWithFriends}
                   aria-label="Play with friends (coming soon)"
                   aria-describedby="friends-feature-info"
                 >
-                  <Users className="w-5 h-5 text-white/70" aria-hidden="true" />
+                  <Users className={`w-5 h-5 transition-colors duration-300 ${theme === 'light' ? 'text-gray-700' : 'text-white/70'}`} aria-hidden="true" />
                   <span className="flex-1 text-left">Play with Friends</span>
-                  <div className="text-xs px-2 py-1 rounded-full bg-white/20 text-white/70">
+                  <div className={`text-xs px-2 py-1 rounded-full transition-colors duration-300 ${
+                    theme === 'light' ? 'bg-black/20 text-gray-700' : 'bg-white/20 text-white/70'
+                  }`}>
                     SOON
                   </div>
                 </motion.button>
@@ -662,11 +739,11 @@ export default function GamesPage() {
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 1 }}
         >
-          <div className="flex items-center space-x-2 text-xs text-white/40">
-            <div className="w-2 h-2 rounded-full animate-pulse bg-white/40" />
+          <div className={`flex items-center space-x-2 text-xs transition-colors duration-300 ${theme === 'light' ? 'text-gray-500' : 'text-white/40'}`}>
+            <div className={`w-2 h-2 rounded-full animate-pulse transition-colors duration-300 ${theme === 'light' ? 'bg-gray-500' : 'bg-white/40'}`} />
             <span>Gaming Network Online</span>
             <div 
-              className="w-2 h-2 rounded-full animate-pulse bg-white/40" 
+              className={`w-2 h-2 rounded-full animate-pulse transition-colors duration-300 ${theme === 'light' ? 'bg-gray-500' : 'bg-white/40'}`}
               style={{ animationDelay: '0.5s' }} 
             />
           </div>

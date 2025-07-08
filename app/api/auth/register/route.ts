@@ -8,8 +8,13 @@ import mongoose from 'mongoose'
 
 // Input validation schema
 const registerSchema = z.object({
-  email: z.string().email(),
+  studentId: z.string().min(1).max(50),
+  phoneNumber: z.string().regex(/^\+98\d{10}$/),
   fullName: z.string().min(2).max(255),
+  username: z.string().min(3).max(50),
+  email: z.string().email().refine(email => email.endsWith('@gmail.com'), {
+    message: 'Email must be a Gmail address'
+  }),
   password: z.string().min(8).max(100)
 })
 
@@ -56,12 +61,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { email, fullName, password } = result.data
-    
+        const { studentId, phoneNumber, fullName, username, email, password } = result.data
+
     await connectToDatabase()
-    
+
     // Define User schema
     const UserSchema = new mongoose.Schema({
+      studentId: String,
+      phoneNumber: String,
+      username: String,
       email: String,
       password: String,
       fullName: String,
@@ -71,17 +79,37 @@ export async function POST(request: NextRequest) {
       createdAt: Date,
       updatedAt: Date
     })
-    
+
     const User = mongoose.models.User || mongoose.model('User', UserSchema)
-    
-    // Check if email already exists
-    const existingUser = await User.findOne({ email })
+
+    // Check if email, username, or studentId already exists
+    const existingUser = await User.findOne({
+      $or: [
+        { email },
+        { username },
+        { studentId }
+      ]
+    })
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: 'Email already registered' },
-        { status: 409 }
-      )
+      if (existingUser.email === email) {
+        return NextResponse.json(
+          { error: 'Email already registered' },
+          { status: 409 }
+        )
+      }
+      if (existingUser.username === username) {
+        return NextResponse.json(
+          { error: 'Username already taken' },
+          { status: 409 }
+        )
+      }
+      if (existingUser.studentId === studentId) {
+        return NextResponse.json(
+          { error: 'Student ID already registered' },
+          { status: 409 }
+        )
+      }
     }
 
     // Hash password with bcrypt
@@ -90,6 +118,9 @@ export async function POST(request: NextRequest) {
     // Insert new user
     try {
       const newUser = await User.create({
+        studentId,
+        phoneNumber,
+        username,
         email,
         password: passwordHash,
         fullName,
@@ -100,11 +131,14 @@ export async function POST(request: NextRequest) {
         updatedAt: new Date()
       })
 
-      return NextResponse.json(
-        { 
+            return NextResponse.json(
+        {
           message: 'User registered successfully',
           user: {
             id: newUser._id.toString(),
+            studentId: newUser.studentId,
+            phoneNumber: newUser.phoneNumber,
+            username: newUser.username,
             email: newUser.email,
             fullName: newUser.fullName,
             role: newUser.role,

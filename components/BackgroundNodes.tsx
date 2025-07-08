@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
+import { useTheme } from '@/contexts/theme-context'
 
 interface Node {
   x: number
@@ -24,6 +25,7 @@ const BackgroundNodes: React.FC<BackgroundNodesProps> = ({ isMobile = false }) =
   const animationRef = useRef<number>()
   const mouseRef = useRef({ x: 0, y: 0 })
   const [nodes, setNodes] = useState<Node[]>([])
+  const { theme } = useTheme()
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -156,6 +158,10 @@ const BackgroundNodes: React.FC<BackgroundNodesProps> = ({ isMobile = false }) =
       const mouseInfluenceRadius = isMobile ? 0 : 120
       const repelForce = 50 // Force of repulsion
       
+      // Get theme-aware colors
+      const nodeColor = theme === 'light' ? '#6b7280' : '#ffffff'
+      const lineColor = theme === 'light' ? '#9ca3af' : '#ffffff'
+      
       // Update and draw nodes
       currentNodes.forEach((node, i) => {
         // Mouse interaction - repel nodes
@@ -222,8 +228,9 @@ const BackgroundNodes: React.FC<BackgroundNodesProps> = ({ isMobile = false }) =
             const maxDistance = isMobile ? 100 : 150
             
             if (distance < maxDistance) {
-              const opacity = (1 - distance / maxDistance) * 0.15
-              ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`
+              const opacity = (1 - distance / maxDistance) * (theme === 'light' ? 0.2 : 0.15)
+              const [r, g, b] = theme === 'light' ? [156, 163, 175] : [255, 255, 255]
+              ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${opacity})`
               ctx.lineWidth = 0.5
               ctx.beginPath()
               ctx.moveTo(node.x, node.y)
@@ -234,16 +241,17 @@ const BackgroundNodes: React.FC<BackgroundNodesProps> = ({ isMobile = false }) =
         })
         
         // Draw node
-        ctx.fillStyle = `rgba(255, 255, 255, ${node.opacity})`
+        const [r, g, b] = theme === 'light' ? [107, 114, 128] : [255, 255, 255]
+        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${node.opacity})`
         ctx.beginPath()
         ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2)
         ctx.fill()
         
         // Add glow effect
         if (node.radius > node.baseRadius) {
-          ctx.shadowColor = 'rgba(255, 255, 255, 0.3)'
+          ctx.shadowColor = `rgba(${r}, ${g}, ${b}, 0.3)`
           ctx.shadowBlur = node.radius * 2
-          ctx.fillStyle = `rgba(255, 255, 255, ${node.opacity * 0.3})`
+          ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${node.opacity * 0.3})`
           ctx.beginPath()
           ctx.arc(node.x, node.y, node.radius * 1.5, 0, Math.PI * 2)
           ctx.fill()
@@ -263,7 +271,7 @@ const BackgroundNodes: React.FC<BackgroundNodesProps> = ({ isMobile = false }) =
         cancelAnimationFrame(animationRef.current)
       }
     }
-  }, [isMobile])
+  }, [isMobile, theme])
 
   return (
     <canvas

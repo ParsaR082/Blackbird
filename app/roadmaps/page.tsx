@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import BackgroundNodes from '@/components/BackgroundNodes'
+import { useTheme } from '@/contexts/theme-context'
 import { 
   Map,
   Target,
@@ -25,6 +26,7 @@ import {
 export default function RoadmapsPage() {
   const [isMobile, setIsMobile] = useState(false)
   const [selectedTrack, setSelectedTrack] = useState('fullstack')
+  const { theme } = useTheme()
 
   useEffect(() => {
     const checkMobile = () => {
@@ -138,7 +140,7 @@ export default function RoadmapsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-hidden">
+    <div className="min-h-screen overflow-hidden transition-colors duration-300" style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}>
       {/* Interactive Background */}
       <BackgroundNodes isMobile={isMobile} />
       
@@ -153,17 +155,24 @@ export default function RoadmapsPage() {
         >
           <div className="flex items-center justify-center gap-4 mb-4">
             <motion.div 
-              className="p-4 rounded-full bg-black/90 border border-white/30 backdrop-blur-sm"
-              whileHover={{ scale: 1.1, boxShadow: '0 0 25px rgba(255,255,255,0.4)' }}
+              className="p-4 rounded-full border backdrop-blur-sm transition-colors duration-300"
+              style={{
+                backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+                borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+              }}
+              whileHover={{ 
+                scale: 1.1, 
+                boxShadow: theme === 'light' ? '0 0 25px rgba(0,0,0,0.2)' : '0 0 25px rgba(255,255,255,0.4)'
+              }}
               transition={{ duration: 0.3 }}
             >
-              <Map className="w-8 h-8 text-white" />
+              <Map className={`w-8 h-8 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
             </motion.div>
           </div>
-          <h1 className="text-3xl font-light text-white tracking-wide mb-2">
+          <h1 className={`text-3xl font-light tracking-wide mb-2 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>
             Development Roadmaps
           </h1>
-          <p className="text-sm text-white/60 max-w-md mx-auto">
+          <p className={`text-sm max-w-md mx-auto transition-colors duration-300 ${theme === 'light' ? 'text-gray-600' : 'text-white/60'}`}>
             Structured learning paths for mastering cutting-edge technologies
           </p>
         </motion.div>
@@ -196,20 +205,28 @@ export default function RoadmapsPage() {
                 />
                 
                 {/* Track Card */}
-                <div className={`relative p-6 bg-black/90 border border-white/30 rounded-lg backdrop-blur-sm h-40 flex flex-col justify-between group-hover:border-white/60 group-hover:bg-black/95 transition-all duration-300 bg-gradient-to-br ${track.color}`}>
+                <div className={`relative p-6 border rounded-lg backdrop-blur-sm h-40 flex flex-col justify-between transition-all duration-300 bg-gradient-to-br ${track.color}`} style={{
+                  backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+                  borderColor: selectedTrack === track.id 
+                    ? (theme === 'light' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.6)')
+                    : (theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)')
+                }}>
                   <div className="flex flex-col items-center text-center">
-                    <track.icon className="w-8 h-8 text-white mb-3" />
-                    <h3 className="text-sm font-medium text-white mb-2">{track.title}</h3>
+                    <track.icon className={`w-8 h-8 mb-3 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
+                    <h3 className={`text-sm font-medium mb-2 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>{track.title}</h3>
                   </div>
-      <div className="text-center">
-                    <p className="text-xs text-white/60 mb-1">{track.duration}</p>
-                    <p className="text-xs text-white/50">{track.students} students</p>
+                  <div className="text-center">
+                    <p className={`text-xs mb-1 transition-colors duration-300 ${theme === 'light' ? 'text-gray-600' : 'text-white/60'}`}>{track.duration}</p>
+                    <p className={`text-xs transition-colors duration-300 ${theme === 'light' ? 'text-gray-500' : 'text-white/50'}`}>{track.students} students</p>
                   </div>
                 </div>
 
                 {/* Pulse effect */}
                 <motion.div
-                  className="absolute inset-0 rounded-lg border border-white/20 opacity-0 group-hover:opacity-40"
+                  className="absolute inset-0 rounded-lg border opacity-0 group-hover:opacity-40 transition-colors duration-300"
+                  style={{
+                    borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'
+                  }}
                   animate={{ scale: [1, 1.1, 1] }}
                   transition={{ 
                     duration: 2,
@@ -231,10 +248,13 @@ export default function RoadmapsPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
           >
-            <div className="bg-black/90 border border-white/30 rounded-lg backdrop-blur-sm p-6">
+            <div className="border rounded-lg backdrop-blur-sm p-6 transition-colors duration-300" style={{
+              backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+              borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+            }}>
               <div className="flex items-center gap-3 mb-6">
-                <Target className="w-5 h-5 text-white" />
-                <h2 className="text-lg font-light text-white tracking-wide">Learning Timeline</h2>
+                <Target className={`w-5 h-5 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
+                <h2 className={`text-lg font-light tracking-wide transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>Learning Timeline</h2>
               </div>
               
               <div className="space-y-6">
@@ -248,7 +268,9 @@ export default function RoadmapsPage() {
                   >
                     {/* Timeline Line */}
                     {phaseIndex !== roadmapData.fullstack.length - 1 && (
-                      <div className="absolute left-6 top-16 w-0.5 h-16 bg-white/20"></div>
+                      <div className={`absolute left-6 top-16 w-0.5 h-16 transition-colors duration-300`} style={{
+                        backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'
+                      }}></div>
                     )}
                     
                     <div className="flex items-start gap-4">
@@ -264,26 +286,31 @@ export default function RoadmapsPage() {
                       </div>
                       
                       {/* Phase Content */}
-                      <div className="flex-1 bg-black/50 border border-white/20 rounded-lg p-4">
+                      <div className="flex-1 border rounded-lg p-4 transition-colors duration-300" style={{
+                        backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)',
+                        borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'
+                      }}>
                         <div className="flex items-center justify-between mb-3">
-                          <h3 className="text-base font-medium text-white">{phase.phase}</h3>
-                          <span className="text-xs text-white/60">{phase.duration}</span>
+                          <h3 className={`text-base font-medium transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>{phase.phase}</h3>
+                          <span className={`text-xs transition-colors duration-300 ${theme === 'light' ? 'text-gray-600' : 'text-white/60'}`}>{phase.duration}</span>
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                           {phase.modules.map((module, moduleIndex) => (
                             <div
                               key={module.name}
-                              className={`flex items-center gap-2 p-2 rounded text-xs ${
+                              className={`flex items-center gap-2 p-2 rounded text-xs transition-colors duration-300 ${
                                 module.completed 
                                   ? 'bg-green-500/10 text-green-400' 
-                                  : 'bg-white/5 text-white/60'
+                                  : (theme === 'light' ? 'bg-black/5 text-gray-600' : 'bg-white/5 text-white/60')
                               }`}
                             >
                               {module.completed ? (
                                 <CheckCircle className="w-3 h-3" />
                               ) : (
-                                <div className="w-3 h-3 rounded-full border border-white/30"></div>
+                                <div className={`w-3 h-3 rounded-full border transition-colors duration-300`} style={{
+                                  borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+                                }}></div>
                               )}
                               <span>{module.name}</span>
                             </div>
@@ -305,58 +332,70 @@ export default function RoadmapsPage() {
             transition={{ duration: 0.8, delay: 0.6 }}
           >
             {/* Progress Stats */}
-            <div className="bg-black/90 border border-white/30 rounded-lg backdrop-blur-sm p-6">
+            <div className="border rounded-lg backdrop-blur-sm p-6 transition-colors duration-300" style={{
+              backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+              borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+            }}>
               <div className="flex items-center gap-3 mb-4">
-                <Star className="w-5 h-5 text-white" />
-                <h3 className="text-lg font-light text-white tracking-wide">Progress Stats</h3>
+                <Star className={`w-5 h-5 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
+                <h3 className={`text-lg font-light tracking-wide transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>Progress Stats</h3>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-white/70">Completion</span>
-                  <span className="text-sm font-light text-white">62.5%</span>
+                  <span className={`text-sm transition-colors duration-300 ${theme === 'light' ? 'text-gray-700' : 'text-white/70'}`}>Completion</span>
+                  <span className={`text-sm font-light transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>62.5%</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-white/70">Modules Done</span>
-                  <span className="text-sm font-light text-white">10/16</span>
+                  <span className={`text-sm transition-colors duration-300 ${theme === 'light' ? 'text-gray-700' : 'text-white/70'}`}>Modules Done</span>
+                  <span className={`text-sm font-light transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>10/16</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-white/70">Time Spent</span>
-                  <span className="text-sm font-light text-white">127h</span>
+                  <span className={`text-sm transition-colors duration-300 ${theme === 'light' ? 'text-gray-700' : 'text-white/70'}`}>Time Spent</span>
+                  <span className={`text-sm font-light transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>127h</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-white/70">Streak</span>
-                  <span className="text-sm font-light text-white">15 days</span>
+                  <span className={`text-sm transition-colors duration-300 ${theme === 'light' ? 'text-gray-700' : 'text-white/70'}`}>Streak</span>
+                  <span className={`text-sm font-light transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>15 days</span>
                 </div>
               </div>
             </div>
 
             {/* Achievements */}
-            <div className="bg-black/90 border border-white/30 rounded-lg backdrop-blur-sm p-6">
+            <div className="border rounded-lg backdrop-blur-sm p-6 transition-colors duration-300" style={{
+              backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+              borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+            }}>
               <div className="flex items-center gap-3 mb-4">
-                <Award className="w-5 h-5 text-white" />
-                <h3 className="text-lg font-light text-white tracking-wide">Achievements</h3>
+                <Award className={`w-5 h-5 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
+                <h3 className={`text-lg font-light tracking-wide transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>Achievements</h3>
               </div>
               <div className="space-y-3">
                 {achievements.map((achievement, index) => (
                   <motion.div 
                     key={achievement.title}
-                    className={`flex items-center gap-3 p-2 rounded-lg ${
-                      achievement.unlocked ? 'bg-white/10' : 'bg-white/5'
+                    className={`flex items-center gap-3 p-2 rounded-lg transition-colors duration-300 ${
+                      achievement.unlocked 
+                        ? (theme === 'light' ? 'bg-black/10' : 'bg-white/10')
+                        : (theme === 'light' ? 'bg-black/5' : 'bg-white/5')
                     }`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: index * 0.1 }}
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      achievement.unlocked ? 'bg-yellow-500/20 border border-yellow-500/40' : 'bg-white/10 border border-white/20'
+                      achievement.unlocked ? 'bg-yellow-500/20 border border-yellow-500/40' : (theme === 'light' ? 'bg-black/10 border border-black/20' : 'bg-white/10 border border-white/20')
                     }`}>
-                      <Award className={`w-4 h-4 ${achievement.unlocked ? 'text-yellow-400' : 'text-white/40'}`} />
+                      <Award className={`w-4 h-4 ${achievement.unlocked ? 'text-yellow-400' : (theme === 'light' ? 'text-gray-400' : 'text-white/40')}`} />
                     </div>
                     <div className="flex-1">
-                      <p className={`text-sm font-light ${achievement.unlocked ? 'text-white' : 'text-white/50'}`}>
+                      <p className={`text-sm font-light transition-colors duration-300 ${
+                        achievement.unlocked 
+                          ? (theme === 'light' ? 'text-black' : 'text-white')
+                          : (theme === 'light' ? 'text-gray-500' : 'text-white/50')
+                      }`}>
                         {achievement.title}
                       </p>
-                      <p className="text-xs text-white/40">{achievement.description}</p>
+                      <p className={`text-xs transition-colors duration-300 ${theme === 'light' ? 'text-gray-400' : 'text-white/40'}`}>{achievement.description}</p>
                     </div>
                   </motion.div>
                 ))}
@@ -364,28 +403,43 @@ export default function RoadmapsPage() {
             </div>
 
             {/* Quick Actions */}
-            <div className="bg-black/90 border border-white/30 rounded-lg backdrop-blur-sm p-6">
+            <div className="border rounded-lg backdrop-blur-sm p-6 transition-colors duration-300" style={{
+              backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+              borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+            }}>
               <div className="flex items-center gap-3 mb-4">
-                <Zap className="w-5 h-5 text-white" />
-                <h3 className="text-lg font-light text-white tracking-wide">Quick Actions</h3>
+                <Zap className={`w-5 h-5 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
+                <h3 className={`text-lg font-light tracking-wide transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>Quick Actions</h3>
               </div>
               <div className="space-y-3">
                 <motion.button
-                  className="w-full p-3 bg-white/10 border border-white/30 rounded-lg text-white hover:bg-white/20 hover:border-white/60 transition-all duration-300 text-sm"
+                  className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm ${
+                    theme === 'light' 
+                      ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60' 
+                      : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60'
+                  }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
                   Continue Learning
                 </motion.button>
                 <motion.button
-                  className="w-full p-3 bg-white/10 border border-white/30 rounded-lg text-white hover:bg-white/20 hover:border-white/60 transition-all duration-300 text-sm"
+                  className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm ${
+                    theme === 'light' 
+                      ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60' 
+                      : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60'
+                  }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
                   Join Study Group
                 </motion.button>
                 <motion.button
-                  className="w-full p-3 bg-white/10 border border-white/30 rounded-lg text-white hover:bg-white/20 hover:border-white/60 transition-all duration-300 text-sm"
+                  className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm ${
+                    theme === 'light' 
+                      ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60' 
+                      : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60'
+                  }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -403,10 +457,10 @@ export default function RoadmapsPage() {
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 1 }}
         >
-          <div className="flex items-center space-x-2 text-white/40 text-xs">
-            <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse" />
+          <div className={`flex items-center space-x-2 text-xs transition-colors duration-300 ${theme === 'light' ? 'text-gray-500' : 'text-white/40'}`}>
+            <div className={`w-2 h-2 rounded-full animate-pulse transition-colors duration-300 ${theme === 'light' ? 'bg-gray-500' : 'bg-white/40'}`} />
             <span>Learning Path Active</span>
-            <div className="w-2 h-2 bg-white/40 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }} />
+            <div className={`w-2 h-2 rounded-full animate-pulse transition-colors duration-300 ${theme === 'light' ? 'bg-gray-500' : 'bg-white/40'}`} style={{ animationDelay: '0.5s' }} />
           </div>
         </motion.div>
       </div>

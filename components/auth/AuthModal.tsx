@@ -42,10 +42,8 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthComple
 
   // Register form state
   const [registerData, setRegisterData] = useState({
-    student_id: '',
-    username: '',
-    mobile_phone: '',
-    full_name: '',
+    email: '',
+    fullName: '',
     password: '',
     confirm_password: ''
   })
@@ -62,22 +60,14 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthComple
   const validateRegisterForm = useCallback(() => {
     const errors: Record<string, string> = {}
     
-    if (registerData.student_id.length < 3) {
-      errors.student_id = 'Student ID must be at least 3 characters'
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(registerData.email)) {
+      errors.email = 'Please enter a valid email address'
     }
     
-    if (registerData.username.length < 3) {
-      errors.username = 'Username must be at least 3 characters'
-    } else if (!/^[a-zA-Z0-9_]+$/.test(registerData.username)) {
-      errors.username = 'Username can only contain letters, numbers, and underscores'
-    }
-    
-    if (!/^\+?[0-9]{8,15}$/.test(registerData.mobile_phone)) {
-      errors.mobile_phone = 'Please enter a valid mobile number'
-    }
-    
-    if (registerData.full_name.length < 2) {
-      errors.full_name = 'Full name must be at least 2 characters'
+    if (registerData.fullName.length < 2) {
+      errors.fullName = 'Full name must be at least 2 characters'
     }
     
     if (registerData.password.length < 8) {
@@ -131,10 +121,8 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthComple
 
     try {
       const { success, error } = await register({
-        student_id: registerData.student_id,
-        username: registerData.username,
-        mobile_phone: registerData.mobile_phone,
-        full_name: registerData.full_name,
+        email: registerData.email,
+        fullName: registerData.fullName,
         password: registerData.password
       })
 
@@ -144,7 +132,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthComple
         setTimeout(() => {
           setMode('login')
           setLoginData({
-            identifier: registerData.username, // Pre-fill the username
+            identifier: registerData.email, // Pre-fill the email
             password: ''
           })
         }, 1500)
@@ -249,13 +237,13 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthComple
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
                     <label htmlFor="login-identifier" className="block text-sm font-medium text-white/70">
-                      Student ID / Username / Mobile
+                      Email
                     </label>
                     <Input
                       id="login-identifier"
                       ref={initialFocusRef}
-                      type="text"
-                      placeholder="Enter your student ID, username or mobile"
+                      type="email"
+                      placeholder="Enter your email"
                       value={loginData.identifier}
                       onChange={(e) => setLoginData({ ...loginData, identifier: e.target.value })}
                       required
@@ -308,66 +296,24 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthComple
               {mode === 'register' && (
                 <form onSubmit={handleRegister} className="space-y-4">
                   <div className="space-y-2">
-                    <label htmlFor="register-student-id" className="flex items-center text-sm font-medium text-white/70">
-                      <School className="w-4 h-4 mr-2" /> 
-                      Student ID
-                    </label>
-                    <Input
-                      id="register-student-id"
-                      ref={initialFocusRef}
-                      type="text"
-                      placeholder="Enter your student ID"
-                      value={registerData.student_id}
-                      onChange={(e) => setRegisterData({ ...registerData, student_id: e.target.value })}
-                      required
-                      className="w-full p-2 bg-white/10 border border-white/20 rounded-md text-white placeholder-white/40 focus:border-white/40"
-                      aria-required="true"
-                      disabled={loading}
-                    />
-                    {validationErrors.student_id && (
-                      <p className="mt-1 text-xs text-red-400" aria-live="polite">{validationErrors.student_id}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <label htmlFor="register-username" className="flex items-center text-sm font-medium text-white/70">
+                    <label htmlFor="register-email" className="flex items-center text-sm font-medium text-white/70">
                       <User className="w-4 h-4 mr-2" /> 
-                      Username
+                      Email
                     </label>
                     <Input
-                      id="register-username"
-                      type="text"
-                      placeholder="Choose a username"
-                      value={registerData.username}
-                      onChange={(e) => setRegisterData({ ...registerData, username: e.target.value })}
+                      id="register-email"
+                      ref={initialFocusRef}
+                      type="email"
+                      placeholder="Enter your email"
+                      value={registerData.email}
+                      onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
                       required
                       className="w-full p-2 bg-white/10 border border-white/20 rounded-md text-white placeholder-white/40 focus:border-white/40"
                       aria-required="true"
                       disabled={loading}
                     />
-                    {validationErrors.username && (
-                      <p className="mt-1 text-xs text-red-400" aria-live="polite">{validationErrors.username}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <label htmlFor="register-mobile" className="flex items-center text-sm font-medium text-white/70">
-                      <Phone className="w-4 h-4 mr-2" />
-                      Mobile Phone
-                    </label>
-                    <Input
-                      id="register-mobile"
-                      type="tel"
-                      placeholder="Enter your mobile phone"
-                      value={registerData.mobile_phone}
-                      onChange={(e) => setRegisterData({ ...registerData, mobile_phone: e.target.value })}
-                      required
-                      className="w-full p-2 bg-white/10 border border-white/20 rounded-md text-white placeholder-white/40 focus:border-white/40"
-                      aria-required="true"
-                      disabled={loading}
-                    />
-                    {validationErrors.mobile_phone && (
-                      <p className="mt-1 text-xs text-red-400" aria-live="polite">{validationErrors.mobile_phone}</p>
+                    {validationErrors.email && (
+                      <p className="mt-1 text-xs text-red-400" aria-live="polite">{validationErrors.email}</p>
                     )}
                   </div>
 
@@ -380,15 +326,15 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login', onAuthComple
                       id="register-fullname"
                       type="text"
                       placeholder="Enter your full English name"
-                      value={registerData.full_name}
-                      onChange={(e) => setRegisterData({ ...registerData, full_name: e.target.value })}
+                      value={registerData.fullName}
+                      onChange={(e) => setRegisterData({ ...registerData, fullName: e.target.value })}
                       required
                       className="w-full p-2 bg-white/10 border border-white/20 rounded-md text-white placeholder-white/40 focus:border-white/40"
                       aria-required="true"
                       disabled={loading}
                     />
-                    {validationErrors.full_name && (
-                      <p className="mt-1 text-xs text-red-400" aria-live="polite">{validationErrors.full_name}</p>
+                    {validationErrors.fullName && (
+                      <p className="mt-1 text-xs text-red-400" aria-live="polite">{validationErrors.fullName}</p>
                     )}
                   </div>
 
