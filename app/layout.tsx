@@ -5,7 +5,12 @@ import { Header } from '@/components/layout/header'
 import { AuthProvider } from '@/contexts/auth-context'
 import { ThemeProvider } from '@/contexts/theme-context'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ 
+  subsets: ['latin'],
+  fallback: ['system-ui', 'arial'],
+  display: 'swap',
+  preload: true,
+})
 
 export const metadata: Metadata = {
   title: 'Blackbird Portal',
