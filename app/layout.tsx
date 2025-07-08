@@ -1,16 +1,11 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
 import '../styles/globals.css'
 import { Header } from '@/components/layout/header'
 import { AuthProvider } from '@/contexts/auth-context'
 import { ThemeProvider } from '@/contexts/theme-context'
 
-const inter = Inter({ 
-  subsets: ['latin'],
-  fallback: ['system-ui', 'arial'],
-  display: 'swap',
-  preload: true,
-})
+// Use CSS fallback fonts instead of Google Fonts for build resilience
+const fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
 
 export const metadata: Metadata = {
   title: 'Blackbird Portal',
@@ -32,7 +27,21 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} min-h-screen antialiased transition-colors duration-300`} style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}>
+      <head>
+        <link 
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" 
+          rel="stylesheet"
+          // Make font loading optional - won't block build if unavailable
+        />
+      </head>
+      <body 
+        className="min-h-screen antialiased transition-colors duration-300" 
+        style={{ 
+          backgroundColor: 'var(--bg-color)', 
+          color: 'var(--text-color)',
+          fontFamily: `Inter, ${fontFamily}`
+        }}
+      >
         <ThemeProvider>
           <AuthProvider>
             <div className="relative min-h-screen flex flex-col">
