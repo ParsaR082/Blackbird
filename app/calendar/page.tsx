@@ -92,7 +92,7 @@ export default function CalendarPage() {
       <BackgroundNodes isMobile={isMobile} />
       
       {/* Main Content */}
-      <div className="relative z-10 h-screen px-4 py-4 md:py-6 flex flex-col">
+      <div className="relative z-10 h-screen px-4 pt-24 pb-4 md:pb-6 flex flex-col">
         {/* Header */}
         <motion.div 
           className="text-center mb-4 md:mb-6"

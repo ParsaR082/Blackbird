@@ -69,7 +69,7 @@ export default function HallOfFamePage() {
       <BackgroundNodes isMobile={isMobile} />
       
       {/* Main Content */}
-      <div className="relative z-10 min-h-screen px-4 py-12">
+      <div className="relative z-10 min-h-screen px-4 pt-24 pb-12">
         {/* Header */}
         <motion.div 
           className="text-center mb-16"
