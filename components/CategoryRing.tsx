@@ -43,7 +43,7 @@ const CategoryRing = () => {
               ease: "easeOut"
             }}
             style={{
-              left: `calc(50% + ${x}px - 25px)`,
+              left: `calc(50% + ${x}px - 64px)`,
               top: `calc(50% + ${y}px)`,
               transform: 'translate(-50%, -50%)',
             }}
