@@ -5,7 +5,9 @@ import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import BackgroundNodes from '@/components/BackgroundNodes'
 import { useTheme } from '@/contexts/theme-context'
+import { useAuth } from '@/contexts/auth-context'
 import CreateEventModal from './CreateEventModal'
+import EventRegistrationModal from './EventRegistrationModal'
 import { 
   Calendar,
   Clock,
@@ -23,17 +25,68 @@ import {
   Coffee,
   Mic,
   Video,
-  X
+  X,
+  AlertCircle,
+  Plus,
+  CheckCircle2,
+  UserCheck
 } from 'lucide-react'
+
+interface Event {
+  id: string
+  title: string
+  description: string
+  detailDescription: string
+  date: string
+  time: string
+  duration: string
+  location: string
+  category: 'workshops' | 'hackathons' | 'conferences' | 'networking'
+  attendees: number
+  maxAttendees: number
+  status: 'upcoming' | 'registration-open' | 'full' | 'completed' | 'cancelled'
+  featured: boolean
+  prerequisites: string[]
+  whatYouWillLearn: string[]
+  imageUrl?: string
+  createdBy: {
+    name: string
+    username: string
+  }
+  timeUntilEvent: string
+  createdAt: string
+}
+
+interface CategoryCounts {
+  all: number
+  workshops: number
+  hackathons: number
+  conferences: number
+  networking: number
+}
 
 export default function EventsPage() {
   const router = useRouter()
   const [isMobile, setIsMobile] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const [selectedEvent, setSelectedEvent] = useState<any>(null)
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState(false)
+  const [events, setEvents] = useState<Event[]>([])
+  const [categoryCounts, setCategoryCounts] = useState<CategoryCounts>({
+    all: 0,
+    workshops: 0,
+    hackathons: 0,
+    conferences: 0,
+    networking: 0
+  })
+  const [userRegistrations, setUserRegistrations] = useState<{[eventId: string]: any}>({})
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  
   const { theme } = useTheme()
+  const { user } = useAuth()
 
   useEffect(() => {
     const checkMobile = () => {
@@ -46,105 +99,65 @@ export default function EventsPage() {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
+  // Fetch events from API
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const response = await fetch('/api/events')
+        const data = await response.json()
+        
+        if (data.success) {
+          setEvents(data.events)
+          setCategoryCounts(data.categoryCounts)
+        } else {
+          setError('Failed to load events')
+        }
+      } catch (err) {
+        setError('Failed to load events')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchEvents()
+  }, [])
+
+  // Fetch user registrations if logged in
+  useEffect(() => {
+    const fetchUserRegistrations = async () => {
+      if (!user) return
+
+      try {
+        const response = await fetch('/api/events/register')
+        const data = await response.json()
+        
+        if (data.success) {
+          const registrationsMap: {[eventId: string]: any} = {}
+          data.registrations.forEach((reg: any) => {
+            registrationsMap[reg.event.id] = reg
+          })
+          setUserRegistrations(registrationsMap)
+        }
+      } catch (err) {
+        console.error('Failed to fetch user registrations:', err)
+      }
+    }
+
+    fetchUserRegistrations()
+  }, [user])
+
   const eventCategories = [
-    { id: 'all', label: 'All Events', icon: Globe, count: 24 },
-    { id: 'workshops', label: 'Workshops', icon: Code, count: 8 },
-    { id: 'hackathons', label: 'Hackathons', icon: Zap, count: 4 },
-    { id: 'conferences', label: 'Conferences', icon: Mic, count: 6 },
-    { id: 'networking', label: 'Networking', icon: Users, count: 6 }
+    { id: 'all', label: 'All Events', icon: Globe, count: categoryCounts.all },
+    { id: 'workshops', label: 'Workshops', icon: Code, count: categoryCounts.workshops },
+    { id: 'hackathons', label: 'Hackathons', icon: Zap, count: categoryCounts.hackathons },
+    { id: 'conferences', label: 'Conferences', icon: Mic, count: categoryCounts.conferences },
+    { id: 'networking', label: 'Networking', icon: Users, count: categoryCounts.networking }
   ]
 
-  const upcomingEvents = [
-    {
-      id: 1,
-      title: 'Neural Network Workshop',
-      description: 'Deep dive into advanced neural network architectures and implementation',
-      detailDescription: 'Join us for an intensive hands-on workshop where you\'ll build neural networks from scratch. We\'ll cover everything from basic perceptrons to complex deep learning architectures. Perfect for developers looking to understand the fundamentals behind modern AI systems.',
-      date: '2026-01-15',
-      time: '14:00',
-      duration: '3 hours',
-      location: 'Virtual Reality Lab',
-      category: 'workshops',
-      attendees: 124,
-      maxAttendees: 150,
-      status: 'upcoming',
-      featured: true,
-      prerequisites: ['Basic Python knowledge', 'Understanding of linear algebra'],
-      whatYouWillLearn: ['Neural network fundamentals', 'Backpropagation algorithm', 'TensorFlow implementation', 'Model optimization techniques']
-    },
-    {
-      id: 2,
-      title: 'Quantum Computing Hackathon',
-      description: '48-hour intensive hackathon exploring quantum algorithms',
-      detailDescription: 'Ready to dive into the quantum realm? This hackathon brings together brilliant minds to tackle real-world problems using quantum computing. Teams will work on cutting-edge quantum algorithms and compete for amazing prizes.',
-      date: '2026-01-20',
-      time: '09:00',
-      duration: '48 hours',
-      location: 'Innovation Center',
-      category: 'hackathons',
-      attendees: 89,
-      maxAttendees: 100,
-      status: 'registration-open',
-      featured: true,
-      prerequisites: ['Basic quantum mechanics understanding', 'Programming experience'],
-      whatYouWillLearn: ['Quantum algorithm design', 'Qiskit framework', 'Quantum error correction', 'Real quantum hardware access']
-    },
-    {
-      id: 3,
-      title: 'AI Ethics Conference',
-      description: 'Exploring the ethical implications of artificial intelligence',
-      detailDescription: 'As AI becomes more prevalent, ethical considerations become crucial. This conference brings together ethicists, technologists, and policy makers to discuss responsible AI development and deployment in our society.',
-      date: '2026-01-25',
-      time: '10:00',
-      duration: '6 hours',
-      location: 'Main Auditorium',
-      category: 'conferences',
-      attendees: 267,
-      maxAttendees: 300,
-      status: 'upcoming',
-      featured: false,
-      prerequisites: ['None - open to all'],
-      whatYouWillLearn: ['AI bias detection', 'Ethical AI frameworks', 'Policy implications', 'Industry best practices']
-    },
-    {
-      id: 4,
-      title: 'Tech Startup Mixer',
-      description: 'Connect with fellow entrepreneurs and innovators',
-      detailDescription: 'Network with like-minded entrepreneurs, investors. Share ideas, find co-founders, and discover opportunities in the thriving tech startup ecosystem.',
-      date: '2026-01-30',
-      time: '18:00',
-      duration: '2 hours',
-      location: 'not determined',
-      category: 'networking',
-      attendees: 156,
-      maxAttendees: 200,
-      status: 'registration-open',
-      featured: false,
-      prerequisites: ['None - all welcome'],
-      whatYouWillLearn: ['Networking strategies', 'Pitch techniques', 'Funding insights', 'Industry connections']
-    }
-  ]
-
-  const pastEvents = [
-    {
-      title: 'Blockchain Fundamentals',
-      date: '2026-01-05',
-      attendees: 142,
-      rating: 4.8
-    },
-    {
-      title: 'React Masterclass',
-      date: '2026-01-10',
-      attendees: 98,
-      rating: 4.9
-    },
-    {
-      title: 'Cybersecurity Summit',
-      date: '2026-12-20',
-      attendees: 234,
-      rating: 4.7
-    }
-  ]
+  // Filter events by category
+  const filteredEvents = selectedCategory === 'all' 
+    ? events 
+    : events.filter(event => event.category === selectedCategory)
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -173,36 +186,86 @@ export default function EventsPage() {
     setIsCreateModalOpen(false)
   }
 
-  const handleCreateEvent = (eventData: any) => {
-    console.log('New event created:', eventData)
-    // Here you would typically send the data to your backend API
-    setIsCreateModalOpen(false)
+  const openRegistrationModal = (event: Event) => {
+    setSelectedEvent(event)
+    setIsRegistrationModalOpen(true)
   }
 
-  const filteredEvents = selectedCategory === 'all' 
-    ? upcomingEvents 
-    : upcomingEvents.filter(event => event.category === selectedCategory)
+  const closeRegistrationModal = () => {
+    setIsRegistrationModalOpen(false)
+    setSelectedEvent(null)
+  }
 
-  // Helper function to calculate time until event
-  const getTimeUntilEvent = (eventDate: string, eventTime: string) => {
-    const now = new Date()
-    const eventDateTime = new Date(`${eventDate}T${eventTime}`)
-    const timeDiff = eventDateTime.getTime() - now.getTime()
-    
-    if (timeDiff <= 0) {
-      return "Event has started"
+  const handleRegistrationSuccess = async () => {
+    // Refresh events data
+    try {
+      const response = await fetch('/api/events')
+      const data = await response.json()
+      
+      if (data.success) {
+        setEvents(data.events)
+        setCategoryCounts(data.categoryCounts)
+      }
+    } catch (err) {
+      console.error('Failed to refresh events:', err)
     }
-    
-    const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24))
-    const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-    const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60))
-    
-    if (days > 0) {
-      return `Starts in ${days} day${days > 1 ? 's' : ''}, ${hours} hour${hours > 1 ? 's' : ''}`
-    } else if (hours > 0) {
-      return `Starts in ${hours} hour${hours > 1 ? 's' : ''}, ${minutes} minute${minutes > 1 ? 's' : ''}`
-    } else {
-      return `Starts in ${minutes} minute${minutes > 1 ? 's' : ''}`
+
+    // Refresh user registrations if logged in
+    if (user) {
+      try {
+        const response = await fetch('/api/events/register')
+        const data = await response.json()
+        
+        if (data.success) {
+          const registrationsMap: {[eventId: string]: any} = {}
+          data.registrations.forEach((reg: any) => {
+            registrationsMap[reg.event.id] = reg
+          })
+          setUserRegistrations(registrationsMap)
+        }
+      } catch (err) {
+        console.error('Failed to refresh user registrations:', err)
+      }
+    }
+  }
+
+  const handleCreateEvent = async (eventData: any) => {
+    try {
+      const response = await fetch('/api/admin/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: eventData.title,
+          description: eventData.description,
+          dateTime: eventData.dateTime,
+          duration: eventData.duration,
+          location: eventData.location,
+          category: eventData.category,
+          maxAttendees: eventData.maxAttendees,
+          featured: eventData.tags.featured,
+          prerequisites: [],
+          whatYouWillLearn: []
+        }),
+      })
+
+      const data = await response.json()
+      
+      if (data.success) {
+        // Refresh events list
+        const eventsResponse = await fetch('/api/events')
+        const eventsData = await eventsResponse.json()
+        if (eventsData.success) {
+          setEvents(eventsData.events)
+          setCategoryCounts(eventsData.categoryCounts)
+        }
+        setIsCreateModalOpen(false)
+      } else {
+        console.error('Failed to create event:', data.error)
+      }
+    } catch (error) {
+      console.error('Create event error:', error)
     }
   }
 
@@ -351,13 +414,24 @@ export default function EventsPage() {
 
           {/* Action Buttons */}
           <div className="flex gap-3">
-            <motion.button
-              className="flex-1 bg-[#2D8EFF] hover:bg-[#2D8EFF]/90 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              Register Now
-            </motion.button>
+            {userRegistrations[selectedEvent.id] ? (
+              <div className="flex-1 bg-green-500/20 border border-green-500/40 text-green-400 px-6 py-3 rounded-lg font-medium flex items-center justify-center gap-2">
+                <CheckCircle2 className="w-4 h-4" />
+                {userRegistrations[selectedEvent.id].status === 'registered' 
+                  ? 'Registered' 
+                  : 'On Waitlist'}
+              </div>
+            ) : (
+              <motion.button
+                onClick={() => openRegistrationModal(selectedEvent)}
+                disabled={selectedEvent.status === 'completed' || selectedEvent.status === 'cancelled'}
+                className="flex-1 bg-[#2D8EFF] hover:bg-[#2D8EFF]/90 disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-medium transition-all duration-200"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {selectedEvent.status === 'full' ? 'Join Waitlist' : 'Register Now'}
+              </motion.button>
+            )}
             <motion.button
               className="px-6 py-3 bg-[#1F1F1F] hover:bg-[#333333] text-[#CCCCCC] rounded-lg font-medium transition-all duration-200"
               whileHover={{ scale: 1.02 }}
@@ -383,6 +457,14 @@ export default function EventsPage() {
           isOpen={isCreateModalOpen}
           onClose={closeCreateModal}
           onSubmit={handleCreateEvent}
+        />
+      )}
+      {isRegistrationModalOpen && selectedEvent && (
+        <EventRegistrationModal
+          isOpen={isRegistrationModalOpen}
+          onClose={closeRegistrationModal}
+          event={selectedEvent}
+          onRegistrationSuccess={handleRegistrationSuccess}
         />
       )}
       
@@ -484,8 +566,23 @@ export default function EventsPage() {
                 <h2 className={`text-lg font-light tracking-wide transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>Upcoming Events</h2>
               </div>
               
-              <div className="space-y-4">
-                {filteredEvents.map((event, index) => (
+              {loading ? (
+                <div className="flex items-center justify-center py-16">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className={`transition-colors duration-300 ${theme === 'light' ? 'text-gray-600' : 'text-white/60'}`}>Loading events...</p>
+                  </div>
+                </div>
+              ) : error ? (
+                <div className="flex items-center justify-center py-16">
+                  <div className="text-center">
+                    <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                    <p className={`text-lg transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>{error}</p>
+                  </div>
+                </div>
+              ) : filteredEvents.length > 0 ? (
+                <div className="space-y-4">
+                  {filteredEvents.map((event, index) => (
                   <motion.div
                     key={event.id}
                     className="group p-4 border rounded-lg cursor-pointer transition-all duration-300"
@@ -535,21 +632,30 @@ export default function EventsPage() {
                           </span>
                         </div>
                         <div className={`text-xs mt-2 transition-colors duration-300 ${theme === 'light' ? 'text-gray-500' : 'text-white/50'}`}>
-                          {getTimeUntilEvent(event.date, event.time)}
+                          {event.timeUntilEvent}
                         </div>
                       </div>
                       <div className="flex flex-col gap-2">
-                        <motion.button
-                          className={`px-6 py-2 border rounded-lg transition-all duration-300 text-sm ${
-                            theme === 'light' 
-                              ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60' 
-                              : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60'
-                          }`}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          Register
-                        </motion.button>
+                        {userRegistrations[event.id] ? (
+                          <div className="px-6 py-2 bg-green-500/20 border border-green-500/40 text-green-400 rounded-lg text-sm flex items-center justify-center gap-1">
+                            <UserCheck className="w-3 h-3" />
+                            {userRegistrations[event.id].status === 'registered' ? 'Registered' : 'Waitlisted'}
+                          </div>
+                        ) : (
+                          <motion.button
+                            onClick={() => openRegistrationModal(event)}
+                            disabled={event.status === 'completed' || event.status === 'cancelled'}
+                            className={`px-6 py-2 border rounded-lg transition-all duration-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed ${
+                              theme === 'light' 
+                                ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60' 
+                                : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60'
+                            }`}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            {event.status === 'full' ? 'Join Waitlist' : 'Register'}
+                          </motion.button>
+                        )}
                         <motion.button
                           className={`px-6 py-2 border rounded-lg transition-all duration-300 text-sm ${
                             theme === 'light' 
@@ -563,10 +669,21 @@ export default function EventsPage() {
                           Details
                         </motion.button>
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center py-16">
+                  <div className="text-center">
+                    <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className={`text-lg transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>No events found</p>
+                    <p className={`text-sm transition-colors duration-300 ${theme === 'light' ? 'text-gray-600' : 'text-white/60'}`}>
+                      Try selecting a different category or check back later.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
 
@@ -616,29 +733,21 @@ export default function EventsPage() {
                 <h3 className={`text-lg font-light tracking-wide transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>Recent Events</h3>
               </div>
               <div className="space-y-3">
-                {pastEvents.map((event, index) => (
-                  <motion.div 
-                    key={event.title}
-                    className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all duration-300 ${
-                      theme === 'light' ? 'hover:bg-black/5' : 'hover:bg-white/5'
-                    }`}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: index * 0.1 }}
-                  >
-                    <div className="flex-1">
-                      <p className={`text-sm font-light transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>{event.title}</p>
-                      <p className={`text-xs transition-colors duration-300 ${theme === 'light' ? 'text-gray-500' : 'text-white/50'}`}>{new Date(event.date).toLocaleDateString()}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className={`text-xs transition-colors duration-300 ${theme === 'light' ? 'text-gray-600' : 'text-white/60'}`}>{event.attendees} attended</p>
-                      <div className="flex items-center gap-1">
-                        <Star className="w-3 h-3 text-yellow-400" />
-                        <span className="text-xs text-yellow-400">{event.rating}</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
+                <motion.div 
+                  className={`flex items-center justify-center p-8 rounded-lg transition-all duration-300 ${
+                    theme === 'light' ? 'bg-black/5' : 'bg-white/5'
+                  }`}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <div className="text-center">
+                    <Calendar className={`w-8 h-8 mx-auto mb-2 opacity-50 ${theme === 'light' ? 'text-gray-400' : 'text-white/40'}`} />
+                    <p className={`text-sm transition-colors duration-300 ${theme === 'light' ? 'text-gray-500' : 'text-white/50'}`}>
+                      No past events to display
+                    </p>
+                  </div>
+                </motion.div>
               </div>
             </div>
 
@@ -652,18 +761,21 @@ export default function EventsPage() {
                 <h3 className={`text-lg font-light tracking-wide transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>Quick Actions</h3>
               </div>
               <div className="space-y-3">
-                <motion.button
-                  className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm ${
-                    theme === 'light' 
-                      ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60' 
-                      : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60'
-                  }`}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={openCreateModal}
-                >
-                  Create Event
-                </motion.button>
+                {user && user.role === 'ADMIN' && (
+                  <motion.button
+                    className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm flex items-center justify-center gap-2 ${
+                      theme === 'light' 
+                        ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60' 
+                        : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60'
+                    }`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={openCreateModal}
+                  >
+                    <Plus className="w-4 h-4" />
+                    Create Event
+                  </motion.button>
+                )}
                 <motion.button
                   className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm ${
                     theme === 'light' 
