@@ -18,8 +18,8 @@ const categories = [
 const CategoryRing = () => {
   // Logo dimensions from LogoBird.tsx: 220x220 pixels
   const logoRadius = 110 // Half of logo width/height (220/2)
-  const distanceFromLogoBorder = 140 // Space between logo edge and categories  
-  const radius = logoRadius + distanceFromLogoBorder // Total distance from center (250px)
+  const distanceFromLogoBorder = 180 // Space between logo edge and categories (increased from 140)
+  const radius = logoRadius + distanceFromLogoBorder // Total distance from center (290px)
   const { theme } = useTheme()
   
   return (
@@ -67,12 +67,13 @@ const CategoryRing = () => {
                 
                 {/* Category text */}
                 <motion.div
-                  className="relative px-6 py-3 font-medium text-base text-center whitespace-nowrap rounded-full backdrop-blur-sm shadow-lg transition-colors duration-300"
+                  className="relative px-8 py-4 font-medium text-base text-center whitespace-nowrap rounded-full backdrop-blur-sm shadow-lg transition-colors duration-300"
                   style={{
                     backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
                     borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.3)',
                     color: theme === 'light' ? '#000000' : '#ffffff',
-                    border: '1px solid'
+                    border: '1px solid',
+                    minWidth: '140px'
                   }}
                   whileHover={{ 
                     backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(17, 17, 17, 0.95)',
