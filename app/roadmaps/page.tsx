@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import BackgroundNodes from '@/components/BackgroundNodes'
+import StudyGroupsModal from './StudyGroupsModal'
+import Toast from './Toast'
 import { useTheme } from '@/contexts/theme-context'
 import { 
   Map,
@@ -26,6 +28,9 @@ import {
 export default function RoadmapsPage() {
   const [isMobile, setIsMobile] = useState(false)
   const [selectedTrack, setSelectedTrack] = useState('fullstack')
+  const [isStudyGroupsModalOpen, setIsStudyGroupsModalOpen] = useState(false)
+  const [toastVisible, setToastVisible] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
   const { theme } = useTheme()
 
   useEffect(() => {
@@ -38,6 +43,17 @@ export default function RoadmapsPage() {
     
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
+
+  const handleJoinStudyGroup = (groupId: string, groupName: string) => {
+    setIsStudyGroupsModalOpen(false)
+    setToastMessage(`Successfully joined "${groupName}"!`)
+    setToastVisible(true)
+  }
+
+  const handleCloseToast = () => {
+    setToastVisible(false)
+    setToastMessage('')
+  }
 
   const roadmapTracks = [
     { 
@@ -431,6 +447,7 @@ export default function RoadmapsPage() {
                   }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
+                  onClick={() => setIsStudyGroupsModalOpen(true)}
                 >
                   Join Study Group
                 </motion.button>
@@ -464,6 +481,21 @@ export default function RoadmapsPage() {
           </div>
         </motion.div>
       </div>
+
+      {/* Study Groups Modal */}
+      <StudyGroupsModal
+        isOpen={isStudyGroupsModalOpen}
+        onClose={() => setIsStudyGroupsModalOpen(false)}
+        onJoinGroup={handleJoinStudyGroup}
+      />
+
+      {/* Toast Notification */}
+      <Toast
+        isVisible={toastVisible}
+        message={toastMessage}
+        type="success"
+        onClose={handleCloseToast}
+      />
     </div>
   )
 } 
