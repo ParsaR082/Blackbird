@@ -161,7 +161,7 @@ export default function RoadmapsPage() {
       <BackgroundNodes isMobile={isMobile} />
       
       {/* Main Content */}
-      <div className="relative z-10 min-h-screen px-4 py-8">
+      <div className="relative z-10 min-h-screen px-4 pt-24 pb-8">
         {/* Header */}
         <motion.div 
           className="text-center mb-12"

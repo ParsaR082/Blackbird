@@ -101,9 +101,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true)
       
-      // Get CSRF token from header
+      // Get CSRF token from response body (not headers)
       const csrfResponse = await fetch('/api/auth/csrf')
-      const csrfToken = csrfResponse.headers.get('x-csrf-token')
+      const { token: csrfToken } = await csrfResponse.json()
       
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -137,9 +137,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true)
       
-      // Get CSRF token from header
+      // Get CSRF token from response body
       const csrfResponse = await fetch('/api/auth/csrf')
-      const csrfToken = csrfResponse.headers.get('x-csrf-token')
+      const { token: csrfToken } = await csrfResponse.json()
       
       const response = await fetch('/api/auth/register', {
         method: 'POST',
@@ -171,9 +171,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true)
       
-      // Get CSRF token from header
+      // Get CSRF token from response body
       const csrfResponse = await fetch('/api/auth/csrf')
-      const csrfToken = csrfResponse.headers.get('x-csrf-token')
+      const { token: csrfToken } = await csrfResponse.json()
       
       await fetch('/api/auth/logout', {
         method: 'POST',

@@ -250,7 +250,7 @@ export default function GamesPage() {
       </Suspense>
       
       {/* Main Content */}
-      <div className="relative z-10 min-h-screen px-4 py-8" role="main">
+      <div className="relative z-10 min-h-screen px-4 pt-24 pb-8" role="main">
         {/* Accessibility: Live region for dynamic content updates */}
         <div aria-live="polite" aria-atomic="true" className="sr-only">
           {selectedCategory ? `Filtered by ${selectedCategory}` : 'Showing all games'}

@@ -82,12 +82,13 @@ export async function POST(request: NextRequest) {
 
     const User = mongoose.models.User || mongoose.model('User', UserSchema)
 
-    // Check if email, username, or studentId already exists
+    // Check if email, username, studentId, or phoneNumber already exists
     const existingUser = await User.findOne({
       $or: [
         { email },
         { username },
-        { studentId }
+        { studentId },
+        { phoneNumber }
       ]
     })
 
@@ -107,6 +108,12 @@ export async function POST(request: NextRequest) {
       if (existingUser.studentId === studentId) {
         return NextResponse.json(
           { error: 'Student ID already registered' },
+          { status: 409 }
+        )
+      }
+      if (existingUser.phoneNumber === phoneNumber) {
+        return NextResponse.json(
+          { error: 'Phone number already registered' },
           { status: 409 }
         )
       }
@@ -131,7 +138,7 @@ export async function POST(request: NextRequest) {
         updatedAt: new Date()
       })
 
-            return NextResponse.json(
+      return NextResponse.json(
         {
           message: 'User registered successfully',
           user: {
@@ -149,6 +156,41 @@ export async function POST(request: NextRequest) {
       )
     } catch (error) {
       console.error('Registration error:', error)
+      
+      // Handle MongoDB duplicate key errors (race condition protection)
+      if (error && typeof error === 'object' && 'code' in error && error.code === 11000) {
+        const mongoError = error as any
+        const duplicateField = Object.keys(mongoError.keyPattern || {})[0]
+        
+        switch (duplicateField) {
+          case 'email':
+            return NextResponse.json(
+              { error: 'Email already registered' },
+              { status: 409 }
+            )
+          case 'username':
+            return NextResponse.json(
+              { error: 'Username already taken' },
+              { status: 409 }
+            )
+          case 'studentId':
+            return NextResponse.json(
+              { error: 'Student ID already registered' },
+              { status: 409 }
+            )
+          case 'phoneNumber':
+            return NextResponse.json(
+              { error: 'Phone number already registered' },
+              { status: 409 }
+            )
+          default:
+            return NextResponse.json(
+              { error: 'A user with these details already exists' },
+              { status: 409 }
+            )
+        }
+      }
+      
       return NextResponse.json(
         { error: 'Failed to register user' },
         { status: 500 }
