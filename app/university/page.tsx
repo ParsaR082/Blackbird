@@ -21,16 +21,29 @@ import {
   Plus,
   ArrowRight,
   GraduationCap,
-  Loader2
+  Loader2,
+  AlertCircle
 } from 'lucide-react'
 
 interface DashboardStats {
   totalCourses: number
   completedCourses: number
+  enrolledCourses: number
   activePlans: number
   overallProgress: number
   upcomingDeadlines: number
   currentGPA: number
+  cumulativeGPA: number
+  totalCreditsEarned: number
+  academicStanding: string
+}
+
+interface RecentActivity {
+  id: string
+  type: 'assignment' | 'enrollment' | 'plan' | 'grade'
+  description: string
+  timestamp: Date
+  status: 'completed' | 'started' | 'updated'
 }
 
 const containerVariants = {
@@ -58,7 +71,9 @@ export default function UniversityPage() {
   const { theme } = useTheme()
   const router = useRouter()
   const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -67,20 +82,128 @@ export default function UniversityPage() {
     }
 
     if (isAuthenticated) {
-      // Simulate loading dashboard data
-      setTimeout(() => {
-        setStats({
-          totalCourses: 6,
-          completedCourses: 2,
-          activePlans: 3,
-          overallProgress: 67,
-          upcomingDeadlines: 4,
-          currentGPA: 3.75
-        })
-        setLoading(false)
-      }, 1000)
+      fetchDashboardData()
     }
   }, [isAuthenticated, isLoading, router])
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      // Fetch academic records and progress
+      const [academicRecordResponse, enrollmentsResponse, assignmentsResponse, studyPlansResponse] = await Promise.all([
+        fetch('/api/university/academic-record'),
+        fetch('/api/university/enrollments'),
+        fetch('/api/university/assignments?upcoming=true'),
+        fetch('/api/university/study-plans?active=true')
+      ])
+
+      if (!academicRecordResponse.ok || !enrollmentsResponse.ok) {
+        throw new Error('Failed to fetch academic data')
+      }
+
+      const academicRecord = await academicRecordResponse.json()
+      const enrollments = await enrollmentsResponse.json()
+      const assignments = assignmentsResponse.ok ? await assignmentsResponse.json() : { assignments: [] }
+      const studyPlans = studyPlansResponse.ok ? await studyPlansResponse.json() : { studyPlans: [] }
+
+      // Calculate stats from real data
+      const currentStatus = academicRecord.currentStatus || {}
+      const enrollmentData = enrollments.enrollments || []
+      
+      // Count courses by status
+      let totalCourses = 0
+      let completedCourses = 0
+      let enrolledCourses = 0
+
+      enrollmentData.forEach((semester: any) => {
+        semester.courses.forEach((course: any) => {
+          totalCourses++
+          if (course.status === 'completed') {
+            completedCourses++
+          } else if (course.status === 'enrolled') {
+            enrolledCourses++
+          }
+        })
+      })
+
+      // Calculate progress percentage
+      const progressPercentage = currentStatus.progressTowardsGraduation?.percentage || 0
+
+      // Count upcoming assignments
+      const upcomingCount = assignments.assignments?.filter((a: any) => 
+        !a.submission || a.submission.status !== 'completed'
+      ).length || 0
+
+      const dashboardStats: DashboardStats = {
+        totalCourses,
+        completedCourses,
+        enrolledCourses,
+        activePlans: studyPlans.studyPlans?.length || 0,
+        overallProgress: Math.round(progressPercentage),
+        upcomingDeadlines: upcomingCount,
+        currentGPA: currentStatus.currentSemesterGPA || 0,
+        cumulativeGPA: currentStatus.cumulativeGPA || 0,
+        totalCreditsEarned: currentStatus.totalCreditsEarned || 0,
+        academicStanding: currentStatus.academicStanding || 'Good Standing'
+      }
+
+      setStats(dashboardStats)
+
+      // Generate recent activity from real data
+      const activities: RecentActivity[] = []
+
+      // Add recent assignments
+      assignments.assignments?.slice(0, 2).forEach((assignment: any) => {
+        if (assignment.submission) {
+          activities.push({
+            id: `assignment-${assignment._id}`,
+            type: 'assignment',
+            description: `${assignment.submission.status === 'completed' ? 'Completed' : 'Updated'} assignment for ${assignment.courseId.courseCode}`,
+            timestamp: new Date(assignment.submission.lastModified || assignment.submission.submissionDate),
+            status: assignment.submission.status === 'completed' ? 'completed' : 'updated'
+          })
+        }
+      })
+
+      // Add recent enrollments
+      enrollmentData.slice(0, 1).forEach((semester: any) => {
+        semester.courses.slice(0, 2).forEach((course: any) => {
+          if (course.enrollmentDate) {
+            activities.push({
+              id: `enrollment-${course._id}`,
+              type: 'enrollment',
+              description: `Enrolled in ${course.courseId.courseCode} - ${course.courseId.title}`,
+              timestamp: new Date(course.enrollmentDate),
+              status: 'started'
+            })
+          }
+        })
+      })
+
+      // Add recent study plans
+      studyPlans.studyPlans?.slice(0, 1).forEach((plan: any) => {
+        activities.push({
+          id: `plan-${plan._id}`,
+          type: 'plan',
+          description: `${plan.createdAt === plan.lastModified ? 'Created' : 'Updated'} study plan: ${plan.title}`,
+          timestamp: new Date(plan.lastModified || plan.createdAt),
+          status: plan.createdAt === plan.lastModified ? 'started' : 'updated'
+        })
+      })
+
+      // Sort by most recent
+      activities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+      setRecentActivity(activities.slice(0, 5))
+
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err)
+      setError('Failed to load university data. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   if (isLoading || loading) {
     return (
@@ -95,6 +218,25 @@ export default function UniversityPage() {
 
   if (!isAuthenticated) {
     return null
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center transition-colors duration-300" style={{ backgroundColor: 'var(--bg-color)' }}>
+        <div className="text-center max-w-md mx-auto">
+          <AlertCircle className="h-12 w-12 mx-auto mb-4 text-red-400" />
+          <h2 className="text-xl font-bold mb-2 transition-colors duration-300" style={{ color: 'var(--text-color)' }}>
+            Unable to Load University Data
+          </h2>
+          <p className="mb-4 transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>
+            {error}
+          </p>
+          <Button onClick={fetchDashboardData} className="transition-colors duration-300">
+            Try Again
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -138,6 +280,16 @@ export default function UniversityPage() {
               <p className="mt-2 transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>
                 Welcome back, {user?.fullName || 'Student'}
               </p>
+              {stats && (
+                <div className="mt-2 flex items-center space-x-4">
+                  <Badge variant="outline" className="transition-colors duration-300">
+                    {stats.academicStanding}
+                  </Badge>
+                  <span className="text-sm transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>
+                    {stats.totalCreditsEarned} credits earned
+                  </span>
+                </div>
+              )}
             </div>
             <motion.div
               whileHover={{ scale: 1.05 }}
@@ -159,9 +311,9 @@ export default function UniversityPage() {
               <BookOpen className="h-4 w-4 text-blue-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold transition-colors duration-300" style={{ color: 'var(--text-color)' }}>{stats?.totalCourses}</div>
+              <div className="text-2xl font-bold transition-colors duration-300" style={{ color: 'var(--text-color)' }}>{stats?.totalCourses || 0}</div>
               <p className="text-xs transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>
-                {stats?.completedCourses} completed
+                {stats?.completedCourses || 0} completed, {stats?.enrolledCourses || 0} in progress
               </p>
             </CardContent>
           </Card>
@@ -175,7 +327,7 @@ export default function UniversityPage() {
               <TrendingUp className="h-4 w-4 text-green-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold transition-colors duration-300" style={{ color: 'var(--text-color)' }}>{stats?.overallProgress}%</div>
+              <div className="text-2xl font-bold transition-colors duration-300" style={{ color: 'var(--text-color)' }}>{stats?.overallProgress || 0}%</div>
               <div className="w-full rounded-full h-2 mt-2 transition-colors duration-300" style={{ 
                 backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)' 
               }}>
@@ -192,13 +344,13 @@ export default function UniversityPage() {
             borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)'
           }}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>Current GPA</CardTitle>
+              <CardTitle className="text-sm font-medium transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>Cumulative GPA</CardTitle>
               <Award className="h-4 w-4 text-yellow-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold transition-colors duration-300" style={{ color: 'var(--text-color)' }}>{stats?.currentGPA}</div>
+              <div className="text-2xl font-bold transition-colors duration-300" style={{ color: 'var(--text-color)' }}>{stats?.cumulativeGPA?.toFixed(2) || '0.00'}</div>
               <p className="text-xs transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>
-                Out of 4.0
+                Current: {stats?.currentGPA?.toFixed(2) || '0.00'}
               </p>
             </CardContent>
           </Card>
@@ -212,9 +364,9 @@ export default function UniversityPage() {
               <Clock className="h-4 w-4 text-red-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold transition-colors duration-300" style={{ color: 'var(--text-color)' }}>{stats?.upcomingDeadlines}</div>
+              <div className="text-2xl font-bold transition-colors duration-300" style={{ color: 'var(--text-color)' }}>{stats?.upcomingDeadlines || 0}</div>
               <p className="text-xs transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>
-                This week
+                Assignments pending
               </p>
             </CardContent>
           </Card>
@@ -351,27 +503,30 @@ export default function UniversityPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-green-400 rounded-full" />
-                  <div className="flex-1">
-                    <p className="transition-colors duration-300" style={{ color: 'var(--text-color)' }}>Completed assignment for Data Structures</p>
-                    <p className="text-xs transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>2 hours ago</p>
+                {recentActivity.length > 0 ? (
+                  recentActivity.map((activity) => (
+                    <div key={activity.id} className="flex items-center space-x-3">
+                      <div className={`w-2 h-2 rounded-full ${
+                        activity.status === 'completed' ? 'bg-green-400' : 
+                        activity.status === 'started' ? 'bg-blue-400' : 'bg-yellow-400'
+                      }`} />
+                      <div className="flex-1">
+                        <p className="transition-colors duration-300" style={{ color: 'var(--text-color)' }}>
+                          {activity.description}
+                        </p>
+                        <p className="text-xs transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>
+                          {new Date(activity.timestamp).toLocaleDateString()} - {new Date(activity.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>
+                      No recent activity yet. Start by enrolling in courses or creating a study plan!
+                    </p>
                   </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-blue-400 rounded-full" />
-                  <div className="flex-1">
-                    <p className="transition-colors duration-300" style={{ color: 'var(--text-color)' }}>Started new study plan for Algorithms</p>
-                    <p className="text-xs transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>1 day ago</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-yellow-400 rounded-full" />
-                  <div className="flex-1">
-                    <p className="transition-colors duration-300" style={{ color: 'var(--text-color)' }}>Enrolled in Machine Learning course</p>
-                    <p className="text-xs transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>3 days ago</p>
-                  </div>
-                </div>
+                )}
               </div>
             </CardContent>
           </Card>
