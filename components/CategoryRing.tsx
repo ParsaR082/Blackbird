@@ -18,8 +18,8 @@ const categories = [
 const CategoryRing = () => {
   // Logo dimensions from LogoBird.tsx: 220x220 pixels
   const logoRadius = 110 // Half of logo width/height (220/2)
-  const distanceFromLogoBorder = 140 // Space between logo edge and categories  
-  const radius = logoRadius + distanceFromLogoBorder // Total distance from center (250px)
+  const distanceFromLogoBorder = 180 // Space between logo edge and categories (increased from 140)
+  const radius = logoRadius + distanceFromLogoBorder // Total distance from center (290px)
   const { theme } = useTheme()
   
   return (
@@ -36,14 +36,39 @@ const CategoryRing = () => {
             key={category.name}
             className="absolute"
             initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
+            animate={{ 
+              opacity: 1, 
+              scale: 1,
+              // Floating animation - each button gets slightly different timing
+              y: [0, -8, 0, -5, 0],
+              x: [0, 3, 0, -2, 0],
+              rotate: [0, 1, 0, -1, 0],
+            }}
             transition={{ 
-              duration: 0.8, 
-              delay: index * 0.15,
-              ease: "easeOut"
+              opacity: { duration: 0.8, delay: index * 0.15, ease: "easeOut" },
+              scale: { duration: 0.8, delay: index * 0.15, ease: "easeOut" },
+              // Continuous floating motion with unique timing per button
+              y: { 
+                duration: 4 + (index * 0.3), 
+                repeat: Infinity, 
+                ease: "easeInOut",
+                delay: index * 0.2 
+              },
+              x: { 
+                duration: 6 + (index * 0.4), 
+                repeat: Infinity, 
+                ease: "easeInOut",
+                delay: index * 0.3 
+              },
+              rotate: { 
+                duration: 8 + (index * 0.2), 
+                repeat: Infinity, 
+                ease: "easeInOut",
+                delay: index * 0.1 
+              }
             }}
             style={{
-              left: `calc(50% + ${x}px)`,
+              left: `calc(50% + ${x}px - 64px)`,
               top: `calc(50% + ${y}px)`,
               transform: 'translate(-50%, -50%)',
             }}
@@ -53,6 +78,18 @@ const CategoryRing = () => {
                 className="group relative cursor-pointer"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
+                // Additional subtle floating for the inner element
+                animate={{
+                  scale: [1, 1.02, 1, 0.98, 1],
+                }}
+                transition={{
+                  scale: {
+                    duration: 5 + (index * 0.5),
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                    delay: index * 0.4
+                  }
+                }}
               >
                 {/* Glow effect on hover */}
                 <motion.div
@@ -62,17 +99,30 @@ const CategoryRing = () => {
                   }}
                   initial={{ scale: 0.8 }}
                   whileHover={{ scale: 1.5 }}
-                  transition={{ duration: 0.3 }}
+                  // Gentle pulsing glow effect
+                  animate={{
+                    opacity: [0, 0.05, 0, 0.03, 0],
+                  }}
+                  transition={{
+                    hover: { duration: 0.3 },
+                    opacity: {
+                      duration: 7 + (index * 0.3),
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: index * 0.6
+                    }
+                  }}
                 />
                 
                 {/* Category text */}
                 <motion.div
-                  className="relative px-6 py-3 font-medium text-base text-center whitespace-nowrap rounded-full backdrop-blur-sm shadow-lg transition-colors duration-300"
+                  className="relative px-8 py-4 font-medium text-base text-center whitespace-nowrap rounded-full backdrop-blur-sm shadow-lg transition-colors duration-300"
                   style={{
                     backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
                     borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.3)',
                     color: theme === 'light' ? '#000000' : '#ffffff',
-                    border: '1px solid'
+                    border: '1px solid',
+                    minWidth: '140px'
                   }}
                   whileHover={{ 
                     backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(17, 17, 17, 0.95)',
@@ -80,7 +130,23 @@ const CategoryRing = () => {
                     boxShadow: theme === 'light' ? '0 0 25px rgba(0,0,0,0.2)' : '0 0 25px rgba(255,255,255,0.4)',
                     y: -2
                   }}
-                  transition={{ duration: 0.3 }}
+                  // Subtle shadow floating effect
+                  animate={{
+                    boxShadow: [
+                      theme === 'light' ? '0 4px 15px rgba(0,0,0,0.1)' : '0 4px 15px rgba(255,255,255,0.1)',
+                      theme === 'light' ? '0 8px 25px rgba(0,0,0,0.15)' : '0 8px 25px rgba(255,255,255,0.15)',
+                      theme === 'light' ? '0 4px 15px rgba(0,0,0,0.1)' : '0 4px 15px rgba(255,255,255,0.1)',
+                    ]
+                  }}
+                  transition={{
+                    hover: { duration: 0.3 },
+                    boxShadow: {
+                      duration: 6 + (index * 0.2),
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: index * 0.5
+                    }
+                  }}
                 >
                   {category.name}
                 </motion.div>
