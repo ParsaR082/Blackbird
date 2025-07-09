@@ -18,7 +18,8 @@ import {
   RefreshCcw,
   UserCheck,
   UserX,
-  Loader2
+  Loader2,
+  LogIn
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import BackgroundNodes from '@/components/BackgroundNodes'
@@ -41,17 +42,12 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [processingUser, setProcessingUser] = useState<string | null>(null)
-  const { user } = useAuth()
+  const [loginEmail, setLoginEmail] = useState('')
+  const [loginPassword, setLoginPassword] = useState('')
+  const [loginError, setLoginError] = useState<string | null>(null)
+  const [isLoggingIn, setIsLoggingIn] = useState(false)
+  const { user, isAuthenticated, isLoading, login } = useAuth()
   const router = useRouter()
-  
-  useEffect(() => {
-    // Redirect if user is not admin
-    if (user && user.role !== 'ADMIN') {
-      router.push('/dashboard')
-    }
-    
-    fetchUsers()
-  }, [user, router])
   
   const fetchUsers = async () => {
     try {
@@ -71,6 +67,43 @@ export default function AdminPage() {
       setError('Failed to load users')
     } finally {
       setLoading(false)
+    }
+  }
+  
+  useEffect(() => {
+    // Do not redirect immediately - we'll show a login form instead
+    if (!isLoading && isAuthenticated && user && user.role !== 'ADMIN') {
+      router.push('/dashboard')
+    }
+    
+    // Only fetch users if the user is authenticated and is an admin
+    if (!isLoading && isAuthenticated && user?.role === 'ADMIN') {
+      fetchUsers()
+    } else {
+      setLoading(false) // Stop the loading state if we're not authenticated
+    }
+  }, [user, isAuthenticated, isLoading, router])
+  
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoginError(null)
+    setIsLoggingIn(true)
+    
+    try {
+      const result = await login(loginEmail, loginPassword)
+      if (!result.success) {
+        setLoginError(result.error || 'Login failed')
+      } else if (result.user?.role !== 'ADMIN') {
+        setLoginError('You do not have admin privileges')
+        // Additional cleanup for non-admin users would be handled by the useEffect
+      } else {
+        // Admin login successful, will fetch users via useEffect
+      }
+    } catch (err) {
+      console.error('Login error:', err)
+      setLoginError('An unexpected error occurred')
+    } finally {
+      setIsLoggingIn(false)
     }
   }
   
@@ -143,6 +176,99 @@ export default function AdminPage() {
     )
   })
 
+  // If not authenticated or not admin, show login page
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="fixed inset-0 bg-gradient-to-br from-black via-gray-900 to-black" />
+        <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.1),transparent_50%)]" />
+        <BackgroundNodes isMobile={false} />
+        <div className="relative z-10 text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
+          <p className="mt-4 text-lg">Checking authentication...</p>
+        </div>
+      </div>
+    )
+  }
+  
+  if (!isAuthenticated || (user && user.role !== 'ADMIN')) {
+    return (
+      <div className="min-h-screen bg-black text-white">
+        <div className="fixed inset-0 bg-gradient-to-br from-black via-gray-900 to-black" />
+        <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.1),transparent_50%)]" />
+        <BackgroundNodes isMobile={false} />
+        
+        <div className="relative z-10 flex items-center justify-center min-h-screen">
+          <Card className="w-full max-w-md bg-white/5 border-white/10 backdrop-blur-sm">
+            <CardHeader>
+              <div className="flex items-center justify-center mb-2">
+                <Shield className="w-10 h-10 text-primary" />
+              </div>
+              <CardTitle className="text-2xl font-bold text-center">Admin Login</CardTitle>
+              <CardDescription className="text-center">
+                Sign in with your admin credentials
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loginError && (
+                <div className="mb-4 p-3 bg-red-500/20 border border-red-500 rounded-md text-red-200">
+                  <p className="flex items-center gap-2 text-sm">
+                    <XCircle className="w-4 h-4" />
+                    {loginError}
+                  </p>
+                </div>
+              )}
+              
+              <form onSubmit={handleAdminLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Email</label>
+                  <Input 
+                    type="email"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    placeholder="admin@example.com"
+                    required
+                    className="bg-white/10"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Password</label>
+                  <Input 
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    className="bg-white/10"
+                  />
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={isLoggingIn}
+                >
+                  {isLoggingIn ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    <>
+                      <LogIn className="w-4 h-4 mr-2" />
+                      Sign In
+                    </>
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Background Effects */}
@@ -204,121 +330,123 @@ export default function AdminPage() {
           transition={{ duration: 0.5, delay: 0.2 }}
         >
           <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <div>
-            <CardTitle className="text-xl font-bold">User Management</CardTitle>
-            <CardDescription>Manage user accounts and permissions</CardDescription>
-          </div>
-          
-          {/* Search */}
-          <div className="relative w-64">
-            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search users..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8"
-            />
-          </div>
-        </CardHeader>
-        
-        <CardContent>
-          {loading ? (
-            <div className="flex justify-center items-center py-8">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <p className="ml-2 text-lg">Loading users...</p>
-            </div>
-          ) : filteredUsers.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              {searchTerm ? 'No matching users found' : 'No users found'}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="py-3 px-2 text-left">Student ID</th>
-                    <th className="py-3 px-2 text-left">Name</th>
-                    <th className="py-3 px-2 text-left">Username</th>
-                    <th className="py-3 px-2 text-left">Mobile</th>
-                    <th className="py-3 px-2 text-center">Status</th>
-                    <th className="py-3 px-2 text-center">Role</th>
-                    <th className="py-3 px-2 text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredUsers.map((user) => (
-                    <tr key={user.id} className="border-b hover:bg-accent/50 transition-colors">
-                      <td className="py-3 px-2">{user.student_id}</td>
-                      <td className="py-3 px-2">{user.full_name}</td>
-                      <td className="py-3 px-2">@{user.username}</td>
-                      <td className="py-3 px-2">{user.mobile_phone}</td>
-                      <td className="py-3 px-2 text-center">
-                        {user.is_verified ? (
-                          <Badge variant="success" className="bg-green-500/20 text-green-500 border-green-500">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Verified
-                          </Badge>
-                        ) : (
-                          <Badge variant="warning" className="bg-yellow-500/20 text-yellow-500 border-yellow-500">
-                            <XCircle className="w-3 h-3 mr-1" />
-                            Unverified
-                          </Badge>
-                        )}
-                      </td>
-                      <td className="py-3 px-2 text-center">
-                        <Badge variant={user.role === 'admin' ? "secondary" : "default"}>
-                          {user.role === 'admin' ? (
-                            <Shield className="w-3 h-3 mr-1" />
-                          ) : (
-                            <Users className="w-3 h-3 mr-1" />
-                          )}
-                          {user.role}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-2">
-                        <div className="flex justify-center gap-2">
-                          {!user.is_verified && (
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => verifyUser(user.id)}
-                              disabled={processingUser === user.id}
-                              className="flex items-center gap-1"
-                            >
-                              {processingUser === user.id ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : (
-                                <UserCheck className="w-3 h-3" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <div>
+                <CardTitle className="text-xl font-bold">User Management</CardTitle>
+                <CardDescription>Manage user accounts and permissions</CardDescription>
+              </div>
+              
+              {/* Search */}
+              <div className="relative w-64">
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search users..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+            </CardHeader>
+            
+            <CardContent>
+              {loading ? (
+                <div className="flex justify-center items-center py-8">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  <p className="ml-2 text-lg">Loading users...</p>
+                </div>
+              ) : filteredUsers.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  {searchTerm ? 'No matching users found' : 'No users found'}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-white/10">
+                        <th className="py-3 px-2 text-left">Student ID</th>
+                        <th className="py-3 px-2 text-left">Name</th>
+                        <th className="py-3 px-2 text-left">Username</th>
+                        <th className="py-3 px-2 text-left">Mobile</th>
+                        <th className="py-3 px-2 text-center">Status</th>
+                        <th className="py-3 px-2 text-center">Role</th>
+                        <th className="py-3 px-2 text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredUsers.map((user) => (
+                        <tr key={user.id} className="border-b border-white/5 hover:bg-white/5">
+                          <td className="py-3 px-2">{user.student_id}</td>
+                          <td className="py-3 px-2">{user.full_name}</td>
+                          <td className="py-3 px-2">{user.username}</td>
+                          <td className="py-3 px-2">{user.mobile_phone}</td>
+                          <td className="py-3 px-2 text-center">
+                            {user.is_verified ? (
+                              <Badge className="bg-green-500/20 text-green-300 hover:bg-green-500/30">
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Verified
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="border-yellow-500/50 text-yellow-300">
+                                <XCircle className="w-3 h-3 mr-1" />
+                                Unverified
+                              </Badge>
+                            )}
+                          </td>
+                          <td className="py-3 px-2 text-center">
+                            {user.role === 'admin' ? (
+                              <Badge className="bg-blue-500/20 text-blue-300 hover:bg-blue-500/30">
+                                <Shield className="w-3 h-3 mr-1" />
+                                Admin
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="border-white/20 text-white/70">
+                                User
+                              </Badge>
+                            )}
+                          </td>
+                          <td className="py-3 px-2 text-center">
+                            <div className="flex justify-center gap-2">
+                              {!user.is_verified && (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  className="h-8 bg-green-500/10 border-green-500/30 text-green-300 hover:bg-green-500/20"
+                                  onClick={() => verifyUser(user.id)}
+                                  disabled={processingUser === user.id}
+                                >
+                                  {processingUser === user.id ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <UserCheck className="w-3 h-3 mr-1" />
+                                  )}
+                                  Verify
+                                </Button>
                               )}
-                              Verify
-                            </Button>
-                          )}
-                          
-                          {user.role !== 'admin' && (
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => promoteToAdmin(user.id)}
-                              disabled={processingUser === user.id}
-                              className="flex items-center gap-1"
-                            >
-                              {processingUser === user.id ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : (
-                                <Shield className="w-3 h-3" />
+                              
+                              {user.role !== 'admin' && (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  className="h-8 bg-blue-500/10 border-blue-500/30 text-blue-300 hover:bg-blue-500/20"
+                                  onClick={() => promoteToAdmin(user.id)}
+                                  disabled={processingUser === user.id}
+                                >
+                                  {processingUser === user.id ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <Shield className="w-3 h-3 mr-1" />
+                                  )}
+                                  Make Admin
+                                </Button>
                               )}
-                              Make Admin
-                            </Button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>

@@ -1,358 +1,324 @@
-# Blackbird Portal University System
+# University System Documentation
 
-This documentation provides an overview of the University System implementation within the Blackbird Portal. The system is designed to help students manage their academic journey including courses, enrollments, study plans, assignments, and tracking academic progress.
+## Overview
 
-## Table of Contents
+The University System is a comprehensive educational management platform within the Blackbird Portal application. It provides functionality for students to enroll in courses, create study plans, track assignments and academic progress.
 
-1. [System Overview](#system-overview)
-2. [Database Schema](#database-schema)
-3. [API Endpoints](#api-endpoints)
-4. [Frontend Pages](#frontend-pages)
-5. [UI Components](#ui-components)
-6. [Authentication & Authorization](#authentication--authorization)
-7. [Error Handling & Loading States](#error-handling--loading-states)
-8. [Responsive Design](#responsive-design)
-9. [Future Enhancements](#future-enhancements)
+## System Architecture
 
-## System Overview
+### Core Components
 
-The University System is built as a module within the Blackbird Portal to provide students with a comprehensive academic management platform. Key features include:
+1. **Course Management**
+   - Browse available courses
+   - View course details and prerequisites
+   - Semester-based course offerings
 
-- Course browsing and enrollment
-- Study plan creation and tracking
-- Assignment submission and management
-- Academic record and progress tracking
-- Semester and credit management
-- GPA calculation and academic standing
+2. **Enrollment System**
+   - Semester-based enrollment
+   - Course selection and registration
+   - Credit tracking and limits
 
-The system follows a client-server architecture with a React-based frontend and Node.js/MongoDB backend.
+3. **Assignment Management**
+   - View and submit assignments
+   - Track due dates and completion status
+   - File uploads and submissions
 
-## Database Schema
+4. **Study Plans**
+   - Create personalized study plans
+   - Set academic goals
+   - Track progress towards completion
 
-### Models
+5. **Academic Record**
+   - View grades and GPA
+   - Track completed courses
+   - Monitor academic standing
 
-All database models are defined in `lib/models/university.ts` and include:
+6. **Admin Interface**
+   - Course creation and management
+   - Assignment creation and grading
+   - Semester scheduling and management
 
-#### Course
+## Data Models
+
+### Course
+
 ```typescript
-{
-  courseCode: string           // Unique identifier for the course (e.g., CS101)
-  title: string                // Course title
-  description: string          // Course description
-  credits: number              // Number of credits for the course
-  professor: {                 // Professor information
+interface Course {
+  _id: string
+  courseCode: string
+  title: string
+  description: string
+  credits: number
+  professor: {
     name: string
     email: string
-    office: string
+    department: string
   }
-  department: string           // Department offering the course
-  level: string                // Course level (Beginner, Intermediate, Advanced)
-  prerequisites: string[]      // Array of courseCode prerequisites
-  semester: string             // Semester offered (Fall, Spring, Summer)
-  year: number                 // Academic year
-  maxEnrollment: number        // Maximum number of students
-  currentEnrollment: number    // Current number of enrolled students
+  department: string
+  level: 'undergraduate' | 'graduate'
+  prerequisites: string[]
+  semester: 'Fall' | 'Spring' | 'Summer'
+  year: number
+  maxStudents: number
+  currentEnrollments: number
+  syllabus?: string
+  isActive: boolean
+  createdBy: string
+  createdAt: Date
+  updatedAt: Date
 }
 ```
 
-#### Enrollment
+### Assignment
+
 ```typescript
-{
-  userId: ObjectId             // Reference to User model
-  courseId: ObjectId           // Reference to Course model
-  semester: string             // Semester of enrollment
-  year: number                 // Year of enrollment
-  status: string               // Status: 'enrolled', 'completed', 'dropped'
-  grade: string                // Final grade (if completed)
-  enrollmentDate: Date         // Date of enrollment
+interface Assignment {
+  _id: string
+  courseId: string
+  title: string
+  description: string
+  type: 'homework' | 'quiz' | 'exam' | 'project' | 'reading'
+  dueDate: Date
+  points: number
+  isRequired: boolean
+  attachments: {
+    name: string
+    url: string
+    type: string
+  }[]
+  createdAt: Date
+  updatedAt: Date
 }
 ```
 
-#### Assignment
+### User Assignment
+
 ```typescript
-{
-  courseId: ObjectId           // Reference to Course model
-  title: string                // Assignment title
-  description: string          // Assignment description
-  dueDate: Date                // Due date
-  totalPoints: number          // Maximum points possible
-  weight: number               // Weight in final grade calculation (percentage)
+interface UserAssignment {
+  _id: string
+  userId: string
+  assignmentId: string
+  courseId: string
+  status: 'pending' | 'in-progress' | 'submitted' | 'graded' | 'overdue'
+  submissionDate?: Date
+  grade?: number
+  feedback?: string
+  attachments: {
+    name: string
+    url: string
+    type: string
+  }[]
+  timeSpent: number // in minutes
+  isCompleted: boolean
+  createdAt: Date
+  updatedAt: Date
 }
 ```
 
-#### AssignmentSubmission
+### Study Plan
+
 ```typescript
-{
-  userId: ObjectId             // Reference to User model
-  assignmentId: ObjectId       // Reference to Assignment model
-  submissionDate: Date         // Date of submission
-  status: string               // Status: 'draft', 'submitted', 'graded', 'late'
-  content: string              // Submission content/answer
-  attachments: string[]        // Attachment URLs
-  score: number                // Points awarded
-  feedback: string             // Feedback from professor
-  lastModified: Date           // Last modified date
+interface StudyPlan {
+  _id: string
+  userId: string
+  title: string
+  description: string
+  academicYear: number
+  semester: 'Fall' | 'Spring' | 'Summer'
+  courses: string[] // Course IDs
+  goals: string[]
+  targetGPA: number
+  progress: number
+  isActive: boolean
+  createdAt: Date
+  updatedAt: Date
 }
 ```
 
-#### StudyPlan
-```typescript
-{
-  userId: ObjectId             // Reference to User model
-  title: string                // Plan title
-  description: string          // Plan description
-  type: string                 // Type: 'personal', 'semester', 'yearly'
-  status: string               // Status: 'active', 'paused', 'completed'
-  startDate: Date              // Start date
-  endDate: Date                // End date
-  tasks: [{                    // Study tasks
-    title: string
-    description: string
-    completed: boolean
-    dueDate: Date
-    priority: string           // Priority: 'low', 'medium', 'high'
-  }]
-  createdAt: Date              // Creation date
-  lastModified: Date           // Last modified date
-}
-```
+### Academic Record
 
-#### AcademicRecord
 ```typescript
-{
-  userId: ObjectId             // Reference to User model
-  cumulativeGPA: number        // Overall GPA
-  totalCreditsEarned: number   // Total credits earned
-  totalCreditsAttempted: number // Total credits attempted
-  academicStanding: string     // Standing: 'Good Standing', 'Probation', etc.
-  semesters: [{                // Semester records
-    year: number
-    semester: string
+interface AcademicRecord {
+  _id: string
+  userId: string
+  academicYear: number
+  semester: 'Fall' | 'Spring' | 'Summer'
+  courses: {
+    courseId: string
+    grade: string
     gpa: number
-    creditsEarned: number
-    creditsAttempted: number
-    courses: [{                // Courses in this semester
-      courseId: ObjectId
-      grade: string
-      status: string
-      credits: number
-    }]
-  }]
-  progressTowardsGraduation: {  // Graduation progress
-    percentage: number
-    requiredCredits: number
-    completedCredits: number
-  }
-  lastUpdated: Date            // Last update date
+    credits: number
+  }[]
+  semesterGPA: number
+  cumulativeGPA: number
+  totalCredits: number
+  completedCredits: number
+  status: 'active' | 'completed' | 'on-hold'
+  createdAt: Date
+  updatedAt: Date
+}
+```
+
+### Semester
+
+```typescript
+interface Semester {
+  _id: string
+  year: number
+  term: 'Fall' | 'Spring' | 'Summer'
+  startDate: Date
+  endDate: Date
+  registrationDeadline: Date
+  isActive: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+```
+
+### Semester Enrollment
+
+```typescript
+interface SemesterEnrollment {
+  _id: string
+  userId: string
+  semesterId: string
+  year: number
+  term: 'Fall' | 'Spring' | 'Summer'
+  courses: string[] // Array of course IDs
+  totalCredits: number
+  status: 'registered' | 'in-progress' | 'completed'
+  gpa: number
+  createdAt: Date
+  updatedAt: Date
 }
 ```
 
 ## API Endpoints
 
-### Courses API
+### Courses
 
-#### Public Endpoints
+- `GET /api/university/courses`: Get all available courses with optional filtering
+- `GET /api/university/courses/:id`: Get details for a specific course
+- `POST /api/admin/university/courses`: Create a new course (admin only)
+- `PUT /api/admin/university/courses?courseId=[id]`: Update a course (admin only)
+- `DELETE /api/admin/university/courses?courseId=[id]`: Delete or deactivate a course (admin only)
 
-`GET /api/university/courses`
-- **Description**: Retrieves a list of available courses
-- **Auth**: Required
-- **Returns**: `{ courses: Course[] }`
+### Enrollments
 
-`GET /api/university/courses/:id`
-- **Description**: Retrieves details for a specific course
-- **Auth**: Required
-- **Returns**: `{ course: Course }`
+- `GET /api/university/enrollments`: Get all enrollments for the authenticated user
+- `POST /api/university/enrollments`: Create a new enrollment for a course
+- `DELETE /api/university/enrollments?id=[id]`: Drop a course enrollment
 
-#### Admin Endpoints
+### Semesters
 
-`POST /api/university/admin/courses`
-- **Description**: Creates a new course
-- **Auth**: Admin only
-- **Body**: Course object
-- **Returns**: `{ course: Course }`
+- `GET /api/university/semesters`: Get all available semesters or active semesters
+- `GET /api/university/semesters?id=[id]`: Get details for a specific semester
+- `POST /api/admin/university/semesters`: Create a new semester (admin only)
+- `PUT /api/admin/university/semesters?id=[id]`: Update a semester (admin only)
+- `DELETE /api/admin/university/semesters?id=[id]`: Delete or deactivate a semester (admin only)
 
-`PUT /api/university/admin/courses/:id`
-- **Description**: Updates a course
-- **Auth**: Admin only
-- **Body**: Course object
-- **Returns**: `{ course: Course }`
+### Semester Enrollments
 
-`DELETE /api/university/admin/courses/:id`
-- **Description**: Deletes a course
-- **Auth**: Admin only
-- **Returns**: `{ success: true }`
+- `GET /api/university/semester-enrollments`: Get all semester enrollments for the authenticated user
+- `GET /api/university/semester-enrollments?id=[id]`: Get details for a specific semester enrollment
+- `POST /api/university/semester-enrollments`: Create a new semester enrollment with selected courses
+- `PUT /api/university/semester-enrollments?id=[id]`: Update courses for an existing semester enrollment
+- `DELETE /api/university/semester-enrollments?id=[id]`: Drop a semester enrollment
 
-### Enrollments API
+### Assignments
 
-`GET /api/university/enrollments`
-- **Description**: Retrieves user's course enrollments
-- **Auth**: Required
-- **Returns**: `{ enrollments: [...] }`
+- `GET /api/university/assignments`: Get assignments for the authenticated user
+- `GET /api/university/assignments/:id`: Get details for a specific assignment
+- `GET /api/university/assignments?courseId=[id]`: Get assignments for a specific course
+- `POST /api/admin/university/assignments`: Create a new assignment (admin only)
+- `PUT /api/admin/university/assignments?assignmentId=[id]`: Update an assignment (admin only)
+- `DELETE /api/admin/university/assignments?assignmentId=[id]`: Delete an assignment (admin only)
 
-`POST /api/university/enrollments`
-- **Description**: Enrolls user in a course
-- **Auth**: Required
-- **Body**: `{ courseId, year, semester }`
-- **Returns**: `{ enrollment: Enrollment }`
+### User Assignments (Submissions)
 
-`DELETE /api/university/enrollments`
-- **Description**: Unenrolls user from a course
-- **Auth**: Required
-- **Query**: `?enrollmentId=123`
-- **Returns**: `{ success: true }`
+- `GET /api/university/submissions`: Get user assignment submissions
+- `GET /api/university/submissions/:id`: Get a specific submission
+- `POST /api/university/submissions`: Create a new submission for an assignment
+- `PUT /api/university/submissions/:id`: Update a submission
+- `DELETE /api/university/submissions/:id`: Delete a submission
 
-### Assignments API
+### Study Plans
 
-`GET /api/university/assignments`
-- **Description**: Retrieves assignments for user's enrolled courses
-- **Auth**: Required
-- **Query**: Optional `?courseId=123&upcoming=true`
-- **Returns**: `{ assignments: [...] }`
+- `GET /api/university/study-plans`: Get study plans for the authenticated user
+- `GET /api/university/study-plans/:id`: Get details for a specific study plan
+- `POST /api/university/study-plans`: Create a new study plan
+- `PUT /api/university/study-plans/:id`: Update a study plan
+- `DELETE /api/university/study-plans/:id`: Delete a study plan
 
-`GET /api/university/assignments/:id`
-- **Description**: Retrieves a specific assignment details
-- **Auth**: Required
-- **Returns**: `{ assignment: Assignment, submission?: AssignmentSubmission }`
+### Academic Records
 
-`POST /api/university/assignments/:id/submit`
-- **Description**: Submits an assignment
-- **Auth**: Required
-- **Body**: `{ content, attachments }`
-- **Returns**: `{ submission: AssignmentSubmission }`
-
-### Study Plans API
-
-`GET /api/university/study-plans`
-- **Description**: Retrieves user's study plans
-- **Auth**: Required
-- **Query**: Optional `?active=true`
-- **Returns**: `{ studyPlans: [...] }`
-
-`POST /api/university/study-plans`
-- **Description**: Creates a study plan
-- **Auth**: Required
-- **Body**: Study plan object
-- **Returns**: `{ studyPlan: StudyPlan }`
-
-`PUT /api/university/study-plans/:id`
-- **Description**: Updates a study plan
-- **Auth**: Required
-- **Body**: Study plan updates
-- **Returns**: `{ studyPlan: StudyPlan }`
-
-`DELETE /api/university/study-plans/:id`
-- **Description**: Deletes a study plan
-- **Auth**: Required
-- **Returns**: `{ success: true }`
-
-### Academic Record API
-
-`GET /api/university/academic-record`
-- **Description**: Retrieves user's academic record
-- **Auth**: Required
-- **Returns**: `{ record: AcademicRecord, currentStatus: {...} }`
+- `GET /api/university/academic-record`: Get academic record for the authenticated user
+- `GET /api/university/academic-record/semester/:year/:term`: Get academic record for a specific semester
+- `POST /api/admin/university/academic-record`: Create or update academic record (admin only)
 
 ## Frontend Pages
 
-### University Portal Dashboard (`app/university/page.tsx`)
-- Overview of academic status
-- Quick access to courses, study plans, and progress
-- Recent activity feed
-- Academic statistics (GPA, credits, etc.)
+### Student Interface
 
-### Courses Page (`app/university/courses/page.tsx`)
-- Browse available courses
-- View enrolled courses by semester
-- Course enrollment and unenrollment
-- Course filtering and search
-- Responsive course cards with detailed information
+- `/university`: University dashboard with semester overview and academic stats
+- `/university/courses`: Browse available courses
+- `/university/semester-enrollment`: Manage semester enrollment and course selection
+- `/university/study-plans`: Create and manage study plans
+- `/university/assignments`: View and submit assignments
+- `/university/academic-record`: View academic record, grades, and progress
 
-### Study Plans Page (`app/university/study-plans/page.tsx`)
-- Create and manage study plans
-- Track progress on study tasks
-- Filter plans by type and status
-- Add/edit study tasks
+### Admin Interface
 
-### Progress Page (`app/university/progress/page.tsx`)
-- View academic record and progress
-- Semester-by-semester breakdown
-- Graduation requirements tracking
-- GPA calculator
+- `/admin/university/courses`: Manage university courses
+- `/admin/university/assignments`: Manage course assignments
+- `/admin/university/semesters`: Manage academic semesters
+- `/admin/university/students`: View and manage student enrollments
+- `/admin/university/academic-records`: Manage student academic records
 
-### Assignments Page (`app/university/assignments/page.tsx`)
-- View upcoming and past assignments
-- Submit assignment responses
-- Track assignment grades and feedback
-- Filter assignments by course and status
+## Workflow
 
-## UI Components
+### Student Course Enrollment
 
-### Reusable Components
+1. Student navigates to University Dashboard
+2. Views available semesters with registration status
+3. Selects a semester with open registration
+4. Browses available courses for that semester
+5. Selects desired courses
+6. Confirms enrollment in selected courses
+7. Receives confirmation of successful enrollment
+8. Can modify course selection before registration deadline
+9. Can view enrolled courses on dashboard
 
-- `LoadingState` (`app/university/components/LoadingState.tsx`): Consistent loading UI
-- `ErrorState` (`app/university/components/ErrorState.tsx`): Full-page error display
-- `ErrorMessage` (`app/university/components/ErrorMessage.tsx`): Inline error message
+### Course Assignment Flow
 
-### Course Components
-- `CourseCard`: Display course information in a compact card
-- `EnrollmentModal`: Dialog for course enrollment
-- `CourseFilters`: Search and filter controls for courses
+1. Admin creates assignments for courses
+2. Students view assignments for enrolled courses
+3. Students complete and submit assignments
+4. Admin reviews and grades submissions
+5. Students receive grades and feedback
+6. Academic record is updated
 
-### Study Plan Components
-- `StudyPlanCard`: Display study plan with progress
-- `StudyPlanFilters`: Filter controls for study plans
-- `TaskList`: List of tasks in a study plan
+## System Integration
 
-## Authentication & Authorization
+The University System integrates with the following components:
 
-The university system leverages the portal's existing authentication system. Key points:
+- Authentication System: For user authentication and authorization
+- User Management: For student and faculty information
+- File Storage: For assignment submissions and course materials
+- Notification System: For alerts about deadlines, grade postings, etc.
 
-- All university pages require authentication
-- Course enrollment and academic data are user-specific
-- Admin-only routes for course management, grade updates, etc.
-- Session validation on both client and server
+## Security Considerations
 
-## Error Handling & Loading States
-
-The system implements comprehensive error handling:
-
-1. **API Error Handling**
-   - Structured error responses with appropriate HTTP status codes
-   - Detailed error messages for debugging
-   - Validation errors with field-specific messages
-
-2. **Frontend Error States**
-   - Full-page error displays for critical failures
-   - Inline error messages for form validations and operations
-   - Retry mechanisms for transient failures
-
-3. **Loading States**
-   - Consistent loading indicators throughout the application
-   - Skeleton loaders for content-heavy pages
-   - Disabled UI elements during async operations
-
-## Responsive Design
-
-The university system is fully responsive:
-
-- Mobile-first approach with adaptive layouts
-- Flexible grids that adjust to different screen sizes
-- Touch-friendly UI elements
-- Optimized typography and spacing for readability
-- Theme support (light/dark mode)
+- Course enrollment is limited to authenticated users
+- Assignment submissions are secured and private
+- Admin functions require special permissions
+- Data is properly validated and sanitized
+- Appropriate CSRF protection is implemented
 
 ## Future Enhancements
 
-Potential improvements for future iterations:
-
-1. **Advanced Features**
-   - Calendar integration for assignments and deadlines
-   - Real-time notifications for grades and course updates
-   - Peer collaboration tools for group assignments
-   - Academic advisor communication channel
-
-2. **Technical Improvements**
-   - Implement data caching for performance optimization
-   - Add offline support for basic functionality
-   - Improve data visualization for academic progress
-   - Integration with external learning management systems 
+- Real-time notifications for assignment deadlines
+- Integration with calendar systems
+- Peer review functionality for assignments
+- Advanced analytics for academic performance
+- Mobile app support for on-the-go access 
