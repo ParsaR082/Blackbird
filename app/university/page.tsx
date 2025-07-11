@@ -4,11 +4,14 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/auth-context'
+import { useTheme } from '@/contexts/theme-context'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
+import { motion } from 'framer-motion'
+import BackgroundNodes from '@/components/BackgroundNodes'
 import {
   Loader2,
   Calendar,
@@ -55,6 +58,22 @@ interface SemesterEnrollment {
   gpa: number
 }
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      duration: 0.6,
+      staggerChildren: 0.1
+    }
+  }
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 }
+}
+
 export default function UniversityPage() {
   const [semesters, setSemesters] = useState<Record<number, Semester[]>>({})
   const [years, setYears] = useState<number[]>([])
@@ -67,6 +86,7 @@ export default function UniversityPage() {
 
   const { user } = useAuth()
   const router = useRouter()
+  const { theme } = useTheme()
 
   useEffect(() => {
     fetchSemesters()
@@ -161,27 +181,41 @@ export default function UniversityPage() {
   }
 
   if (error) {
-    return <ErrorState message={error} retry={fetchSemesters} />
+    return <ErrorState message={error} onRetry={fetchSemesters} />
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="fixed inset-0 bg-gradient-to-br from-black via-gray-900 to-black" />
-      <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.1),transparent_50%)]" />
+    <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}>
+      <div className="fixed inset-0 transition-colors duration-300" style={{ 
+        background: theme === 'light' 
+          ? 'linear-gradient(to bottom right, #ffffff, #f8fafc, #ffffff)' 
+          : 'linear-gradient(to bottom right, #000000, #1f2937, #000000)'
+      }} />
+      <div className="fixed inset-0" style={{
+        background: theme === 'light'
+          ? 'radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.1), transparent 50%)'
+          : 'radial-gradient(circle at 50% 50%, rgba(120, 119, 198, 0.1), transparent 50%)'
+      }} />
+      <BackgroundNodes isMobile={false} />
       
-      <div className="relative z-10 container mx-auto pt-24 pb-12 px-4">
+      <motion.div 
+        className="relative z-10 container mx-auto pt-24 pb-12 px-4"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
         {/* Header */}
-        <div className="mb-8 text-center">
+        <motion.div className="mb-8 text-center" variants={itemVariants}>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
             University Dashboard
           </h1>
           <p className="text-white/60 mt-2 max-w-xl mx-auto">
             Manage your courses, study plans, and track your academic progress
           </p>
-        </div>
+        </motion.div>
         
         {/* Current Semester Overview */}
-        <div className="mb-10">
+        <motion.div className="mb-10" variants={itemVariants}>
           <h2 className="text-2xl font-bold mb-4">Current Semester</h2>
           
           {currentEnrollment ? (
@@ -253,7 +287,7 @@ export default function UniversityPage() {
                   <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
                   <h3 className="text-xl font-medium mb-2">No Current Enrollment</h3>
                   <p className="text-white/60 max-w-md mx-auto">
-                    You're not enrolled in the current semester. Check available semesters below to enroll.
+                    You haven&apos;t enrolled in any courses yet. Check available semesters below to enroll.
                   </p>
                 </div>
                 <Button 
@@ -265,10 +299,10 @@ export default function UniversityPage() {
               </CardContent>
             </Card>
           )}
-        </div>
+        </motion.div>
         
         {/* Academic Stats */}
-        <div className="mb-10 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <motion.div className="mb-10 grid grid-cols-1 md:grid-cols-3 gap-4" variants={itemVariants}>
           <Card className="bg-white/5 border-white/10">
             <CardContent className="pt-6">
               <div className="flex items-center">
@@ -323,10 +357,10 @@ export default function UniversityPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </motion.div>
         
         {/* Year-based Semesters */}
-        <div>
+        <motion.div variants={itemVariants}>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold">Semester Overview</h2>
             <Button 
@@ -339,18 +373,19 @@ export default function UniversityPage() {
           </div>
           
           <div className="mb-4">
-            <TabsList className="bg-white/5 border border-white/10">
-              {years.map(year => (
-                <TabsTrigger 
-                  key={year} 
-                  value={year.toString()}
-                  onClick={() => setSelectedYear(year)}
-                  className={selectedYear === year ? "bg-blue-600 text-white data-[state=active]:bg-blue-600" : ""}
-                >
-                  {year}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            <Tabs value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+              <TabsList className="bg-white/5 border border-white/10">
+                {years.map(year => (
+                  <TabsTrigger 
+                    key={year} 
+                    value={year.toString()}
+                    className={selectedYear === year ? "bg-blue-600 text-white data-[state=active]:bg-blue-600" : ""}
+                  >
+                    {year}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
           </div>
           
           {selectedYear > 0 && (
@@ -453,10 +488,10 @@ export default function UniversityPage() {
               })}
             </div>
           )}
-        </div>
+        </motion.div>
         
         {/* Quick Links */}
-        <div className="mt-10">
+        <motion.div className="mt-10" variants={itemVariants}>
           <h2 className="text-2xl font-bold mb-4">Quick Links</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card className="bg-white/5 border-white/10 hover:bg-white/10 cursor-pointer transition-colors"
@@ -499,8 +534,8 @@ export default function UniversityPage() {
               </CardContent>
             </Card>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </div>
   )
 }
