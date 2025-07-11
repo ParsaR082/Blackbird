@@ -20,6 +20,7 @@ export async function middleware(req: NextRequest) {
     const sessionToken = req.cookies.get('session_token')?.value
     
     if (!sessionToken) {
+      console.log(`[Middleware] No session token found, redirecting from ${pathname} to login`)
       // Redirect to login if no session token
       const url = new URL('/auth/login', req.url)
       url.searchParams.set('redirectTo', pathname)
@@ -28,20 +29,30 @@ export async function middleware(req: NextRequest) {
     
     // Validate session token by calling the API
     try {
-      const validateRes = await fetch(new URL('/api/auth/validate', req.url), {
+      // Get the base URL from the request
+      const baseUrl = new URL('/', req.url).origin
+      const validateUrl = `${baseUrl}/api/auth/validate`
+      
+      console.log(`[Middleware] Validating session for ${pathname}, calling ${validateUrl}`)
+      
+      const validateRes = await fetch(validateUrl, {
         headers: {
           Cookie: `session_token=${sessionToken}`
-        }
+        },
+        cache: 'no-store'
       })
       
       if (!validateRes.ok) {
+        console.log(`[Middleware] Session validation failed with status ${validateRes.status}`)
         // Session is invalid, redirect to login
         const url = new URL('/auth/login', req.url)
         url.searchParams.set('redirectTo', pathname)
         return NextResponse.redirect(url)
       }
+      
+      console.log(`[Middleware] Session validated successfully for ${pathname}`)
     } catch (error) {
-      console.error('Session validation error:', error)
+      console.error('[Middleware] Session validation error:', error)
       // On error, redirect to login
       const url = new URL('/auth/login', req.url)
       url.searchParams.set('redirectTo', pathname)

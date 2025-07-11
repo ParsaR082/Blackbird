@@ -7,6 +7,8 @@ import { validateCsrfToken } from '@/lib/csrf'
 import { loginLimiter } from '@/lib/rate-limit'
 import mongoose from 'mongoose'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     // Get request body first
@@ -188,19 +190,31 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date() 
     })
 
-    // Set session cookie
-    cookies().set({
+    // Get request host for cookie domain
+    const host = request.headers.get('host') || ''
+    console.log(`[Login] Setting cookie for host: ${host}`)
+    
+    // Determine if we're in production
+    const isProduction = process.env.NODE_ENV === 'production'
+    
+    // Set cookie options
+    const cookieOptions = {
       name: 'session_token',
       value: sessionToken,
       expires: expiresAt,
       path: '/',
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
-    })
+      secure: isProduction,
+      sameSite: 'lax' as const
+    }
+    
+    // Set session cookie
+    cookies().set(cookieOptions)
+    
+    console.log(`[Login] Session cookie set successfully for user: ${user.email}`)
 
-    // Return user data
-    return NextResponse.json({
+    // Create response with user data
+    const response = NextResponse.json({
       user: {
         id: user._id.toString(),
         email: user.email,
@@ -211,6 +225,8 @@ export async function POST(request: NextRequest) {
       },
       redirect: user.role === 'ADMIN' ? '/admin' : '/dashboard'
     })
+
+    return response
   } catch (error) {
     console.error('Login error:', error)
     return NextResponse.json(
