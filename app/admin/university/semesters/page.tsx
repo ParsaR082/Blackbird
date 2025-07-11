@@ -310,7 +310,7 @@ export default function AdminSemestersPage() {
   })
 
   // Get unique years for filter
-  const years = [...new Set(semesters.map(s => s.year))].sort((a, b) => b - a)
+  const years = Array.from(new Set(semesters.map(s => s.year))).sort((a, b) => b - a)
 
   if (isLoading || loading) {
     return (

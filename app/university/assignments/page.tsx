@@ -166,7 +166,7 @@ export default function AssignmentsPage() {
   }
 
   // Get unique courses for filter
-  const courses = [...new Set(assignments.map(assignment => assignment.courseId))]
+  const courses = Array.from(new Set(assignments.map(assignment => assignment.courseId)))
     .map(courseId => {
       const assignment = assignments.find(a => a.courseId === courseId)
       return {

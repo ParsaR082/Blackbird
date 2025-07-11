@@ -66,9 +66,11 @@ export default function AdminEventsPage() {
   
   // Check if we should show the create modal based on URL
   useEffect(() => {
-    const action = searchParams.get('action')
-    if (action === 'create') {
-      setShowCreateModal(true)
+    if (searchParams) {
+      const action = searchParams.get('action')
+      if (action === 'create') {
+        setShowCreateModal(true)
+      }
     }
   }, [searchParams])
   

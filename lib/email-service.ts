@@ -13,7 +13,7 @@ const emailConfig = {
 
 // Create reusable transporter
 const createTransporter = () => {
-  return nodemailer.createTransporter(emailConfig)
+  return nodemailer.createTransport(emailConfig)
 }
 
 // Email templates
