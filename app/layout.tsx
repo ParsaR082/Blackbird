@@ -3,6 +3,7 @@ import '../styles/globals.css'
 import { Header } from '@/components/layout/header'
 import { AuthProvider } from '@/contexts/auth-context'
 import { ThemeProvider } from '@/contexts/theme-context'
+import { Toaster } from 'sonner'
 
 // Use CSS fallback fonts instead of Google Fonts for build resilience
 const fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
@@ -50,6 +51,7 @@ export default function RootLayout({
                 {children}
               </main>
             </div>
+            <Toaster position="top-right" theme="dark" />
           </AuthProvider>
         </ThemeProvider>
       </body>

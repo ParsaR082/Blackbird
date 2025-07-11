@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -42,7 +42,7 @@ export default function PurchaseDialog({
   const [notifications, setNotifications] = useState<GuestNotification[]>([])
   const [loadingNotifications, setLoadingNotifications] = useState(false)
 
-  const fetchGuestNotifications = async (purchaseId: string) => {
+  const fetchGuestNotifications = useCallback(async (purchaseId: string) => {
     try {
       setLoadingNotifications(true)
       const response = await fetch(`/api/admin/purchases/notifications?purchaseId=${purchaseId}`)
@@ -64,7 +64,7 @@ export default function PurchaseDialog({
     } finally {
       setLoadingNotifications(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     if (purchase) {
@@ -78,7 +78,7 @@ export default function PurchaseDialog({
         setNotifications([])
       }
     }
-  }, [purchase])
+  }, [purchase, fetchGuestNotifications])
 
   const markNotificationAsRead = async (notificationId: string) => {
     try {
@@ -128,11 +128,13 @@ export default function PurchaseDialog({
     }
   }
 
-  const handleStatusUpdate = (status: string) => {
+  const handleStatusUpdate = (newStatus: string) => {
+    if (!purchase) return;
+    
     setProcessing(true)
     
     setTimeout(() => {
-      onUpdateStatus(purchase.id, status, adminNotes)
+      onUpdateStatus(purchase.id, newStatus, adminNotes)
       setProcessing(false)
       setAdminNotes('')
     }, 500)

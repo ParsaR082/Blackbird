@@ -109,6 +109,7 @@ export default function AdminCoursesPage() {
     if (isAuthenticated && user?.role === 'ADMIN') {
       fetchCourses()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, isAuthenticated, isLoading, router])
 
   const fetchCourses = async () => {

@@ -111,6 +111,7 @@ export default function AdminAssignmentsPage() {
       fetchCourses()
       fetchAssignments()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, isAuthenticated, isLoading, router])
 
   const fetchCourses = async () => {

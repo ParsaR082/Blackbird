@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -19,10 +19,20 @@ import {
   UserCheck,
   UserX,
   Loader2,
-  LogIn
+  LogIn,
+  Calendar,
+  Award,
+  ShoppingBag,
+  GraduationCap,
+  PlusCircle,
+  Edit3,
+  Trash2,
+  ShoppingCart,
+  Package
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import BackgroundNodes from '@/components/BackgroundNodes'
+import Link from 'next/link'
 
 interface User {
   id: string
@@ -46,9 +56,16 @@ export default function AdminPage() {
   const [loginPassword, setLoginPassword] = useState('')
   const [loginError, setLoginError] = useState<string | null>(null)
   const [isLoggingIn, setIsLoggingIn] = useState(false)
-  const { user, isAuthenticated, isLoading, login } = useAuth()
+  const { user, isAuthenticated, isLoading, login, logout } = useAuth()
   const router = useRouter()
   
+  const [stats, setStats] = useState({
+    usersCount: 0,
+    eventsCount: 0,
+    purchasesCount: 0,
+    pendingPurchasesCount: 0, // Add pending purchases count
+  })
+
   const fetchUsers = async () => {
     try {
       setLoading(true)
@@ -71,7 +88,7 @@ export default function AdminPage() {
   }
   
   useEffect(() => {
-    // Do not redirect immediately - we'll show a login form instead
+    // Check if user is logged in but not admin, redirect to dashboard
     if (!isLoading && isAuthenticated && user && user.role !== 'ADMIN') {
       router.push('/dashboard')
     }
@@ -79,10 +96,35 @@ export default function AdminPage() {
     // Only fetch users if the user is authenticated and is an admin
     if (!isLoading && isAuthenticated && user?.role === 'ADMIN') {
       fetchUsers()
-    } else {
+    } else if (!isLoading) {
       setLoading(false) // Stop the loading state if we're not authenticated
     }
   }, [user, isAuthenticated, isLoading, router])
+
+  useEffect(() => {
+    // Fetch analytics data for admin dashboard
+    const fetchAnalytics = async () => {
+      try {
+        const response = await fetch('/api/admin/analytics')
+        if (response.ok) {
+          const data = await response.json()
+          
+          if (data.success) {
+            setStats({
+              usersCount: data.stats.usersCount || 0,
+              eventsCount: data.stats.eventsCount || 0,
+              purchasesCount: data.stats.purchasesCount || 0,
+              pendingPurchasesCount: data.stats.pendingPurchasesCount || 0, // Add pending purchases count
+            })
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch analytics:', error)
+      }
+    }
+    
+    fetchAnalytics()
+  }, [])
   
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -95,9 +137,12 @@ export default function AdminPage() {
         setLoginError(result.error || 'Login failed')
       } else if (result.user?.role !== 'ADMIN') {
         setLoginError('You do not have admin privileges')
-        // Additional cleanup for non-admin users would be handled by the useEffect
+        // Log out the non-admin user to prevent being stuck in a redirect loop
+        await logout()
       } else {
         // Admin login successful, will fetch users via useEffect
+        // Force a re-check of authentication status and user role
+        window.location.reload()
       }
     } catch (err) {
       console.error('Login error:', err)
@@ -170,11 +215,86 @@ export default function AdminPage() {
     
     const term = searchTerm.toLowerCase()
     return (
-      user.student_id.toLowerCase().includes(term) ||
-      user.username.toLowerCase().includes(term) ||
-      user.full_name.toLowerCase().includes(term)
+      user.student_id?.toLowerCase().includes(term) ||
+      user.username?.toLowerCase().includes(term) ||
+      user.full_name?.toLowerCase().includes(term)
     )
   })
+
+  // Admin management modules based on documentation
+  const adminModules = [
+    {
+      title: "Events Management",
+      description: "Create and manage technology events",
+      icon: Calendar,
+      color: "text-purple-400",
+      bgColor: "bg-purple-500/10",
+      borderColor: "border-purple-500/20",
+      path: "/admin/events",
+      actions: [
+        { name: "Create Event", icon: PlusCircle, path: "/admin/events?action=create" },
+        { name: "Manage Events", icon: Edit3, path: "/admin/events" },
+        { name: "View Registrations", icon: Users, path: "/admin/registrations" }
+      ],
+      stats: [
+        { label: "Upcoming", value: "8" },
+        { label: "Registrations", value: "42" }
+      ]
+    },
+    {
+      title: "Hall of Fame",
+      description: "Manage exceptional contributors",
+      icon: Award,
+      color: "text-amber-400",
+      bgColor: "bg-amber-500/10",
+      borderColor: "border-amber-500/20",
+      path: "/admin/hall-of-fame",
+      actions: [
+        { name: "Add Inductee", icon: PlusCircle, path: "/admin/hall-of-fame?action=create" },
+        { name: "Manage Entries", icon: Edit3, path: "/admin/hall-of-fame" }
+      ],
+      stats: [
+        { label: "Inductees", value: "24" },
+        { label: "Categories", value: "4" }
+      ]
+    },
+    {
+      title: "Product Playground",
+      description: "Manage products and purchases",
+      icon: ShoppingBag,
+      color: "text-blue-400",
+      bgColor: "bg-blue-500/10",
+      borderColor: "border-blue-500/20",
+      path: "/admin/products",
+      actions: [
+        { name: "Add Product", icon: PlusCircle, path: "/admin/products?action=create" },
+        { name: "Manage Products", icon: Edit3, path: "/admin/products" },
+        { name: "Review Purchases", icon: Users, path: "/admin/purchases" }
+      ],
+      stats: [
+        { label: "Products", value: "16" },
+        { label: "Pending Orders", value: "5" }
+      ]
+    },
+    {
+      title: "University System",
+      description: "Manage courses and academic records",
+      icon: GraduationCap,
+      color: "text-green-400",
+      bgColor: "bg-green-500/10",
+      borderColor: "border-green-500/20",
+      path: "/admin/university",
+      actions: [
+        { name: "Manage Courses", icon: PlusCircle, path: "/admin/university/courses" },
+        { name: "Manage Assignments", icon: Edit3, path: "/admin/university/assignments" },
+        { name: "Manage Semesters", icon: Calendar, path: "/admin/university/semesters" }
+      ],
+      stats: [
+        { label: "Courses", value: "12" },
+        { label: "Students", value: "86" }
+      ]
+    }
+  ];
 
   // If not authenticated or not admin, show login page
   if (isLoading) {
@@ -293,9 +413,9 @@ export default function AdminPage() {
             <div>
               <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent flex items-center gap-2">
                 <Shield className="w-8 h-8 text-white/40" />
-                Admin Panel
+                Admin Dashboard
               </h1>
-              <p className="text-white/60 mt-2">Manage users and system settings</p>
+              <p className="text-white/60 mt-2">Manage all aspects of the Blackbird Portal</p>
             </div>
             <Button 
               onClick={fetchUsers} 
@@ -323,11 +443,141 @@ export default function AdminPage() {
           </motion.div>
         )}
         
+        {/* Admin Modules Grid */}
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          {adminModules.map((module, index) => (
+            <Card 
+              key={index}
+              className={`backdrop-blur-sm border transition-colors duration-300 ${module.bgColor} ${module.borderColor}`}
+            >
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${module.bgColor} ${module.color}`}>
+                      <module.icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl font-bold">{module.title}</CardTitle>
+                      <CardDescription className="text-white/60">{module.description}</CardDescription>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    {module.stats.map((stat, i) => (
+                      <div key={i} className="text-center">
+                        <div className="text-lg font-bold">{stat.value}</div>
+                        <div className="text-xs text-white/60">{stat.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {module.actions.map((action, i) => (
+                    <Button 
+                      key={i}
+                      variant="outline"
+                      className="flex items-center justify-start gap-2 bg-white/5 hover:bg-white/10"
+                      onClick={() => router.push(action.path)}
+                    >
+                      <action.icon className="w-4 h-4" />
+                      <span>{action.name}</span>
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-center bg-white/5 hover:bg-white/10"
+                  onClick={() => router.push(module.path)}
+                >
+                  View All
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </motion.div>
+        
+        {/* Product Playground Section */}
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+        >
+          <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <div>
+                <CardTitle className="text-xl font-bold">Product Management</CardTitle>
+                <CardDescription>Manage products and their details</CardDescription>
+              </div>
+              <Button 
+                variant="outline" 
+                className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+                onClick={() => router.push('/admin/products?action=create')}
+              >
+                <PlusCircle className="w-4 h-4 mr-2" />
+                Add Product
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <p className="text-white/60">
+                Manage all products available in the system. Add new products, update existing ones, and set their prices.
+              </p>
+              <div className="mt-4">
+                <Link 
+                  href="/admin/products"
+                  className="p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors duration-200 flex items-center"
+                >
+                  <Package className="mr-3 h-5 w-5 text-blue-400" />
+                  <span>View All Products</span>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <div>
+                <CardTitle className="text-xl font-bold">Purchase Management</CardTitle>
+                <CardDescription>Review and manage pending and completed purchases</CardDescription>
+              </div>
+              <Button 
+                variant="outline" 
+                className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+                onClick={() => router.push('/admin/purchases')}
+              >
+                <ShoppingCart className="w-4 h-4 mr-2" />
+                View Purchases
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <p className="text-white/60">
+                Monitor all product purchases. View pending orders and completed transactions.
+              </p>
+              {stats.pendingPurchasesCount > 0 && (
+                <div className="mt-4 p-3 bg-red-500/20 border border-red-500 rounded-md text-red-200">
+                  <p className="flex items-center gap-2 text-sm">
+                    <XCircle className="w-4 h-4" />
+                    {stats.pendingPurchasesCount} pending orders
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+        
         {/* User Management */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
         >
           <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
