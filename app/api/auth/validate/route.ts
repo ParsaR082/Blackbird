@@ -9,8 +9,12 @@ export async function GET(request: NextRequest) {
   try {
     // Get session token from cookie
     const sessionToken = cookies().get('session_token')?.value
+    const requestUrl = request.url
+    
+    console.log(`[Validate] Validating session at ${requestUrl}`)
 
     if (!sessionToken) {
+      console.log('[Validate] No session token found')
       return NextResponse.json(
         { error: 'No session token found' },
         { status: 401 }
@@ -36,11 +40,14 @@ export async function GET(request: NextRequest) {
     })
 
     if (!session) {
+      console.log('[Validate] Invalid or expired session')
       return NextResponse.json(
         { error: 'Invalid or expired session' },
         { status: 401 }
       )
     }
+    
+    console.log(`[Validate] Found valid session for user ID: ${session.userId}`)
 
     // Define User schema
     const UserSchema = new mongoose.Schema({
@@ -60,11 +67,14 @@ export async function GET(request: NextRequest) {
     const user = await User.findById(session.userId)
 
     if (!user) {
+      console.log('[Validate] User not found for session')
       return NextResponse.json(
         { error: 'User not found' },
         { status: 401 }
       )
     }
+    
+    console.log(`[Validate] User validated successfully: ${user.email}`)
 
     // Return user data without sensitive information
     return NextResponse.json({
@@ -76,7 +86,7 @@ export async function GET(request: NextRequest) {
       avatarUrl: user.avatarUrl
     })
   } catch (error) {
-    console.error('Session validation error:', error)
+    console.error('[Validate] Session validation error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

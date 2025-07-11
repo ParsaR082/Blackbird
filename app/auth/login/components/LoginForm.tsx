@@ -28,14 +28,22 @@ export function LoginForm() {
     setError('')
 
     try {
+      console.log(`[LoginForm] Attempting login for ${email}, will redirect to ${redirectTo}`)
+      
       const result = await login(email, password)
       
       if (result.success) {
-        router.push(redirectTo)
+        console.log(`[LoginForm] Login successful, redirecting to ${redirectTo}`)
+        
+        // Let the auth context handle the redirect if it has a redirect URL
+        if (!result.redirect) {
+          router.push(redirectTo)
+        }
       } else {
         setError(result.error || 'Login failed')
       }
     } catch (err) {
+      console.error('[LoginForm] Login error:', err)
       setError('An unexpected error occurred')
     } finally {
       setIsLoading(false)

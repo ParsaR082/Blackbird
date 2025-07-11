@@ -8,12 +8,13 @@ import {
   ReactNode 
 } from 'react'
 import { UserAuth } from '@/types'
+import { useRouter } from 'next/navigation'
 
 type AuthContextType = {
   user: UserAuth | null
   isLoading: boolean
   isAuthenticated: boolean
-  login: (identifier: string, password: string) => Promise<{ success: boolean, error?: string, user?: UserAuth }>
+  login: (identifier: string, password: string) => Promise<{ success: boolean, error?: string, user?: UserAuth, redirect?: string }>
   register: (userData: RegisterData) => Promise<{ success: boolean, error?: string }>
   logout: () => Promise<void>
   checkAuth: () => Promise<boolean>
@@ -31,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserAuth | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isClient, setIsClient] = useState(false)
+  const router = useRouter()
 
   // Set client flag on mount
   useEffect(() => {
@@ -47,7 +49,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const runAuthCheck = async () => {
       try {
         setIsLoading(true)
-        const response = await fetch('/api/auth/validate')
+        const response = await fetch('/api/auth/validate', {
+          cache: 'no-store'
+        })
         
         if (!isMounted) return
         
@@ -70,13 +74,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [isClient])
 
   // Function to check authentication status
   const checkAuth = async (): Promise<boolean> => {
     try {
       setIsLoading(true)
-      const response = await fetch('/api/auth/validate')
+      const response = await fetch('/api/auth/validate', {
+        cache: 'no-store'
+      })
       
       if (response.ok) {
         const userData = await response.json()
@@ -97,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   // Login function
-  const login = async (identifier: string, password: string): Promise<{ success: boolean, error?: string, user?: UserAuth }> => {
+  const login = async (identifier: string, password: string): Promise<{ success: boolean, error?: string, user?: UserAuth, redirect?: string }> => {
     try {
       setIsLoading(true)
       
@@ -105,28 +111,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const csrfResponse = await fetch('/api/auth/csrf')
       const { token: csrfToken } = await csrfResponse.json()
       
+      console.log('[Auth] Logging in user:', identifier)
+      
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'x-csrf-token': csrfToken || ''
         },
-        body: JSON.stringify({ identifier, password })
+        body: JSON.stringify({ identifier, password }),
+        cache: 'no-store'
       })
 
       const data = await response.json()
 
       if (!response.ok) {
+        console.error('[Auth] Login failed:', data.error)
         setIsLoading(false)
         return { success: false, error: data.error || 'Login failed' }
       }
 
+      console.log('[Auth] Login successful, redirect to:', data.redirect)
+      
       // Update user state after successful login
       setUser(data.user)
       setIsLoading(false)
-      return { success: true, user: data.user }
+      
+      // Manually navigate to the redirect URL
+      if (data.redirect) {
+        router.push(data.redirect)
+      }
+      
+      return { success: true, user: data.user, redirect: data.redirect }
     } catch (error) {
-      console.error('Login error:', error)
+      console.error('[Auth] Login error:', error)
       setIsLoading(false)
       return { success: false, error: 'An unexpected error occurred' }
     }
@@ -147,7 +165,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           'Content-Type': 'application/json',
           'x-csrf-token': csrfToken || ''
         },
-        body: JSON.stringify(userData)
+        body: JSON.stringify(userData),
+        cache: 'no-store'
       })
 
       const data = await response.json()
@@ -179,7 +198,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         method: 'POST',
         headers: {
           'x-csrf-token': csrfToken || ''
-        }
+        },
+        cache: 'no-store'
       })
       
       setUser(null)
