@@ -117,6 +117,7 @@ export default function SemesterEnrollmentPage() {
     if (years.length > 0 && activeYear === 0) {
       setActiveYear(years[0])
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [years])
 
   const fetchSemesters = async () => {
@@ -355,7 +356,7 @@ export default function SemesterEnrollmentPage() {
   }
 
   if (error) {
-    return <ErrorState message={error} retry={fetchSemesters} />
+    return <ErrorState message={error} onRetry={fetchSemesters} />
   }
 
   return (

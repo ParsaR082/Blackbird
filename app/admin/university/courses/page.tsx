@@ -151,13 +151,18 @@ export default function AdminCoursesPage() {
     
     if (name.includes('.')) {
       const [parent, child] = name.split('.')
-      setFormData({
-        ...formData,
-        [parent]: {
-          ...formData[parent as keyof typeof formData],
-          [child]: value
-        }
-      })
+      const parentKey = parent as keyof typeof formData
+      const parentObj = formData[parentKey]
+      
+      if (typeof parentObj === 'object' && parentObj !== null) {
+        setFormData({
+          ...formData,
+          [parent]: {
+            ...parentObj,
+            [child]: value
+          }
+        })
+      }
     } else {
       setFormData({
         ...formData,

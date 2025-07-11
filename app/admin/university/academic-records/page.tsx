@@ -72,7 +72,7 @@ export default function AdminAcademicRecordsPage() {
   const { user, isAuthenticated, isLoading } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const studentId = searchParams.get('studentId')
+  const studentId = searchParams ? searchParams.get('studentId') : null
 
   const fetchAcademicRecords = useCallback(async () => {
     try {
@@ -228,7 +228,7 @@ export default function AdminAcademicRecordsPage() {
   })
 
   // Get unique years for filter
-  const years = [...new Set(records.map(record => record.academicYear))].sort((a, b) => b - a)
+  const years = Array.from(new Set(records.map(record => record.academicYear))).sort((a, b) => b - a)
 
   if (isLoading || loading) {
     return (

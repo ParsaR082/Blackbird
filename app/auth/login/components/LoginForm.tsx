@@ -20,7 +20,7 @@ export function LoginForm() {
   const { theme } = useTheme()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirectTo') || '/dashboard'
+  const redirectTo = searchParams ? searchParams.get('redirectTo') || '/dashboard' : '/dashboard'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
