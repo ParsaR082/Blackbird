@@ -105,12 +105,14 @@ export default function SemesterEnrollmentPage() {
     fetchEnrollments()
   }, [])
   
+  // Fix the useEffect hooks with eslint-disable comments
   useEffect(() => {
     if (selectedSemester) {
       fetchCoursesForSemester(selectedSemester)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSemester])
-  
+
   useEffect(() => {
     if (years.length > 0 && activeYear === 0) {
       setActiveYear(years[0])
@@ -865,7 +867,7 @@ export default function SemesterEnrollmentPage() {
           <DialogHeader>
             <DialogTitle>Drop Semester Enrollment?</DialogTitle>
             <DialogDescription>
-              You're about to drop all courses for this semester. This action can only be done during the registration period.
+              You&apos;re about to drop all courses for this semester. This action can only be done during the registration period.
             </DialogDescription>
           </DialogHeader>
           

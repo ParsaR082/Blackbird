@@ -1,8 +1,10 @@
 const mongoose = require('mongoose')
 const bcrypt = require('bcrypt')
 
-// Connection string - replace with your actual MongoDB connection
+// Connection string - use environment variable if available
+require('dotenv').config();
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/blackbird-portal'
+console.log('Using MongoDB URI:', MONGODB_URI)
 
 // User schema
 const UserSchema = new mongoose.Schema({

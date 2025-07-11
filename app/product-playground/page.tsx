@@ -6,6 +6,7 @@ import BackgroundNodes from '@/components/BackgroundNodes'
 import { useTheme } from '@/contexts/theme-context'
 import { useAuth } from '@/contexts/auth-context'
 import { ShoppingCart, Package, User, AlertCircle, CheckCircle, Clock, X } from 'lucide-react'
+import { useRouter } from 'next/navigation';
 
 interface Product {
   id: string
@@ -354,9 +355,11 @@ export default function ProductPlaygroundPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [showPurchaseModal, setShowPurchaseModal] = useState(false)
   const [activeTab, setActiveTab] = useState<'products' | 'purchases'>('products')
+  const [showAdminMenu, setShowAdminMenu] = useState(false);
   
   const { theme } = useTheme()
   const { user } = useAuth()
+  const router = useRouter();
 
   // Check if mobile
   useEffect(() => {
@@ -421,6 +424,15 @@ export default function ProductPlaygroundPage() {
       setFilteredProducts(products.filter(product => product.category === selectedCategory))
     }
   }, [selectedCategory, products])
+
+  // Check if user is admin and add admin controls if needed
+  useEffect(() => {
+    if (user && user.role === 'ADMIN') {
+      setShowAdminMenu(true);
+    } else {
+      setShowAdminMenu(false);
+    }
+  }, [user]);
 
   // Categories
   const categories = ['All', 'Software', 'Hardware', 'Service', 'Consultation', 'Training', 'License', 'Other']
@@ -527,6 +539,46 @@ export default function ProductPlaygroundPage() {
             Discover and purchase our innovative products
           </motion.p>
         </motion.div>
+
+        {showAdminMenu && (
+          <motion.div 
+            className="w-full max-w-4xl mb-8"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <div className="backdrop-blur-sm rounded-lg overflow-hidden border p-4 transition-colors duration-300"
+              style={{
+                backgroundColor: theme === 'light' ? 'rgba(0, 0, 50, 0.05)' : 'rgba(0, 0, 50, 0.3)',
+                borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)'
+              }}
+            >
+              <h3 className="text-lg font-medium mb-3 transition-colors duration-300" style={{ color: 'var(--text-color)' }}>
+                Admin Controls
+              </h3>
+              <div className="flex flex-wrap gap-3">
+                <motion.button
+                  onClick={() => router.push('/admin/products')}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm flex items-center gap-2"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Package className="w-4 h-4" />
+                  Manage Products
+                </motion.button>
+                <motion.button
+                  onClick={() => router.push('/admin/purchases')}
+                  className="px-4 py-2 bg-amber-600 text-white rounded-md text-sm flex items-center gap-2"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  Manage Purchases
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Tab Navigation */}
         <motion.div 

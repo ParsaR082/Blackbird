@@ -3,6 +3,7 @@ import connectToDatabase from '@/lib/mongodb'
 import { Product, Purchase, GuestNotification } from '@/lib/models/product'
 import mongoose from 'mongoose'
 import { getUserFromRequest } from '@/lib/server-utils'
+import { sendPurchaseNotification } from '@/lib/email-service'
 import { z } from 'zod'
 
 // Validation schema
@@ -232,17 +233,32 @@ export async function PUT(request: NextRequest) {
       }
 
       if (notificationMessage) {
-        await GuestNotification.create({
+        // Create notification in database
+        const notification = await GuestNotification.create({
           purchaseId: purchase._id,
           email: purchase.guestInfo.email,
           type: 'status_update',
           message: notificationMessage
         })
+        
+        // Send email notification
+        await sendPurchaseNotification(
+          purchase.guestInfo.email,
+          'status_update',
+          notificationMessage,
+          {
+            productName: purchase.productId.name,
+            quantity: purchase.quantity,
+            totalAmount: purchase.totalAmount,
+            currency: purchase.currency,
+            status: status
+          }
+        )
       }
     }
 
-    // If rejected, restore stock
-    if (status === 'rejected' || status === 'cancelled') {
+    // If rejected or cancelled, restore stock
+    if ((status === 'rejected' || status === 'cancelled') && purchase.status !== 'rejected' && purchase.status !== 'cancelled') {
       const product = await Product.findById(purchase.productId)
       if (product && product.stock !== null) {
         await Product.findByIdAndUpdate(

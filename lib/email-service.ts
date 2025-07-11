@@ -521,3 +521,78 @@ export const emailService = {
     }
   }
 } 
+
+/**
+ * Send purchase notification email to a guest
+ * @param email Guest email address
+ * @param type Type of notification (purchase_received or status_update)
+ * @param message Notification message
+ * @param purchaseDetails Optional purchase details
+ */
+export async function sendPurchaseNotification(
+  email: string, 
+  type: 'purchase_received' | 'status_update',
+  message: string,
+  purchaseDetails?: {
+    productName: string
+    quantity: number
+    totalAmount: number
+    currency: string
+    status: string
+  }
+) {
+  try {
+    const subject = type === 'purchase_received' 
+      ? 'Your Blackbird Portal Purchase Request Received' 
+      : 'Update on Your Blackbird Portal Purchase';
+    
+    let htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <img src="https://blackbirdportal.com/logo.png" alt="Blackbird Portal" style="max-width: 150px;">
+        </div>
+        <h2 style="color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px;">${subject}</h2>
+        <div style="line-height: 1.6; color: #444;">
+          <p>${message}</p>
+    `;
+    
+    if (purchaseDetails) {
+      htmlContent += `
+          <div style="background-color: #f9f9f9; border-radius: 4px; padding: 15px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #333;">Purchase Details</h3>
+            <p><strong>Product:</strong> ${purchaseDetails.productName}</p>
+            <p><strong>Quantity:</strong> ${purchaseDetails.quantity}</p>
+            <p><strong>Total Amount:</strong> ${purchaseDetails.currency} ${purchaseDetails.totalAmount.toFixed(2)}</p>
+            <p><strong>Status:</strong> ${purchaseDetails.status.charAt(0).toUpperCase() + purchaseDetails.status.slice(1)}</p>
+          </div>
+      `;
+    }
+    
+    htmlContent += `
+          <p style="margin-top: 30px;">If you have any questions, please contact our support team.</p>
+        </div>
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; font-size: 12px; color: #777;">
+          <p>© ${new Date().getFullYear()} Blackbird Portal. All rights reserved.</p>
+        </div>
+      </div>
+    `;
+    
+    // Send email using your preferred email service
+    const mailOptions = {
+      from: process.env.SMTP_USER || 'noreply@blackbirdportal.com',
+      to: email,
+      subject,
+      html: htmlContent
+    };
+    
+    // Implementation would depend on your actual email service
+    // For example, with nodemailer:
+    // await transporter.sendMail(mailOptions);
+    
+    console.log('Purchase notification email sent to:', email);
+    return true;
+  } catch (error) {
+    console.error('Error sending purchase notification email:', error);
+    return false;
+  }
+} 

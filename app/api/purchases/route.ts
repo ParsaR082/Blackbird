@@ -3,6 +3,7 @@ import connectToDatabase from '@/lib/mongodb'
 import { Product, Purchase, GuestNotification } from '@/lib/models/product'
 import mongoose from 'mongoose'
 import { getUserFromRequest } from '@/lib/server-utils'
+import { sendPurchaseNotification } from '@/lib/email-service'
 import { z } from 'zod'
 
 // Validation schemas
@@ -199,12 +200,27 @@ export async function POST(request: NextRequest) {
     if (buyerType === 'guest') {
       const notificationMessage = `Thank you for your interest in "${product.name}". We have received your purchase request and will contact you shortly regarding the details. Our team will reach out to you within 24 hours to process your order.`
       
-      await GuestNotification.create({
+      // Create notification in database
+      const notification = await GuestNotification.create({
         purchaseId: purchase._id,
         email: purchaseData.guestInfo.email,
         type: 'purchase_received',
         message: notificationMessage
       })
+      
+      // Send email notification
+      await sendPurchaseNotification(
+        purchaseData.guestInfo.email,
+        'purchase_received',
+        notificationMessage,
+        {
+          productName: product.name,
+          quantity: purchase.quantity,
+          totalAmount: purchase.totalAmount,
+          currency: purchase.currency,
+          status: 'pending'
+        }
+      )
     }
 
     return NextResponse.json({
