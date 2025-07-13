@@ -51,7 +51,7 @@ import { SystemMonitoring } from './components/SystemMonitoring'
 import { IntegrationDashboard } from './components/IntegrationDashboard'
 import { DataOptimization } from './components/DataOptimization'
 import { SecurityCenter } from './components/SecurityCenter'
-import { AuditLogViewer } from './components/AuditLogViewer'
+import AuditLogViewer from './components/AuditLogViewer'
 import { TwoFactorAuth } from './components/TwoFactorAuth'
 
 interface User {

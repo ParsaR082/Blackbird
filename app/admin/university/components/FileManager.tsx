@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -58,11 +58,7 @@ export default function FileManager() {
   const [tags, setTags] = useState('')
   const [isPublic, setIsPublic] = useState(false)
 
-  useEffect(() => {
-    fetchFiles()
-  }, [search])
-
-  const fetchFiles = async () => {
+  const fetchFiles = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
@@ -79,7 +75,11 @@ export default function FileManager() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [search])
+
+  useEffect(() => {
+    fetchFiles()
+  }, [fetchFiles])
 
   const handleFileUpload = async () => {
     if (!selectedFile) return

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -84,15 +84,7 @@ export default function AuditLogViewer() {
   const [selectedEvent, setSelectedEvent] = useState<AuditEvent | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
 
-  useEffect(() => {
-    fetchAuditLog();
-  }, []);
-
-  useEffect(() => {
-    applyFilters();
-  }, [auditEvents, filters, searchTerm]);
-
-  const fetchAuditLog = async () => {
+  const fetchAuditLog = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch('/api/admin/security/audit-log');
@@ -109,9 +101,9 @@ export default function AuditLogViewer() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     let filtered = auditEvents;
 
     // Date range filter
@@ -154,7 +146,15 @@ export default function AuditLogViewer() {
     }
 
     setFilteredEvents(filtered);
-  };
+  }, [auditEvents, filters, searchTerm]);
+
+  useEffect(() => {
+    fetchAuditLog();
+  }, [fetchAuditLog]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
 
   const exportAuditLog = async (format: 'csv' | 'json' = 'csv') => {
     try {
@@ -317,6 +317,7 @@ export default function AuditLogViewer() {
                             }));
                           }
                         }}
+                        className="rounded"
                       />
                       <span className="text-sm">{getEventTypeLabel(type)}</span>
                     </label>
@@ -325,7 +326,7 @@ export default function AuditLogViewer() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Severities</label>
+                <label className="text-sm font-medium">Severity Levels</label>
                 <div className="space-y-1">
                   {['critical', 'high', 'medium', 'low'].map(severity => (
                     <label key={severity} className="flex items-center space-x-2">
@@ -345,6 +346,7 @@ export default function AuditLogViewer() {
                             }));
                           }
                         }}
+                        className="rounded"
                       />
                       <span className="text-sm capitalize">{severity}</span>
                     </label>
@@ -358,9 +360,6 @@ export default function AuditLogViewer() {
                   <Button onClick={clearFilters} variant="outline" size="sm" className="w-full">
                     Clear Filters
                   </Button>
-                  <Button onClick={() => setShowFilters(false)} variant="outline" size="sm" className="w-full">
-                    Close
-                  </Button>
                 </div>
               </div>
             </div>
@@ -370,190 +369,171 @@ export default function AuditLogViewer() {
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search audit events..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-8"
+          className="pl-10"
         />
       </div>
 
-      {/* Results Summary */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          Showing {filteredEvents.length} of {auditEvents.length} events
-        </p>
-        <div className="flex gap-2">
-          <Badge variant="outline">
-            Critical: {filteredEvents.filter(e => e.severity === 'critical').length}
-          </Badge>
-          <Badge variant="outline">
-            High: {filteredEvents.filter(e => e.severity === 'high').length}
-          </Badge>
-          <Badge variant="outline">
-            Medium: {filteredEvents.filter(e => e.severity === 'medium').length}
-          </Badge>
-          <Badge variant="outline">
-            Low: {filteredEvents.filter(e => e.severity === 'low').length}
-          </Badge>
-        </div>
-      </div>
-
-      {/* Audit Events */}
-      <Card>
-        <CardContent className="p-0">
-          <div className="max-h-96 overflow-y-auto">
-            {filteredEvents.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No audit events found matching your criteria
-              </div>
-            ) : (
-              <div className="divide-y">
-                {filteredEvents.map((event) => (
-                  <div
-                    key={event.id}
-                    className="p-4 hover:bg-muted/50 cursor-pointer transition-colors"
+      {/* Audit Events List */}
+      <div className="space-y-4">
+        {filteredEvents.length === 0 ? (
+          <Card>
+            <CardContent className="text-center py-8">
+              <Activity className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">No audit events found</p>
+            </CardContent>
+          </Card>
+        ) : (
+          filteredEvents.map((event) => (
+            <Card key={event.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start space-x-3 flex-1">
+                    <div className="flex-shrink-0 mt-1">
+                      {getEventIcon(event.eventType)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <h3 className="font-medium">{getEventTypeLabel(event.eventType)}</h3>
+                        <Badge className={getSeverityColor(event.severity)}>
+                          {event.severity}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">{event.description}</p>
+                      <div className="flex items-center space-x-4 text-xs text-muted-foreground">
+                        <div className="flex items-center space-x-1">
+                          <Clock className="h-3 w-3" />
+                          <span>{new Date(event.timestamp).toLocaleString()}</span>
+                        </div>
+                        {event.userEmail && (
+                          <div className="flex items-center space-x-1">
+                            <User className="h-3 w-3" />
+                            <span>{event.userEmail}</span>
+                          </div>
+                        )}
+                        {event.ipAddress && (
+                          <div className="flex items-center space-x-1">
+                            <Globe className="h-3 w-3" />
+                            <span>{event.ipAddress}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => {
                       setSelectedEvent(event);
                       setShowEventModal(true);
                     }}
                   >
-                    <div className="flex items-start gap-3">
-                      {getEventIcon(event.eventType)}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium truncate">{event.description}</span>
-                          <Badge className={getSeverityColor(event.severity)}>
-                            {event.severity}
-                          </Badge>
-                          <Badge variant="outline">
-                            {getEventTypeLabel(event.eventType)}
-                          </Badge>
-                        </div>
-                        <div className="text-sm text-muted-foreground space-y-1">
-                          <div className="flex items-center gap-4">
-                            {event.userEmail && (
-                              <span className="flex items-center gap-1">
-                                <User className="h-3 w-3" />
-                                {event.userEmail}
-                              </span>
-                            )}
-                            {event.ipAddress && (
-                              <span className="flex items-center gap-1">
-                                <Globe className="h-3 w-3" />
-                                {event.ipAddress}
-                              </span>
-                            )}
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {new Date(event.timestamp).toLocaleString()}
-                            </span>
-                          </div>
-                          {event.resourceAccessed && (
-                            <div className="text-xs">
-                              Resource: {event.resourceAccessed}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
 
-      {/* Event Detail Modal */}
+      {/* Event Details Modal */}
       {showEventModal && selectedEvent && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background border rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Event Details</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowEventModal(false)}
-              >
-                ×
-              </Button>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label className="text-sm font-medium">Event Type</label>
-                  <p className="text-sm">{getEventTypeLabel(selectedEvent.eventType)}</p>
-                </div>
+          <Card className="w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                {getEventIcon(selectedEvent.eventType)}
+                {getEventTypeLabel(selectedEvent.eventType)}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium">Severity</label>
-                  <Badge className={getSeverityColor(selectedEvent.severity)}>
+                  <Badge className={`mt-1 ${getSeverityColor(selectedEvent.severity)}`}>
                     {selectedEvent.severity}
                   </Badge>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Timestamp</label>
-                  <p className="text-sm">{new Date(selectedEvent.timestamp).toLocaleString()}</p>
+                  <p className="text-sm mt-1">{new Date(selectedEvent.timestamp).toLocaleString()}</p>
                 </div>
-                <div>
-                  <label className="text-sm font-medium">User</label>
-                  <p className="text-sm">{selectedEvent.userEmail || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">IP Address</label>
-                  <p className="text-sm">{selectedEvent.ipAddress || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Location</label>
-                  <p className="text-sm">{selectedEvent.location || 'N/A'}</p>
-                </div>
+                {selectedEvent.userEmail && (
+                  <div>
+                    <label className="text-sm font-medium">User</label>
+                    <p className="text-sm mt-1">{selectedEvent.userEmail}</p>
+                  </div>
+                )}
+                {selectedEvent.ipAddress && (
+                  <div>
+                    <label className="text-sm font-medium">IP Address</label>
+                    <p className="text-sm mt-1">{selectedEvent.ipAddress}</p>
+                  </div>
+                )}
+                {selectedEvent.userRole && (
+                  <div>
+                    <label className="text-sm font-medium">User Role</label>
+                    <p className="text-sm mt-1">{selectedEvent.userRole}</p>
+                  </div>
+                )}
+                {selectedEvent.location && (
+                  <div>
+                    <label className="text-sm font-medium">Location</label>
+                    <p className="text-sm mt-1">{selectedEvent.location}</p>
+                  </div>
+                )}
               </div>
               
               <div>
                 <label className="text-sm font-medium">Description</label>
-                <p className="text-sm">{selectedEvent.description}</p>
+                <p className="text-sm mt-1">{selectedEvent.description}</p>
               </div>
-              
+
               {selectedEvent.resourceAccessed && (
                 <div>
                   <label className="text-sm font-medium">Resource Accessed</label>
-                  <p className="text-sm">{selectedEvent.resourceAccessed}</p>
+                  <p className="text-sm mt-1">{selectedEvent.resourceAccessed}</p>
                 </div>
               )}
-              
+
               {selectedEvent.actionPerformed && (
                 <div>
                   <label className="text-sm font-medium">Action Performed</label>
-                  <p className="text-sm">{selectedEvent.actionPerformed}</p>
+                  <p className="text-sm mt-1">{selectedEvent.actionPerformed}</p>
                 </div>
               )}
-              
+
               {selectedEvent.metadata && (
                 <div>
                   <label className="text-sm font-medium">Metadata</label>
-                  <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
-                    {JSON.stringify(selectedEvent.metadata, null, 2)}
-                  </pre>
+                  <div className="mt-1 p-2 bg-muted rounded text-xs">
+                    <pre>{JSON.stringify(selectedEvent.metadata, null, 2)}</pre>
+                  </div>
                 </div>
               )}
-              
+
               {selectedEvent.details && (
                 <div>
-                  <label className="text-sm font-medium">Additional Details</label>
-                  <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
-                    {JSON.stringify(selectedEvent.details, null, 2)}
-                  </pre>
+                  <label className="text-sm font-medium">Details</label>
+                  <div className="mt-1 p-2 bg-muted rounded text-xs">
+                    <pre>{JSON.stringify(selectedEvent.details, null, 2)}</pre>
+                  </div>
                 </div>
               )}
+            </CardContent>
+            <div className="p-4 border-t">
+              <Button onClick={() => setShowEventModal(false)} className="w-full">
+                Close
+              </Button>
             </div>
-          </div>
+          </Card>
         </div>
       )}
     </div>
   );
 } 
-
-export { AuditLogViewer }; 
