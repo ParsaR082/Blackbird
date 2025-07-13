@@ -23,6 +23,7 @@ import {
   X 
 } from 'lucide-react'
 import BackgroundNodes from '@/components/BackgroundNodes'
+import CreateEventModal from '@/app/events/CreateEventModal'
 
 // Define event types based on documentation
 interface Event {
@@ -59,6 +60,7 @@ export default function AdminEventsPage() {
   const [activeTab, setActiveTab] = useState('all')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingEvent, setEditingEvent] = useState<Event | null>(null)
+  const [creatingEvent, setCreatingEvent] = useState(false)
   
   const { user, isAuthenticated, isLoading } = useAuth()
   const router = useRouter()
@@ -80,139 +82,13 @@ export default function AdminEventsPage() {
       setLoading(true)
       setError(null)
       
-      // In a real implementation, this would call the API
-      // const response = await fetch('/api/admin/events')
+      const response = await fetch('/api/admin/events')
+      if (!response.ok) {
+        throw new Error('Failed to fetch events')
+      }
       
-      // Mock data based on documentation
-      const mockEvents: Event[] = [
-        {
-          id: '1',
-          title: 'Neural Network Workshop',
-          description: 'Deep dive into neural network architectures',
-          detailDescription: 'Comprehensive workshop covering all aspects of neural networks from basic concepts to advanced architectures.',
-          date: '2024-08-15',
-          time: '14:00',
-          duration: 3,
-          location: 'Virtual Reality Lab',
-          category: 'workshops',
-          maxAttendees: 50,
-          currentAttendees: 45,
-          status: 'registration-open',
-          featured: true,
-          prerequisites: ['Basic Python', 'Linear Algebra'],
-          whatYouWillLearn: ['Neural network fundamentals', 'TensorFlow implementation', 'Model optimization'],
-          imageUrl: 'https://example.com/workshop.jpg',
-          createdBy: {
-            id: 'admin1',
-            name: 'Dr. Smith',
-            username: 'drsmith'
-          },
-          createdAt: '2024-07-15T10:30:00Z',
-          updatedAt: '2024-07-16T09:15:00Z'
-        },
-        {
-          id: '2',
-          title: 'AI Hackathon 2024',
-          description: 'Build innovative AI solutions in 48 hours',
-          detailDescription: 'Join our annual hackathon to build cutting-edge AI solutions. Teams of up to 4 people will compete for prizes.',
-          date: '2024-09-20',
-          time: '09:00',
-          duration: 48,
-          location: 'Innovation Hub',
-          category: 'hackathons',
-          maxAttendees: 100,
-          currentAttendees: 78,
-          status: 'upcoming',
-          featured: true,
-          prerequisites: ['Programming experience', 'Basic AI knowledge'],
-          whatYouWillLearn: ['Rapid prototyping', 'Team collaboration', 'AI implementation'],
-          imageUrl: 'https://example.com/hackathon.jpg',
-          createdBy: {
-            id: 'admin1',
-            name: 'Dr. Smith',
-            username: 'drsmith'
-          },
-          createdAt: '2024-07-10T14:20:00Z',
-          updatedAt: '2024-07-10T14:20:00Z'
-        },
-        {
-          id: '3',
-          title: 'Tech Conference 2024',
-          description: 'Annual conference on emerging technologies',
-          detailDescription: 'Our flagship conference featuring keynote speakers from leading tech companies and research institutions.',
-          date: '2024-10-05',
-          time: '10:00',
-          duration: 8,
-          location: 'Grand Conference Center',
-          category: 'conferences',
-          maxAttendees: 500,
-          currentAttendees: 320,
-          status: 'registration-open',
-          featured: true,
-          prerequisites: [],
-          whatYouWillLearn: ['Industry trends', 'Networking opportunities', 'Cutting-edge research'],
-          imageUrl: 'https://example.com/conference.jpg',
-          createdBy: {
-            id: 'admin2',
-            name: 'Jane Doe',
-            username: 'janedoe'
-          },
-          createdAt: '2024-06-20T09:00:00Z',
-          updatedAt: '2024-07-05T11:30:00Z'
-        },
-        {
-          id: '4',
-          title: 'Developer Meetup',
-          description: 'Monthly gathering of software developers',
-          detailDescription: 'Casual networking event for developers to share knowledge and experiences.',
-          date: '2024-08-10',
-          time: '18:00',
-          duration: 3,
-          location: 'Tech Hub Café',
-          category: 'networking',
-          maxAttendees: 50,
-          currentAttendees: 50,
-          status: 'full',
-          featured: false,
-          prerequisites: [],
-          whatYouWillLearn: ['Community building', 'Knowledge sharing'],
-          imageUrl: 'https://example.com/meetup.jpg',
-          createdBy: {
-            id: 'admin2',
-            name: 'Jane Doe',
-            username: 'janedoe'
-          },
-          createdAt: '2024-07-01T15:45:00Z',
-          updatedAt: '2024-07-08T10:20:00Z'
-        },
-        {
-          id: '5',
-          title: 'Machine Learning Basics',
-          description: 'Introduction to machine learning concepts',
-          detailDescription: 'Beginner-friendly workshop covering fundamental concepts in machine learning.',
-          date: '2024-07-10',
-          time: '14:00',
-          duration: 4,
-          location: 'Online Webinar',
-          category: 'workshops',
-          maxAttendees: 100,
-          currentAttendees: 85,
-          status: 'completed',
-          featured: false,
-          prerequisites: ['Basic programming knowledge'],
-          whatYouWillLearn: ['ML fundamentals', 'Supervised learning', 'Model evaluation'],
-          imageUrl: 'https://example.com/ml-workshop.jpg',
-          createdBy: {
-            id: 'admin1',
-            name: 'Dr. Smith',
-            username: 'drsmith'
-          },
-          createdAt: '2024-06-15T09:30:00Z',
-          updatedAt: '2024-07-11T16:20:00Z'
-        }
-      ]
-      
-      setEvents(mockEvents)
+      const data = await response.json()
+      setEvents(data.events || [])
       setLoading(false)
     } catch (err) {
       console.error('Error fetching events:', err)
@@ -256,6 +132,61 @@ export default function AdminEventsPage() {
   const handleCreateEvent = () => {
     setShowCreateModal(true)
   }
+
+  // Handle event submission
+  const handleEventSubmit = async (eventData: any) => {
+    try {
+      setCreatingEvent(true)
+      setError(null)
+
+      // Transform the form data to match API expectations
+      const apiData = {
+        title: eventData.title,
+        description: eventData.description,
+        detailDescription: eventData.description, // Use description as detail description for now
+        dateTime: eventData.dateTime,
+        duration: eventData.duration,
+        location: eventData.location,
+        category: eventData.category.toLowerCase(), // Convert to lowercase to match API enum
+        maxAttendees: eventData.maxAttendees,
+        featured: eventData.tags.featured,
+        prerequisites: [], // Add these fields later
+        whatYouWillLearn: [], // Add these fields later
+        imageUrl: undefined // Add image upload later
+      }
+
+      console.log('Submitting event data:', apiData)
+
+      const response = await fetch('/api/admin/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(apiData)
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        console.error('Create event error:', result)
+        throw new Error(result.error || 'Failed to create event')
+      }
+
+      // Add the new event to the list
+      setEvents(prev => [result.event, ...prev])
+      setShowCreateModal(false)
+      
+      // Show success message
+      alert('Event created successfully!')
+      
+    } catch (err: any) {
+      console.error('Error creating event:', err)
+      setError(err.message || 'Failed to create event')
+    } finally {
+      setCreatingEvent(false)
+    }
+  }
   
   // Handle edit event
   const handleEditEvent = (event: Event) => {
@@ -271,8 +202,14 @@ export default function AdminEventsPage() {
     }
     
     try {
-      // In a real implementation, this would call the API
-      // await fetch(`/api/admin/events?id=${eventId}`, { method: 'DELETE' })
+      const response = await fetch(`/api/admin/events?id=${eventId}`, { 
+        method: 'DELETE',
+        credentials: 'include'
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete event')
+      }
       
       // Update local state
       setEvents(events.filter(e => e.id !== eventId))
@@ -531,6 +468,13 @@ export default function AdminEventsPage() {
           )}
         </div>
       </div>
+
+      {/* Create Event Modal */}
+      <CreateEventModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSubmit={handleEventSubmit}
+      />
     </div>
   )
 } 
