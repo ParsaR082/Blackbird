@@ -33,6 +33,7 @@ import {
 import { motion } from 'framer-motion'
 import BackgroundNodes from '@/components/BackgroundNodes'
 import Link from 'next/link'
+import { UserProfileModal } from './components/UserProfileModal'
 
 interface User {
   id: string
@@ -42,8 +43,12 @@ interface User {
   mobile_phone: string
   role: 'admin' | 'user'
   is_verified: boolean
+  is_active?: boolean
   created_at: string
   last_login: string | null
+  email?: string
+  bio?: string
+  avatarUrl?: string
 }
 
 export default function AdminPage() {
@@ -56,6 +61,8 @@ export default function AdminPage() {
   const [loginPassword, setLoginPassword] = useState('')
   const [loginError, setLoginError] = useState<string | null>(null)
   const [isLoggingIn, setIsLoggingIn] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [showUserModal, setShowUserModal] = useState(false)
   const { user, isAuthenticated, isLoading, login, logout } = useAuth()
   const router = useRouter()
   
@@ -208,6 +215,32 @@ export default function AdminPage() {
     } finally {
       setProcessingUser(null)
     }
+  }
+
+  const handleEditUser = (user: User) => {
+    setSelectedUser(user)
+    setShowUserModal(true)
+  }
+
+  const handleUserUpdate = (updatedUser: any) => {
+    setUsers(users.map(u => 
+      u.id === updatedUser.id ? {
+        ...u,
+        full_name: updatedUser.fullName,
+        username: updatedUser.username,
+        mobile_phone: updatedUser.mobilePhone,
+        role: updatedUser.role.toLowerCase(),
+        is_verified: updatedUser.isVerified,
+        is_active: updatedUser.isActive,
+        email: updatedUser.email,
+        bio: updatedUser.bio,
+        avatarUrl: updatedUser.avatarUrl
+      } : u
+    ))
+  }
+
+  const handleUserDelete = (userId: string) => {
+    setUsers(users.filter(u => u.id !== userId))
   }
   
   const filteredUsers = users.filter(user => {
@@ -656,6 +689,16 @@ export default function AdminPage() {
                           </td>
                           <td className="py-3 px-2 text-center">
                             <div className="flex justify-center gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="h-8 bg-gray-500/10 border-gray-500/30 text-gray-300 hover:bg-gray-500/20"
+                                onClick={() => handleEditUser(user)}
+                              >
+                                <Edit3 className="w-3 h-3 mr-1" />
+                                Edit
+                              </Button>
+                              
                               {!user.is_verified && (
                                 <Button 
                                   variant="outline" 
@@ -700,6 +743,31 @@ export default function AdminPage() {
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* User Profile Modal */}
+        <UserProfileModal
+          user={selectedUser ? {
+            id: selectedUser.id,
+            email: selectedUser.email || '',
+            fullName: selectedUser.full_name,
+            username: selectedUser.username,
+            mobilePhone: selectedUser.mobile_phone,
+            role: selectedUser.role.toUpperCase() as 'ADMIN' | 'USER' | 'MODERATOR',
+            isVerified: selectedUser.is_verified,
+            isActive: selectedUser.is_active ?? true,
+            avatarUrl: selectedUser.avatarUrl,
+            bio: selectedUser.bio,
+            studentId: selectedUser.student_id,
+            createdAt: selectedUser.created_at,
+            lastLogin: selectedUser.last_login || undefined
+          } : null}
+          isOpen={showUserModal}
+          onClose={() => {
+            setShowUserModal(false)
+            setSelectedUser(null)
+          }}
+          onUpdate={handleUserUpdate}
+        />
       </motion.div>
     </div>
   )
