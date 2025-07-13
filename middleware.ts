@@ -18,6 +18,9 @@ export async function middleware(req: NextRequest) {
   if (protectedRoutes.some(route => pathname.startsWith(route))) {
     // Get the session token from cookie
     const sessionToken = req.cookies.get('session_token')?.value
+    const allCookies = req.cookies.getAll()
+    
+    console.log(`[Middleware] Checking ${pathname}, cookies:`, allCookies.map(c => ({ name: c.name, value: c.value ? `${c.value.substring(0, 8)}...` : null })))
     
     if (!sessionToken) {
       console.log(`[Middleware] No session token found, redirecting from ${pathname} to login`)
