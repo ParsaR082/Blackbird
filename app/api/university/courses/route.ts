@@ -8,7 +8,8 @@ export async function GET(request: NextRequest) {
     await connectToDatabase()
 
     // Get query parameters
-    const { searchParams } = new URL(request.url)
+    const url = new URL(request.url)
+    const searchParams = url.searchParams
     const department = searchParams.get('department')
     const level = searchParams.get('level')
     const semester = searchParams.get('semester')
