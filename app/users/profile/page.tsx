@@ -179,8 +179,8 @@ export default function ProfilePage() {
     setSaving(true)
     try {
       // Get CSRF token
-      const csrfResponse = await fetch('/api/csrf')
-      const { csrfToken } = await csrfResponse.json()
+      const csrfResponse = await fetch('/api/auth/csrf')
+      const { token: csrfToken } = await csrfResponse.json()
 
       const response = await fetch('/api/users/profile/update', {
         method: 'POST',
