@@ -350,6 +350,16 @@ export default function EventsPage() {
     }
 
     try {
+      // Convert duration to number if it's a string
+      let duration: number
+      if (typeof event.duration === 'string') {
+        // Extract number from strings like "1 hour", "2 hours", etc.
+        const match = (event.duration as string).match(/(\d+(?:\.\d+)?)/)
+        duration = match ? parseFloat(match[1]) : 1
+      } else {
+        duration = event.duration
+      }
+
       const response = await fetch('/api/calendar', {
         method: 'POST',
         headers: {
@@ -362,7 +372,7 @@ export default function EventsPage() {
           description: event.description,
           date: event.date,
           time: event.time,
-          duration: event.duration,
+          duration: duration,
           location: event.location,
           category: event.category
         })
