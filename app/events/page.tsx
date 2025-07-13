@@ -7,6 +7,7 @@ import BackgroundNodes from '@/components/BackgroundNodes'
 import { useTheme } from '@/contexts/theme-context'
 import { useAuth } from '@/contexts/auth-context'
 import CreateEventModal from './CreateEventModal'
+import EditEventModal from './EditEventModal'
 import EventRegistrationModal from './EventRegistrationModal'
 import { 
   Calendar,
@@ -29,7 +30,9 @@ import {
   AlertCircle,
   Plus,
   CheckCircle2,
-  UserCheck
+  UserCheck,
+  Edit,
+  Trash2
 } from 'lucide-react'
 import jalaali from 'jalaali-js'
 
@@ -40,10 +43,11 @@ interface Event {
   detailDescription: string
   date: string
   time: string
-  duration: string
+  duration: number
   location: string
   category: 'workshops' | 'hackathons' | 'conferences' | 'networking'
   attendees: number
+  currentAttendees: number
   maxAttendees: number
   status: 'upcoming' | 'registration-open' | 'full' | 'completed' | 'cancelled'
   featured: boolean
@@ -51,11 +55,13 @@ interface Event {
   whatYouWillLearn: string[]
   imageUrl?: string
   createdBy: {
+    id: string
     name: string
     username: string
   }
   timeUntilEvent: string
   createdAt: string
+  updatedAt: string
 }
 
 interface CategoryCounts {
@@ -73,6 +79,8 @@ export default function EventsPage() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null)
   const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState(false)
   const [events, setEvents] = useState<Event[]>([])
   const [categoryCounts, setCategoryCounts] = useState<CategoryCounts>({
@@ -187,6 +195,16 @@ export default function EventsPage() {
     setIsCreateModalOpen(false)
   }
 
+  const openEditModal = (event: Event) => {
+    setEditingEvent(event)
+    setIsEditModalOpen(true)
+  }
+
+  const closeEditModal = () => {
+    setIsEditModalOpen(false)
+    setEditingEvent(null)
+  }
+
   const openRegistrationModal = (event: Event) => {
     setSelectedEvent(event)
     setIsRegistrationModalOpen(true)
@@ -267,6 +285,99 @@ export default function EventsPage() {
       }
     } catch (error) {
       console.error('Create event error:', error)
+    }
+  }
+
+  const handleEditEvent = async (eventData: any) => {
+    try {
+      const response = await fetch('/api/admin/events', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(eventData)
+      })
+
+      if (response.ok) {
+        // Refresh events list
+        const eventsResponse = await fetch('/api/events')
+        const eventsData = await eventsResponse.json()
+        if (eventsData.success) {
+          setEvents(eventsData.events)
+          setCategoryCounts(eventsData.categoryCounts)
+        }
+        closeEditModal()
+      } else {
+        console.error('Failed to update event')
+      }
+    } catch (error) {
+      console.error('Error updating event:', error)
+    }
+  }
+
+  const handleDeleteEvent = async (eventId: string) => {
+    if (!confirm('Are you sure you want to delete this event?')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/admin/events?id=${eventId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+
+      if (response.ok) {
+        // Refresh events list
+        const eventsResponse = await fetch('/api/events')
+        const eventsData = await eventsResponse.json()
+        if (eventsData.success) {
+          setEvents(eventsData.events)
+          setCategoryCounts(eventsData.categoryCounts)
+        }
+      } else {
+        console.error('Failed to delete event')
+      }
+    } catch (error) {
+      console.error('Error deleting event:', error)
+    }
+  }
+
+  const handleAddToCalendar = async (event: Event) => {
+    if (!user) {
+      alert('Please log in to add events to your calendar')
+      return
+    }
+
+    try {
+      const response = await fetch('/api/calendar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          eventId: event.id,
+          title: event.title,
+          description: event.description,
+          date: event.date,
+          time: event.time,
+          duration: event.duration,
+          location: event.location,
+          category: event.category
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        alert('Event added to your calendar!')
+      } else {
+        alert(data.error || 'Failed to add event to calendar')
+      }
+    } catch (error) {
+      console.error('Error adding to calendar:', error)
+      alert('Failed to add event to calendar')
     }
   }
 
@@ -441,6 +552,7 @@ export default function EventsPage() {
               </motion.button>
             )}
             <motion.button
+              onClick={() => handleAddToCalendar(selectedEvent)}
               className="px-6 py-3 bg-[#1F1F1F] hover:bg-[#333333] text-[#CCCCCC] rounded-lg font-medium transition-all duration-200"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -465,6 +577,14 @@ export default function EventsPage() {
           isOpen={isCreateModalOpen}
           onClose={closeCreateModal}
           onSubmit={handleCreateEvent}
+        />
+      )}
+      {isEditModalOpen && editingEvent && (
+        <EditEventModal
+          isOpen={isEditModalOpen}
+          onClose={closeEditModal}
+          onSubmit={handleEditEvent}
+          event={editingEvent}
         />
       )}
       {isRegistrationModalOpen && selectedEvent && (
@@ -676,6 +796,34 @@ export default function EventsPage() {
                         >
                           Details
                         </motion.button>
+                        
+                        {/* Admin Actions */}
+                        {user && user.role === 'ADMIN' && (
+                          <div className="flex gap-1 mt-2">
+                            <motion.button
+                              className="px-3 py-1 bg-blue-500/20 border border-blue-500/40 text-blue-400 rounded text-xs hover:bg-blue-500/30 transition-all duration-200"
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                openEditModal(event)
+                              }}
+                            >
+                              <Edit className="w-3 h-3" />
+                            </motion.button>
+                            <motion.button
+                              className="px-3 py-1 bg-red-500/20 border border-red-500/40 text-red-400 rounded text-xs hover:bg-red-500/30 transition-all duration-200"
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDeleteEvent(event.id)
+                              }}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </motion.button>
+                          </div>
+                        )}
                       </div>
                       </div>
                     </motion.div>
