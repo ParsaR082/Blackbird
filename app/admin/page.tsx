@@ -46,6 +46,8 @@ import { AdvancedAnalytics } from './components/AdvancedAnalytics'
 import { WorkflowAutomation } from './components/WorkflowAutomation'
 import { AdvancedUserManagement } from './components/AdvancedUserManagement'
 import { SystemMonitoring } from './components/SystemMonitoring'
+import { IntegrationDashboard } from './components/IntegrationDashboard'
+import { DataOptimization } from './components/DataOptimization'
 
 interface User {
   id: string
@@ -83,7 +85,7 @@ export default function AdminPage() {
   const [isLoggingIn, setIsLoggingIn] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [showUserModal, setShowUserModal] = useState(false)
-  const [activeSection, setActiveSection] = useState<'dashboard' | 'users' | 'content' | 'notifications' | 'settings' | 'analytics' | 'workflows' | 'advanced-users' | 'monitoring'>('dashboard')
+  const [activeSection, setActiveSection] = useState<'dashboard' | 'users' | 'content' | 'notifications' | 'settings' | 'analytics' | 'workflows' | 'advanced-users' | 'monitoring' | 'integration' | 'optimization'>('dashboard')
   const { user, isAuthenticated, isLoading, login, logout } = useAuth()
   const router = useRouter()
   
@@ -526,6 +528,8 @@ export default function AdminPage() {
               { id: 'workflows', label: 'Workflows', icon: Workflow },
               { id: 'advanced-users', label: 'Advanced Users', icon: Shield },
               { id: 'monitoring', label: 'Monitoring', icon: Activity },
+              { id: 'integration', label: 'Integration', icon: Activity },
+              { id: 'optimization', label: 'Optimization', icon: Settings },
               { id: 'settings', label: 'Settings', icon: Settings }
             ].map((tab) => (
               <Button
@@ -886,6 +890,16 @@ export default function AdminPage() {
         {/* Monitoring Section */}
         {activeSection === 'monitoring' && (
           <SystemMonitoring />
+        )}
+
+        {/* Integration Section */}
+        {activeSection === 'integration' && (
+          <IntegrationDashboard />
+        )}
+
+        {/* Optimization Section */}
+        {activeSection === 'optimization' && (
+          <DataOptimization />
         )}
 
         {/* Settings Section */}
