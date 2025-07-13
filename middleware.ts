@@ -32,8 +32,11 @@ export async function middleware(req: NextRequest) {
     
     // Validate session token by calling the API
     try {
-      // Get the base URL from the request
-      const baseUrl = new URL('/', req.url).origin
+      // Use NEXTAUTH_URL in production, local origin in development
+      const baseUrl =
+        process.env.NODE_ENV === 'production'
+          ? process.env.NEXTAUTH_URL || 'https://blackbird-production.up.railway.app'
+          : new URL('/', req.url).origin
       const validateUrl = `${baseUrl}/api/auth/validate`
       
       console.log(`[Middleware] Validating session for ${pathname}, calling ${validateUrl}`)
