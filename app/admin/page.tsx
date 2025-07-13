@@ -30,7 +30,10 @@ import {
   ShoppingCart,
   Package,
   FileText,
-  Bell
+  Bell,
+  BarChart3,
+  Workflow,
+  Activity
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import BackgroundNodes from '@/components/BackgroundNodes'
@@ -39,6 +42,10 @@ import { UserProfileModal } from './components/UserProfileModal'
 import { ContentEditor } from './components/ContentEditor'
 import { NotificationSystem } from './components/NotificationSystem'
 import { SystemSettings } from './components/SystemSettings'
+import { AdvancedAnalytics } from './components/AdvancedAnalytics'
+import { WorkflowAutomation } from './components/WorkflowAutomation'
+import { AdvancedUserManagement } from './components/AdvancedUserManagement'
+import { SystemMonitoring } from './components/SystemMonitoring'
 
 interface User {
   id: string
@@ -76,7 +83,7 @@ export default function AdminPage() {
   const [isLoggingIn, setIsLoggingIn] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [showUserModal, setShowUserModal] = useState(false)
-  const [activeSection, setActiveSection] = useState<'dashboard' | 'users' | 'content' | 'notifications' | 'settings'>('dashboard')
+  const [activeSection, setActiveSection] = useState<'dashboard' | 'users' | 'content' | 'notifications' | 'settings' | 'analytics' | 'workflows' | 'advanced-users' | 'monitoring'>('dashboard')
   const { user, isAuthenticated, isLoading, login, logout } = useAuth()
   const router = useRouter()
   
@@ -515,6 +522,10 @@ export default function AdminPage() {
               { id: 'users', label: 'User Management', icon: Users },
               { id: 'content', label: 'Content', icon: FileText },
               { id: 'notifications', label: 'Notifications', icon: Bell },
+              { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+              { id: 'workflows', label: 'Workflows', icon: Workflow },
+              { id: 'advanced-users', label: 'Advanced Users', icon: Shield },
+              { id: 'monitoring', label: 'Monitoring', icon: Activity },
               { id: 'settings', label: 'Settings', icon: Settings }
             ].map((tab) => (
               <Button
@@ -855,6 +866,26 @@ export default function AdminPage() {
         {/* Notifications Section */}
         {activeSection === 'notifications' && (
           <NotificationSystem />
+        )}
+
+        {/* Analytics Section */}
+        {activeSection === 'analytics' && (
+          <AdvancedAnalytics />
+        )}
+
+        {/* Workflows Section */}
+        {activeSection === 'workflows' && (
+          <WorkflowAutomation />
+        )}
+
+        {/* Advanced Users Section */}
+        {activeSection === 'advanced-users' && (
+          <AdvancedUserManagement />
+        )}
+
+        {/* Monitoring Section */}
+        {activeSection === 'monitoring' && (
+          <SystemMonitoring />
         )}
 
         {/* Settings Section */}
