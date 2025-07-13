@@ -88,55 +88,57 @@ export async function GET(request: NextRequest) {
     const totalCount = Object.values(categoryCounts).reduce((sum, count) => sum + count, 0)
 
     // Format the response
-    const formattedEvents = events.map(event => {
-      // Calculate time until event
-      const now = new Date()
-      const eventDateTime = new Date(event.date)
-      const [hours, minutes] = event.time.split(':').map(Number)
-      eventDateTime.setHours(hours, minutes)
-      
-      const timeDiff = eventDateTime.getTime() - now.getTime()
-      let timeUntilEvent = "Event has started"
-      
-      if (timeDiff > 0) {
-        const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24))
-        const hoursLeft = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-        const minutesLeft = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60))
+    const formattedEvents = events
+      .filter(event => event.createdBy) // Filter out events with null createdBy
+      .map(event => {
+        // Calculate time until event
+        const now = new Date()
+        const eventDateTime = new Date(event.date)
+        const [hours, minutes] = event.time.split(':').map(Number)
+        eventDateTime.setHours(hours, minutes)
         
-        if (days > 0) {
-          timeUntilEvent = `Starts in ${days} day${days > 1 ? 's' : ''}, ${hoursLeft} hour${hoursLeft > 1 ? 's' : ''}`
-        } else if (hoursLeft > 0) {
-          timeUntilEvent = `Starts in ${hoursLeft} hour${hoursLeft > 1 ? 's' : ''}, ${minutesLeft} minute${minutesLeft > 1 ? 's' : ''}`
-        } else {
-          timeUntilEvent = `Starts in ${minutesLeft} minute${minutesLeft > 1 ? 's' : ''}`
+        const timeDiff = eventDateTime.getTime() - now.getTime()
+        let timeUntilEvent = "Event has started"
+        
+        if (timeDiff > 0) {
+          const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24))
+          const hoursLeft = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+          const minutesLeft = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60))
+          
+          if (days > 0) {
+            timeUntilEvent = `Starts in ${days} day${days > 1 ? 's' : ''}, ${hoursLeft} hour${hoursLeft > 1 ? 's' : ''}`
+          } else if (hoursLeft > 0) {
+            timeUntilEvent = `Starts in ${hoursLeft} hour${hoursLeft > 1 ? 's' : ''}, ${minutesLeft} minute${minutesLeft > 1 ? 's' : ''}`
+          } else {
+            timeUntilEvent = `Starts in ${minutesLeft} minute${minutesLeft > 1 ? 's' : ''}`
+          }
         }
-      }
 
-      return {
-        id: event._id.toString(),
-        title: event.title,
-        description: event.description,
-        detailDescription: event.detailDescription || event.description,
-        date: event.date.toISOString().split('T')[0], // YYYY-MM-DD format
-        time: event.time,
-        duration: `${event.duration} hour${event.duration !== 1 ? 's' : ''}`,
-        location: event.location,
-        category: event.category,
-        attendees: event.currentAttendees,
-        maxAttendees: event.maxAttendees,
-        status: event.status,
-        featured: event.featured,
-        prerequisites: event.prerequisites,
-        whatYouWillLearn: event.whatYouWillLearn,
-        imageUrl: event.imageUrl,
-        createdBy: {
-          name: event.createdBy.fullName,
-          username: event.createdBy.username
-        },
-        timeUntilEvent,
-        createdAt: event.createdAt
-      }
-    })
+        return {
+          id: event._id.toString(),
+          title: event.title,
+          description: event.description,
+          detailDescription: event.detailDescription || event.description,
+          date: event.date.toISOString().split('T')[0], // YYYY-MM-DD format
+          time: event.time,
+          duration: `${event.duration} hour${event.duration !== 1 ? 's' : ''}`,
+          location: event.location,
+          category: event.category,
+          attendees: event.currentAttendees,
+          maxAttendees: event.maxAttendees,
+          status: event.status,
+          featured: event.featured,
+          prerequisites: event.prerequisites,
+          whatYouWillLearn: event.whatYouWillLearn,
+          imageUrl: event.imageUrl,
+          createdBy: {
+            name: event.createdBy.fullName || 'Unknown User',
+            username: event.createdBy.username || 'unknown'
+          },
+          timeUntilEvent,
+          createdAt: event.createdAt
+        }
+      })
 
     return NextResponse.json({
       success: true,
