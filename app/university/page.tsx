@@ -442,21 +442,27 @@ export default function UniversityPage() {
                 return (
                   <Card 
                     key={term} 
-                    className={`${semester ? 'bg-white/5' : 'bg-white/2'} border-white/10`}
+                    className="transition-colors duration-300"
+                    style={{
+                      backgroundColor: semester 
+                        ? (theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)')
+                        : (theme === 'light' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)'),
+                      borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+                    }}
                   >
                     <CardHeader>
-                      <CardTitle className="flex items-center justify-between">
+                      <CardTitle className="flex items-center justify-between transition-colors duration-300" style={{ color: 'var(--text-color)' }}>
                         <span>{term} {selectedYear}</span>
                         {semester?.isCurrentSemester && (
                           <Badge className="bg-green-600">Current</Badge>
                         )}
                       </CardTitle>
                       {semester ? (
-                        <CardDescription className="text-white/60">
+                        <CardDescription className="transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>
                           {formatDate(semester.startDate)} - {formatDate(semester.endDate)}
                         </CardDescription>
                       ) : (
-                        <CardDescription className="text-white/40">
+                        <CardDescription className="transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>
                           Not scheduled
                         </CardDescription>
                       )}
@@ -478,16 +484,16 @@ export default function UniversityPage() {
                                  enrollment.status === 'in-progress' ? 'In Progress' :
                                  'Registered'}
                               </Badge>
-                              <span className="text-sm text-white/60">
+                              <span className="text-sm transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>
                                 {enrollment.totalCredits} Credits
                               </span>
                             </div>
                             
                             <div className="mt-4">
-                              <h4 className="text-sm font-medium mb-2">Enrolled Courses ({enrollment.courses.length})</h4>
+                              <h4 className="text-sm font-medium mb-2 transition-colors duration-300" style={{ color: 'var(--text-color)' }}>Enrolled Courses ({enrollment.courses.length})</h4>
                               <ul className="space-y-1">
                                 {enrollment.courses.map(course => (
-                                  <li key={course.id} className="text-sm text-white/80">
+                                  <li key={course.id} className="text-sm transition-colors duration-300" style={{ color: 'var(--text-color)' }}>
                                     {course.courseCode} - {course.title}
                                   </li>
                                 ))}
@@ -499,7 +505,7 @@ export default function UniversityPage() {
                             {semester.isRegistrationOpen ? (
                               <div className="text-center py-4">
                                 <Calendar className="h-8 w-8 text-blue-400 mx-auto mb-2" />
-                                <p className="text-sm text-white/60 mb-3">
+                                <p className="text-sm mb-3 transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>
                                   Registration open until {formatDate(semester.registrationDeadline)}
                                 </p>
                                 <Button 
@@ -511,8 +517,8 @@ export default function UniversityPage() {
                               </div>
                             ) : (
                               <div className="text-center py-4">
-                                <Calendar className="h-8 w-8 text-white/40 mx-auto mb-2" />
-                                <p className="text-sm text-white/60">
+                                <Calendar className="h-8 w-8 mx-auto mb-2 transition-colors duration-300" style={{ color: 'var(--text-secondary)' }} />
+                                <p className="text-sm transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>
                                   {new Date(semester.registrationDeadline) < new Date() ?
                                     'Registration period has ended' :
                                     'Registration not yet open'
@@ -533,44 +539,60 @@ export default function UniversityPage() {
         
         {/* Quick Links */}
         <motion.div className="mt-10" variants={itemVariants}>
-          <h2 className="text-2xl font-bold mb-4">Quick Links</h2>
+          <h2 className="text-2xl font-bold mb-4 transition-colors duration-300" style={{ color: 'var(--text-color)' }}>Quick Links</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="bg-white/5 border-white/10 hover:bg-white/10 cursor-pointer transition-colors"
+            <Card className="cursor-pointer transition-colors duration-300"
+                style={{
+                  backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+                  borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+                }}
                 onClick={() => router.push('/university/courses')}>
               <CardContent className="pt-6">
                 <div className="flex items-center">
                   <BookOpen className="h-6 w-6 text-blue-400 mr-3" />
-                  <span>Browse Courses</span>
+                  <span className="transition-colors duration-300" style={{ color: 'var(--text-color)' }}>Browse Courses</span>
                 </div>
               </CardContent>
             </Card>
             
-            <Card className="bg-white/5 border-white/10 hover:bg-white/10 cursor-pointer transition-colors"
+            <Card className="cursor-pointer transition-colors duration-300"
+                style={{
+                  backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+                  borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+                }}
                 onClick={() => router.push('/university/study-plans')}>
               <CardContent className="pt-6">
                 <div className="flex items-center">
                   <ClipboardList className="h-6 w-6 text-purple-400 mr-3" />
-                  <span>Study Plans</span>
+                  <span className="transition-colors duration-300" style={{ color: 'var(--text-color)' }}>Study Plans</span>
                 </div>
               </CardContent>
             </Card>
             
-            <Card className="bg-white/5 border-white/10 hover:bg-white/10 cursor-pointer transition-colors"
+            <Card className="cursor-pointer transition-colors duration-300"
+                style={{
+                  backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+                  borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+                }}
                 onClick={() => router.push('/university/assignments')}>
               <CardContent className="pt-6">
                 <div className="flex items-center">
                   <Award className="h-6 w-6 text-amber-400 mr-3" />
-                  <span>My Assignments</span>
+                  <span className="transition-colors duration-300" style={{ color: 'var(--text-color)' }}>My Assignments</span>
                 </div>
               </CardContent>
             </Card>
             
-            <Card className="bg-white/5 border-white/10 hover:bg-white/10 cursor-pointer transition-colors"
+            <Card className="cursor-pointer transition-colors duration-300"
+                style={{
+                  backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+                  borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+                }}
                 onClick={() => router.push('/university/academic-record')}>
               <CardContent className="pt-6">
                 <div className="flex items-center">
                   <GraduationCap className="h-6 w-6 text-green-400 mr-3" />
-                  <span>Academic Record</span>
+                  <span className="transition-colors duration-300" style={{ color: 'var(--text-color)' }}>Academic Record</span>
                 </div>
               </CardContent>
             </Card>
