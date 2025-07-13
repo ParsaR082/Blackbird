@@ -31,6 +31,7 @@ import {
   CheckCircle2,
   UserCheck
 } from 'lucide-react'
+import jalaali from 'jalaali-js'
 
 interface Event {
   id: string
@@ -267,6 +268,13 @@ export default function EventsPage() {
     } catch (error) {
       console.error('Create event error:', error)
     }
+  }
+
+  // Helper to convert Gregorian date string to Persian date string
+  function toPersianDateString(dateStr: string) {
+    const d = new Date(dateStr)
+    const j = jalaali.toJalaali(d.getFullYear(), d.getMonth() + 1, d.getDate())
+    return `${j.jy}/${j.jm.toString().padStart(2, '0')}/${j.jd.toString().padStart(2, '0')}`
   }
 
   // Modal Component
@@ -616,7 +624,7 @@ export default function EventsPage() {
                         <div className={`flex flex-wrap items-center gap-4 text-xs transition-colors duration-300 ${theme === 'light' ? 'text-gray-600' : 'text-white/60'}`}>
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
-                            {new Date(event.date).toLocaleDateString()}
+                            {new Date(event.date).toLocaleDateString()} <span className="mx-1">|</span> <span dir="ltr">{toPersianDateString(event.date)}</span>
                           </span>
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
