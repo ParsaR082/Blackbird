@@ -28,12 +28,17 @@ import {
   Edit3,
   Trash2,
   ShoppingCart,
-  Package
+  Package,
+  FileText,
+  Bell
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import BackgroundNodes from '@/components/BackgroundNodes'
 import Link from 'next/link'
 import { UserProfileModal } from './components/UserProfileModal'
+import { ContentEditor } from './components/ContentEditor'
+import { NotificationSystem } from './components/NotificationSystem'
+import { SystemSettings } from './components/SystemSettings'
 
 interface User {
   id: string
@@ -57,12 +62,21 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [processingUser, setProcessingUser] = useState<string | null>(null)
+  
+  // Filter users based on search term
+  const filteredUsers = users.filter(user =>
+    user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.student_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.mobile_phone.includes(searchTerm)
+  )
   const [loginEmail, setLoginEmail] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
   const [loginError, setLoginError] = useState<string | null>(null)
   const [isLoggingIn, setIsLoggingIn] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [showUserModal, setShowUserModal] = useState(false)
+  const [activeSection, setActiveSection] = useState<'dashboard' | 'users' | 'content' | 'notifications' | 'settings'>('dashboard')
   const { user, isAuthenticated, isLoading, login, logout } = useAuth()
   const router = useRouter()
   
@@ -243,16 +257,7 @@ export default function AdminPage() {
     setUsers(users.filter(u => u.id !== userId))
   }
   
-  const filteredUsers = users.filter(user => {
-    if (!searchTerm) return true
-    
-    const term = searchTerm.toLowerCase()
-    return (
-      user.student_id?.toLowerCase().includes(term) ||
-      user.username?.toLowerCase().includes(term) ||
-      user.full_name?.toLowerCase().includes(term)
-    )
-  })
+
 
   // Admin management modules based on documentation
   const adminModules = [
@@ -325,6 +330,42 @@ export default function AdminPage() {
       stats: [
         { label: "Courses", value: "12" },
         { label: "Students", value: "86" }
+      ]
+    },
+    {
+      title: "Content Management",
+      description: "Manage announcements and dynamic content",
+      icon: FileText,
+      color: "text-indigo-400",
+      bgColor: "bg-indigo-500/10",
+      borderColor: "border-indigo-500/20",
+      path: "/admin/content",
+      actions: [
+        { name: "Create Content", icon: PlusCircle, path: "/admin/content?action=create" },
+        { name: "Manage Templates", icon: Edit3, path: "/admin/content" },
+        { name: "View Analytics", icon: Users, path: "/admin/content/analytics" }
+      ],
+      stats: [
+        { label: "Templates", value: "12" },
+        { label: "Published", value: "8" }
+      ]
+    },
+    {
+      title: "Notification System",
+      description: "Send bulk emails and manage notifications",
+      icon: Bell,
+      color: "text-orange-400",
+      bgColor: "bg-orange-500/10",
+      borderColor: "border-orange-500/20",
+      path: "/admin/notifications",
+      actions: [
+        { name: "Send Notification", icon: PlusCircle, path: "/admin/notifications?action=send" },
+        { name: "Manage Templates", icon: Edit3, path: "/admin/notifications/templates" },
+        { name: "View Campaigns", icon: Users, path: "/admin/notifications/campaigns" }
+      ],
+      stats: [
+        { label: "Templates", value: "6" },
+        { label: "Sent Today", value: "15" }
       ]
     }
   ];
@@ -461,6 +502,34 @@ export default function AdminPage() {
           </div>
         </motion.div>
         
+        {/* Navigation Tabs */}
+        <motion.div
+          className="mb-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="flex flex-wrap gap-2">
+            {[
+              { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+              { id: 'users', label: 'User Management', icon: Users },
+              { id: 'content', label: 'Content', icon: FileText },
+              { id: 'notifications', label: 'Notifications', icon: Bell },
+              { id: 'settings', label: 'Settings', icon: Settings }
+            ].map((tab) => (
+              <Button
+                key={tab.id}
+                variant={activeSection === tab.id ? "default" : "outline"}
+                className={`gap-2 ${activeSection === tab.id ? 'bg-white/20 text-white' : 'bg-white/5 hover:bg-white/10 text-white/70'}`}
+                onClick={() => setActiveSection(tab.id as any)}
+              >
+                <tab.icon className="w-4 h-4" />
+                {tab.label}
+              </Button>
+            ))}
+          </div>
+        </motion.div>
+
         {/* Error Display */}
         {error && (
           <motion.div 
@@ -476,13 +545,16 @@ export default function AdminPage() {
           </motion.div>
         )}
         
-        {/* Admin Modules Grid */}
-        <motion.div
-          className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
+        {/* Dashboard Section */}
+        {activeSection === 'dashboard' && (
+          <>
+            {/* Admin Modules Grid */}
+            <motion.div
+              className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
           {adminModules.map((module, index) => (
             <Card 
               key={index}
@@ -606,168 +678,189 @@ export default function AdminPage() {
           </Card>
         </motion.div>
         
-        {/* User Management */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
-          <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <div>
-                <CardTitle className="text-xl font-bold">User Management</CardTitle>
-                <CardDescription>Manage user accounts and permissions</CardDescription>
-              </div>
-              
-              {/* Search */}
-              <div className="relative w-64">
-                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search users..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
-            </CardHeader>
-            
-            <CardContent>
-              {loading ? (
-                <div className="flex justify-center items-center py-8">
-                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                  <p className="ml-2 text-lg">Loading users...</p>
-                </div>
-              ) : filteredUsers.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  {searchTerm ? 'No matching users found' : 'No users found'}
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-white/10">
-                        <th className="py-3 px-2 text-left">Student ID</th>
-                        <th className="py-3 px-2 text-left">Name</th>
-                        <th className="py-3 px-2 text-left">Username</th>
-                        <th className="py-3 px-2 text-left">Mobile</th>
-                        <th className="py-3 px-2 text-center">Status</th>
-                        <th className="py-3 px-2 text-center">Role</th>
-                        <th className="py-3 px-2 text-center">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredUsers.map((user) => (
-                        <tr key={user.id} className="border-b border-white/5 hover:bg-white/5">
-                          <td className="py-3 px-2">{user.student_id}</td>
-                          <td className="py-3 px-2">{user.full_name}</td>
-                          <td className="py-3 px-2">{user.username}</td>
-                          <td className="py-3 px-2">{user.mobile_phone}</td>
-                          <td className="py-3 px-2 text-center">
-                            {user.is_verified ? (
-                              <Badge className="bg-green-500/20 text-green-300 hover:bg-green-500/30">
-                                <CheckCircle className="w-3 h-3 mr-1" />
-                                Verified
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="border-yellow-500/50 text-yellow-300">
-                                <XCircle className="w-3 h-3 mr-1" />
-                                Unverified
-                              </Badge>
-                            )}
-                          </td>
-                          <td className="py-3 px-2 text-center">
-                            {user.role === 'admin' ? (
-                              <Badge className="bg-blue-500/20 text-blue-300 hover:bg-blue-500/30">
-                                <Shield className="w-3 h-3 mr-1" />
-                                Admin
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="border-white/20 text-white/70">
-                                User
-                              </Badge>
-                            )}
-                          </td>
-                          <td className="py-3 px-2 text-center">
-                            <div className="flex justify-center gap-2">
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                className="h-8 bg-gray-500/10 border-gray-500/30 text-gray-300 hover:bg-gray-500/20"
-                                onClick={() => handleEditUser(user)}
-                              >
-                                <Edit3 className="w-3 h-3 mr-1" />
-                                Edit
-                              </Button>
-                              
-                              {!user.is_verified && (
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  className="h-8 bg-green-500/10 border-green-500/30 text-green-300 hover:bg-green-500/20"
-                                  onClick={() => verifyUser(user.id)}
-                                  disabled={processingUser === user.id}
-                                >
-                                  {processingUser === user.id ? (
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                  ) : (
-                                    <UserCheck className="w-3 h-3 mr-1" />
-                                  )}
-                                  Verify
-                                </Button>
-                              )}
-                              
-                              {user.role !== 'admin' && (
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  className="h-8 bg-blue-500/10 border-blue-500/30 text-blue-300 hover:bg-blue-500/20"
-                                  onClick={() => promoteToAdmin(user.id)}
-                                  disabled={processingUser === user.id}
-                                >
-                                  {processingUser === user.id ? (
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                  ) : (
-                                    <Shield className="w-3 h-3 mr-1" />
-                                  )}
-                                  Make Admin
-                                </Button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
 
-        {/* User Profile Modal */}
-        <UserProfileModal
-          user={selectedUser ? {
-            id: selectedUser.id,
-            email: selectedUser.email || '',
-            fullName: selectedUser.full_name,
-            username: selectedUser.username,
-            mobilePhone: selectedUser.mobile_phone,
-            role: selectedUser.role.toUpperCase() as 'ADMIN' | 'USER' | 'MODERATOR',
-            isVerified: selectedUser.is_verified,
-            isActive: selectedUser.is_active ?? true,
-            avatarUrl: selectedUser.avatarUrl,
-            bio: selectedUser.bio,
-            studentId: selectedUser.student_id,
-            createdAt: selectedUser.created_at,
-            lastLogin: selectedUser.last_login || undefined
-          } : null}
-          isOpen={showUserModal}
-          onClose={() => {
-            setShowUserModal(false)
-            setSelectedUser(null)
-          }}
-          onUpdate={handleUserUpdate}
-        />
+
+            {/* User Profile Modal */}
+            <UserProfileModal
+              user={selectedUser ? {
+                id: selectedUser.id,
+                email: selectedUser.email || '',
+                fullName: selectedUser.full_name,
+                username: selectedUser.username,
+                mobilePhone: selectedUser.mobile_phone,
+                role: selectedUser.role.toUpperCase() as 'ADMIN' | 'USER' | 'MODERATOR',
+                isVerified: selectedUser.is_verified,
+                isActive: selectedUser.is_active ?? true,
+                avatarUrl: selectedUser.avatarUrl,
+                bio: selectedUser.bio,
+                studentId: selectedUser.student_id,
+                createdAt: selectedUser.created_at,
+                lastLogin: selectedUser.last_login || undefined
+              } : null}
+              isOpen={showUserModal}
+              onClose={() => {
+                setShowUserModal(false)
+                setSelectedUser(null)
+              }}
+              onUpdate={handleUserUpdate}
+            />
+          </>
+        )}
+
+        {/* Users Section */}
+        {activeSection === 'users' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+          >
+            <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div>
+                  <CardTitle className="text-xl font-bold">User Management</CardTitle>
+                  <CardDescription>Manage user accounts and permissions</CardDescription>
+                </div>
+                
+                {/* Search */}
+                <div className="relative w-64">
+                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search users..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
+              </CardHeader>
+              
+              <CardContent>
+                {loading ? (
+                  <div className="flex justify-center items-center py-8">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    <p className="ml-2 text-lg">Loading users...</p>
+                  </div>
+                ) : filteredUsers.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    {searchTerm ? 'No matching users found' : 'No users found'}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-white/10">
+                          <th className="py-3 px-2 text-left">Student ID</th>
+                          <th className="py-3 px-2 text-left">Name</th>
+                          <th className="py-3 px-2 text-left">Username</th>
+                          <th className="py-3 px-2 text-left">Mobile</th>
+                          <th className="py-3 px-2 text-center">Status</th>
+                          <th className="py-3 px-2 text-center">Role</th>
+                          <th className="py-3 px-2 text-center">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredUsers.map((user) => (
+                          <tr key={user.id} className="border-b border-white/5 hover:bg-white/5">
+                            <td className="py-3 px-2">{user.student_id}</td>
+                            <td className="py-3 px-2">{user.full_name}</td>
+                            <td className="py-3 px-2">{user.username}</td>
+                            <td className="py-3 px-2">{user.mobile_phone}</td>
+                            <td className="py-3 px-2 text-center">
+                              {user.is_verified ? (
+                                <Badge className="bg-green-500/20 text-green-300 hover:bg-green-500/30">
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  Verified
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="border-yellow-500/50 text-yellow-300">
+                                  <XCircle className="w-3 h-3 mr-1" />
+                                  Unverified
+                                </Badge>
+                              )}
+                            </td>
+                            <td className="py-3 px-2 text-center">
+                              {user.role === 'admin' ? (
+                                <Badge className="bg-blue-500/20 text-blue-300 hover:bg-blue-500/30">
+                                  <Shield className="w-3 h-3 mr-1" />
+                                  Admin
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="border-white/20 text-white/70">
+                                  User
+                                </Badge>
+                              )}
+                            </td>
+                            <td className="py-3 px-2 text-center">
+                              <div className="flex justify-center gap-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  className="h-8 bg-gray-500/10 border-gray-500/30 text-gray-300 hover:bg-gray-500/20"
+                                  onClick={() => handleEditUser(user)}
+                                >
+                                  <Edit3 className="w-3 h-3 mr-1" />
+                                  Edit
+                                </Button>
+                                
+                                {!user.is_verified && (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    className="h-8 bg-green-500/10 border-green-500/30 text-green-300 hover:bg-green-500/20"
+                                    onClick={() => verifyUser(user.id)}
+                                    disabled={processingUser === user.id}
+                                  >
+                                    {processingUser === user.id ? (
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                      <UserCheck className="w-3 h-3 mr-1" />
+                                    )}
+                                    Verify
+                                  </Button>
+                                )}
+                                
+                                {user.role !== 'admin' && (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    className="h-8 bg-blue-500/10 border-blue-500/30 text-blue-300 hover:bg-blue-500/20"
+                                    onClick={() => promoteToAdmin(user.id)}
+                                    disabled={processingUser === user.id}
+                                  >
+                                    {processingUser === user.id ? (
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                      <Shield className="w-3 h-3 mr-1" />
+                                    )}
+                                    Make Admin
+                                  </Button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Content Section */}
+        {activeSection === 'content' && (
+          <ContentEditor />
+        )}
+
+        {/* Notifications Section */}
+        {activeSection === 'notifications' && (
+          <NotificationSystem />
+        )}
+
+        {/* Settings Section */}
+        {activeSection === 'settings' && (
+          <SystemSettings />
+        )}
       </motion.div>
     </div>
   )
