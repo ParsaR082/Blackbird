@@ -22,19 +22,26 @@ export function LoginForm() {
   const searchParams = useSearchParams()
   const redirectTo = searchParams ? searchParams.get('redirectTo') || '/dashboard' : '/dashboard'
 
+  // Clear error only when user types again
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value)
+    if (error) setError('')
+  }
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value)
+    if (error) setError('')
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    setError('')
+    // Don't clear error here, only on input change
 
     try {
       console.log(`[LoginForm] Attempting login for ${email}, will redirect to ${redirectTo}`)
-      
       const result = await login(email, password)
-      
       if (result.success) {
         console.log(`[LoginForm] Login successful, redirecting to ${redirectTo}`)
-        
         // Let the auth context handle the redirect if it has a redirect URL
         if (!result.redirect) {
           router.push(redirectTo)
@@ -77,7 +84,7 @@ export function LoginForm() {
                 <Input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={handleEmailChange}
                   placeholder="Enter your email"
                   required
                   className="pl-10"
@@ -89,7 +96,7 @@ export function LoginForm() {
                 <Input
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={handlePasswordChange}
                   placeholder="Enter your password"
                   required
                   className="pl-10"
