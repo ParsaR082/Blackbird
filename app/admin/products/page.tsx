@@ -57,7 +57,9 @@ export default function AdminProductsPage() {
       setLoading(false)
     } catch (err) {
       console.error('Error fetching products:', err)
-      setError('Failed to load products. Please try again.')
+      // Fallback to mock data for development
+      console.log('Using mock data as fallback')
+      setProducts(mockProducts)
       setLoading(false)
     }
   }
@@ -178,48 +180,55 @@ export default function AdminProductsPage() {
     )
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <ProductsHeader 
-        onCreateProduct={() => {
-          setSelectedProduct(null)
-          setDialogMode('create')
-          setShowDialog(true)
-        }}
-      />
+    <div className="min-h-screen bg-black text-white">
+      {/* Background Effects */}
+      <div className="fixed inset-0 bg-gradient-to-br from-black via-gray-900 to-black" />
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.1),transparent_50%)]" />
+      <BackgroundNodes isMobile={false} />
       
-      <ProductsStats products={products} />
-      
-      <ProductsFilters
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        categoryFilter={categoryFilter}
-        setCategoryFilter={setCategoryFilter}
-        products={products}
-      />
-      
-      <ProductsList
-        products={filteredProducts}
-        onEditProduct={(product) => {
-          setSelectedProduct(product)
-          setDialogMode('edit')
-          setShowDialog(true)
-        }}
-        onViewProduct={(product) => {
-          // In a real app, navigate to product detail page
-          toast.info(`Viewing ${product.name}`)
-        }}
-        onDeleteProduct={handleDeleteProduct}
-        onToggleActive={handleToggleActive}
-      />
-      
-      <ProductDialog
-        isOpen={showDialog}
-        onClose={() => setShowDialog(false)}
-        mode={dialogMode}
-        product={selectedProduct}
-        onSave={handleSaveProduct}
-        onDelete={handleDeleteProduct}
-      />
+      <div className="relative z-10 container mx-auto pt-24 pb-8 px-4">
+        <ProductsHeader 
+          onCreateProduct={() => {
+            setSelectedProduct(null)
+            setDialogMode('create')
+            setShowDialog(true)
+          }}
+        />
+        
+        <ProductsStats products={products} />
+        
+        <ProductsFilters
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          categoryFilter={categoryFilter}
+          setCategoryFilter={setCategoryFilter}
+          products={products}
+        />
+        
+        <ProductsList
+          products={filteredProducts}
+          onEditProduct={(product) => {
+            setSelectedProduct(product)
+            setDialogMode('edit')
+            setShowDialog(true)
+          }}
+          onViewProduct={(product) => {
+            // In a real app, navigate to product detail page
+            toast.info(`Viewing ${product.name}`)
+          }}
+          onDeleteProduct={handleDeleteProduct}
+          onToggleActive={handleToggleActive}
+        />
+        
+        <ProductDialog
+          isOpen={showDialog}
+          onClose={() => setShowDialog(false)}
+          mode={dialogMode}
+          product={selectedProduct}
+          onSave={handleSaveProduct}
+          onDelete={handleDeleteProduct}
+        />
+      </div>
     </div>
   )
 } 

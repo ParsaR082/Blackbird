@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       .toArray();
 
     // Transform policies data
-    const securityPolicies = policies.map(policy => ({
+    const securityPolicies = policies.map((policy: any) => ({
       id: policy._id.toString(),
       name: policy.name,
       description: policy.description,

@@ -464,4 +464,6 @@ export default function IntegrationDashboard() {
       </Tabs>
     </div>
   );
-} 
+}
+
+export { IntegrationDashboard }; 

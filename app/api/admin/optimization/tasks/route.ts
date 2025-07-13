@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
       .toArray();
 
     // Transform tasks data
-    const optimizationTasks = tasks.map(task => ({
+    const optimizationTasks = tasks.map((task: any) => ({
       id: task._id.toString(),
       name: task.name,
       status: task.status,

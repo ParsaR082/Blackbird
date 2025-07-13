@@ -504,26 +504,11 @@ export function AdvancedUserManagement({ className }: AdvancedUserManagementProp
 
                     <div className="space-y-2">
                       <Label htmlFor="userDepartment">Department</Label>
-                      <Select value={userForm.department} onValueChange={(value) => setUserForm({ ...userForm, department: value })}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select department" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {departments.map((dept) => (
-                            <SelectItem key={dept.id} value={dept.name}>
-                              {dept.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="userActive">Active</Label>
-                      <Switch
-                        id="userActive"
-                        checked={userForm.isActive}
-                        onCheckedChange={(checked) => setUserForm({ ...userForm, isActive: checked })}
+                      <Input
+                        id="userDepartment"
+                        value={userForm.department}
+                        onChange={(e) => setUserForm({ ...userForm, department: e.target.value })}
+                        placeholder="Engineering"
                       />
                     </div>
 
@@ -553,6 +538,7 @@ export function AdvancedUserManagement({ className }: AdvancedUserManagementProp
                       <CardTitle>User Groups</CardTitle>
                       <CardDescription>Manage user groups and permissions</CardDescription>
                     </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   {groups.length === 0 ? (

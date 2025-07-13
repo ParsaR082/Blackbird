@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
               { 
                 $set: { 
                   status: 'failed',
-                  error: error.message,
+                  error: (error as Error).message,
                   updatedAt: new Date()
                 }
               }
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
           { 
             $set: { 
               status: 'failed',
-              error: error.message,
+              error: (error as Error).message,
               updatedAt: new Date()
             }
           }

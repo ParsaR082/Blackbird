@@ -28,8 +28,10 @@ import {
   AlertCircle,
   X,
   FileText,
-  Link
+  Link,
+  ChevronLeft
 } from 'lucide-react'
+import BackgroundNodes from '@/components/BackgroundNodes'
 
 interface Attachment {
   name: string
@@ -398,32 +400,36 @@ export default function AdminAssignmentsPage() {
 
   return (
     <div className="min-h-screen bg-black text-white">
+      {/* Background Effects */}
       <div className="fixed inset-0 bg-gradient-to-br from-black via-gray-900 to-black" />
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.1),transparent_50%)]" />
+      <BackgroundNodes isMobile={false} />
       
       <div className="relative z-10 container mx-auto pt-24 pb-8 px-4">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
-            <div>
-              <Button
-                variant="ghost"
-                onClick={() => router.push('/admin')}
-                className="mb-4 text-white/60 hover:text-white"
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="bg-white/10 hover:bg-white/20"
+                onClick={() => router.push('/admin/university')}
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Admin Panel
+                <ChevronLeft className="h-5 w-5" />
               </Button>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
-                Assignment Management
-              </h1>
-              <p className="text-white/60 mt-2">Create, edit, and manage course assignments</p>
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
+                  Assignment Management
+                </h1>
+                <p className="text-white/60 mt-1">Create, edit, and manage course assignments</p>
+              </div>
             </div>
             <Button 
               onClick={handleCreateAssignment}
-              className="gap-2 bg-blue-600 hover:bg-blue-700"
+              className="gap-2"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="w-4 h-4" />
               New Assignment
             </Button>
           </div>
@@ -478,7 +484,7 @@ export default function AdminAssignmentsPage() {
                   <SelectValue placeholder="Filter by Course" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Courses</SelectItem>
+                  <SelectItem value="all">All Courses</SelectItem>
                   {courses.map(course => (
                     <SelectItem key={course._id} value={course._id}>
                       {course.courseCode} - {course.title}
@@ -492,7 +498,7 @@ export default function AdminAssignmentsPage() {
                   <SelectValue placeholder="Assignment Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
+                  <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="homework">Homework</SelectItem>
                   <SelectItem value="quiz">Quiz</SelectItem>
                   <SelectItem value="exam">Exam</SelectItem>
