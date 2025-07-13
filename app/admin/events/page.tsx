@@ -139,6 +139,8 @@ export default function AdminEventsPage() {
       setCreatingEvent(true)
       setError(null)
 
+      console.log('Raw form data received:', eventData)
+
       // Transform the form data to match API expectations
       const apiData = {
         title: eventData.title,
@@ -155,7 +157,9 @@ export default function AdminEventsPage() {
         imageUrl: undefined // Add image upload later
       }
 
-      console.log('Submitting event data:', apiData)
+      console.log('Transformed API data:', apiData)
+      console.log('Category before transform:', eventData.category)
+      console.log('Category after transform:', apiData.category)
 
       const response = await fetch('/api/admin/events', {
         method: 'POST',
