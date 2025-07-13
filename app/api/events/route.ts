@@ -8,11 +8,11 @@ export async function GET(request: NextRequest) {
     await connectToDatabase()
 
     // Get query parameters
-    const { searchParams } = new URL(request.url)
-    const category = searchParams.get('category')
-    const limit = parseInt(searchParams.get('limit') || '20')
-    const search = searchParams.get('search')
-    const status = searchParams.get('status') || 'upcoming,registration-open'
+    const url = new URL(request.url)
+    const category = url.searchParams.get('category')
+    const limit = parseInt(url.searchParams.get('limit') || '20')
+    const search = url.searchParams.get('search')
+    const status = url.searchParams.get('status') || 'upcoming,registration-open'
 
     // Build query
     const query: any = { isActive: true }

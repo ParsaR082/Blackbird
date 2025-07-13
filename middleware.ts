@@ -73,7 +73,14 @@ export async function middleware(req: NextRequest) {
 // Configure middleware to run on specific paths
 export const config = {
   matcher: [
-    // Apply to all routes except static assets and API routes
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    // Apply only to protected routes and exclude API routes
+    '/dashboard/:path*',
+    '/admin/:path*',
+    '/profile/:path*',
+    '/settings/:path*',
+    '/training/:path*',
+    '/university/:path*',
+    '/users/:path*',
+    '/auth/:path*'
   ],
 } 
