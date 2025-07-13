@@ -24,6 +24,7 @@ import {
 } from 'lucide-react'
 import BackgroundNodes from '@/components/BackgroundNodes'
 import CreateEventModal from '@/app/events/CreateEventModal'
+import EditEventModal from '@/app/events/EditEventModal'
 
 // Define event types based on documentation
 interface Event {
@@ -59,8 +60,10 @@ export default function AdminEventsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [activeTab, setActiveTab] = useState('all')
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
   const [editingEvent, setEditingEvent] = useState<Event | null>(null)
   const [creatingEvent, setCreatingEvent] = useState(false)
+  const [updatingEvent, setUpdatingEvent] = useState(false)
   
   const { user, isAuthenticated, isLoading } = useAuth()
   const router = useRouter()
@@ -195,8 +198,47 @@ export default function AdminEventsPage() {
   // Handle edit event
   const handleEditEvent = (event: Event) => {
     setEditingEvent(event)
-    // In a real implementation, you would show an edit modal or navigate to an edit page
-    console.log('Editing event:', event)
+    setShowEditModal(true)
+  }
+
+  // Handle event update
+  const handleEventUpdate = async (eventData: any) => {
+    try {
+      setUpdatingEvent(true)
+      setError(null)
+
+      console.log('Updating event with data:', eventData)
+
+      const response = await fetch('/api/admin/events', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(eventData)
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        console.error('Update event error:', result)
+        throw new Error(result.error || 'Failed to update event')
+      }
+
+      // Update the event in the list
+      setEvents(prev => prev.map(e => e.id === eventData.id ? result.event : e))
+      setShowEditModal(false)
+      setEditingEvent(null)
+      
+      // Show success message
+      alert('Event updated successfully!')
+      
+    } catch (err: any) {
+      console.error('Error updating event:', err)
+      setError(err.message || 'Failed to update event')
+    } finally {
+      setUpdatingEvent(false)
+    }
   }
   
   // Handle delete event
@@ -478,6 +520,17 @@ export default function AdminEventsPage() {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSubmit={handleEventSubmit}
+      />
+
+      {/* Edit Event Modal */}
+      <EditEventModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false)
+          setEditingEvent(null)
+        }}
+        onSubmit={handleEventUpdate}
+        event={editingEvent}
       />
     </div>
   )
