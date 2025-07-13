@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -65,7 +65,7 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
   const [timeRange, setTimeRange] = useState('7d')
   const [refreshing, setRefreshing] = useState(false)
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch(`/api/admin/analytics?range=${timeRange}`)
@@ -82,7 +82,7 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [timeRange])
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -124,7 +124,7 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
 
   useEffect(() => {
     fetchAnalytics()
-  }, [timeRange])
+  }, [fetchAnalytics])
 
   if (loading) {
     return (

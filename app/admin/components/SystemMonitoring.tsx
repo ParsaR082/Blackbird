@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -155,7 +155,7 @@ export function SystemMonitoring({ className }: SystemMonitoringProps) {
     }
   }
 
-  const refreshAll = async () => {
+  const refreshAll = useCallback(async () => {
     setLoading(true)
     await Promise.all([
       fetchMetrics(),
@@ -164,7 +164,7 @@ export function SystemMonitoring({ className }: SystemMonitoringProps) {
       fetchPerformance()
     ])
     setLoading(false)
-  }
+  }, [])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -218,7 +218,7 @@ export function SystemMonitoring({ className }: SystemMonitoringProps) {
       const interval = setInterval(refreshAll, 30000) // Refresh every 30 seconds
       return () => clearInterval(interval)
     }
-  }, [autoRefresh])
+  }, [autoRefresh, refreshAll])
 
   return (
     <div className={`space-y-6 ${className}`}>

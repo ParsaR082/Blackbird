@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -54,6 +54,26 @@ export default function GlobalSearch() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  const handleResultClick = useCallback((result: SearchResult) => {
+    setShowResults(false)
+    setSelectedIndex(-1)
+    
+    switch (result.type) {
+      case 'course':
+        router.push(`/admin/university/courses?search=${encodeURIComponent(result.displayName)}`)
+        break
+      case 'assignment':
+        router.push(`/admin/university/assignments?search=${encodeURIComponent(result.displayName)}`)
+        break
+      case 'student':
+        router.push(`/admin/university/students?search=${encodeURIComponent(result.displayName)}`)
+        break
+      case 'semester':
+        router.push(`/admin/university/semesters?search=${encodeURIComponent(result.displayName)}`)
+        break
+    }
+  }, [router])
+
   // Handle keyboard navigation
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -87,7 +107,7 @@ export default function GlobalSearch() {
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [showResults, results, selectedIndex])
+  }, [showResults, results, selectedIndex, handleResultClick])
 
   const performSearch = async (searchQuery: string) => {
     if (!searchQuery.trim()) {
@@ -131,26 +151,6 @@ export default function GlobalSearch() {
 
     return () => clearTimeout(timeoutId)
   }, [query])
-
-  const handleResultClick = (result: SearchResult) => {
-    setShowResults(false)
-    setSelectedIndex(-1)
-    
-    switch (result.type) {
-      case 'course':
-        router.push(`/admin/university/courses?search=${encodeURIComponent(result.displayName)}`)
-        break
-      case 'assignment':
-        router.push(`/admin/university/assignments?search=${encodeURIComponent(result.displayName)}`)
-        break
-      case 'student':
-        router.push(`/admin/university/students?search=${encodeURIComponent(result.displayName)}`)
-        break
-      case 'semester':
-        router.push(`/admin/university/semesters?search=${encodeURIComponent(result.displayName)}`)
-        break
-    }
-  }
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -265,7 +265,7 @@ export default function GlobalSearch() {
                     router.push(`/admin/university/search?q=${encodeURIComponent(query)}`)
                   }}
                 >
-                  View all results for "{query}"
+                  View all results for &quot;{query}&quot;
                 </Button>
               </div>
             )}
@@ -278,7 +278,7 @@ export default function GlobalSearch() {
         <Card className="absolute top-full mt-2 w-full bg-black/95 border-white/10 shadow-xl z-50">
           <CardContent className="p-4 text-center">
             <Search className="w-8 h-8 mx-auto text-white/40 mb-2" />
-            <p className="text-sm text-white/60">No results found for "{query}"</p>
+            <p className="text-sm text-white/60">No results found for &quot;{query}&quot;</p>
             <p className="text-xs text-white/40 mt-1">Try different keywords or check spelling</p>
           </CardContent>
         </Card>
