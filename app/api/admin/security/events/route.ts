@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       .toArray();
 
     // Transform events data
-    const securityEvents = events.map(event => ({
+    const securityEvents = events.map((event: any) => ({
       id: event._id.toString(),
       timestamp: event.timestamp,
       eventType: event.eventType,

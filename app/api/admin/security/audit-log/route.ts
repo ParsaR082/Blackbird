@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       .toArray();
 
     // Transform audit log data
-    const auditEvents = auditLog.map(event => ({
+    const auditEvents = auditLog.map((event: any) => ({
       id: event._id.toString(),
       timestamp: event.timestamp,
       eventType: event.eventType,

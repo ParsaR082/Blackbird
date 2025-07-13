@@ -32,6 +32,89 @@ const updateProductSchema = z.object({
   isActive: z.boolean().optional()
 })
 
+export async function GET(request: NextRequest) {
+  try {
+    // Check if user is admin
+    const currentUser = await getUserFromRequest(request)
+    if (!currentUser || currentUser.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'Unauthorized. Admin access required.' },
+        { status: 403 }
+      )
+    }
+
+    await connectToDatabase()
+
+    // Get query parameters
+    const { searchParams } = new URL(request.url)
+    const category = searchParams.get('category')
+    const isActive = searchParams.get('isActive')
+    const search = searchParams.get('search')
+
+    // Build query
+    let query: any = {}
+    
+    if (category && category !== 'all') {
+      query.category = category
+    }
+    
+    if (isActive !== null) {
+      query.isActive = isActive === 'true'
+    }
+    
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ]
+    }
+
+    // Fetch products with populated createdBy field
+    const products = await Product.find(query)
+      .populate('createdBy', 'full_name username')
+      .sort({ createdAt: -1 })
+      .lean() as Array<any>
+
+    // Transform the data to match the expected format
+    const transformedProducts = products.map(product => {
+      const p = product as any;
+      return {
+        id: p._id.toString(),
+        name: p.name,
+        description: p.description,
+        price: p.price,
+        currency: p.currency,
+        category: p.category,
+        imageUrl: p.imageUrl,
+        features: p.features || [],
+        specifications: p.specifications || {},
+        stock: p.stock,
+        isActive: p.isActive !== false, // Default to true if not set
+        createdBy: {
+          id: p.createdBy?._id?.toString() || p.createdBy?.toString() || 'unknown',
+          name: p.createdBy?.full_name || p.createdBy?.name || 'Unknown User',
+          username: p.createdBy?.username || 'unknown'
+        },
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt
+      }
+    })
+
+    return NextResponse.json({
+      success: true,
+      products: transformedProducts,
+      total: transformedProducts.length
+    })
+
+  } catch (error) {
+    console.error('Get products error:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch products' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Check if user is admin
@@ -62,8 +145,12 @@ export async function POST(request: NextRequest) {
     const product = await Product.create({
       ...productData,
       createdBy: currentUser.id,
-      specifications: productData.specifications || {}
+      specifications: productData.specifications || {},
+      isActive: true
     })
+
+    // Populate the createdBy field for the response
+    await product.populate('createdBy', 'full_name username')
 
     return NextResponse.json({
       success: true,
@@ -80,7 +167,13 @@ export async function POST(request: NextRequest) {
         specifications: product.specifications,
         stock: product.stock,
         isActive: product.isActive,
-        createdAt: product.createdAt
+        createdBy: {
+          id: product.createdBy._id.toString(),
+          name: product.createdBy.full_name || product.createdBy.name || 'Unknown User',
+          username: product.createdBy.username || 'unknown'
+        },
+        createdAt: product.createdAt,
+        updatedAt: product.updatedAt
       }
     }, { status: 201 })
 
@@ -124,7 +217,7 @@ export async function PUT(request: NextRequest) {
       id,
       { $set: updateData },
       { new: true }
-    )
+    ).populate('createdBy', 'full_name username')
 
     if (!updatedProduct) {
       return NextResponse.json(
@@ -148,6 +241,12 @@ export async function PUT(request: NextRequest) {
         specifications: updatedProduct.specifications,
         stock: updatedProduct.stock,
         isActive: updatedProduct.isActive,
+        createdBy: {
+          id: updatedProduct.createdBy._id.toString(),
+          name: updatedProduct.createdBy.full_name || updatedProduct.createdBy.name || 'Unknown User',
+          username: updatedProduct.createdBy.username || 'unknown'
+        },
+        createdAt: updatedProduct.createdAt,
         updatedAt: updatedProduct.updatedAt
       }
     })

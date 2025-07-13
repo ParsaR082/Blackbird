@@ -534,4 +534,6 @@ export default function TwoFactorAuth() {
       )}
     </div>
   );
-} 
+}
+
+export { TwoFactorAuth }; 

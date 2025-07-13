@@ -433,7 +433,7 @@ export default function CoursesPage() {
                     <SelectValue placeholder="Department" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Departments</SelectItem>
+                    <SelectItem value="all">All Departments</SelectItem>
                     {departments.map(dept => (
                       <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                     ))}
@@ -444,7 +444,7 @@ export default function CoursesPage() {
                     <SelectValue placeholder="Level" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Levels</SelectItem>
+                    <SelectItem value="all">All Levels</SelectItem>
                     {levels.map(level => (
                       <SelectItem key={level} value={level}>{level}</SelectItem>
                     ))}
@@ -455,7 +455,7 @@ export default function CoursesPage() {
                     <SelectValue placeholder="Semester" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Semesters</SelectItem>
+                    <SelectItem value="all">All Semesters</SelectItem>
                     {semesters.map(semester => (
                       <SelectItem key={semester} value={semester}>{semester}</SelectItem>
                     ))}
@@ -466,7 +466,7 @@ export default function CoursesPage() {
                     <SelectValue placeholder="Year" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Years</SelectItem>
+                    <SelectItem value="all">All Years</SelectItem>
                     {years.map(year => (
                       <SelectItem key={year} value={year}>{year}</SelectItem>
                     ))}

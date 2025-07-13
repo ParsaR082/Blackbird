@@ -482,7 +482,7 @@ export default function SemesterEnrollmentPage() {
                           <SelectValue placeholder="All Departments" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All Departments</SelectItem>
+                          <SelectItem value="all">All Departments</SelectItem>
                           {departments.map(dept => (
                             <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                           ))}
@@ -497,7 +497,7 @@ export default function SemesterEnrollmentPage() {
                           <SelectValue placeholder="All Levels" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All Levels</SelectItem>
+                          <SelectItem value="all">All Levels</SelectItem>
                           <SelectItem value="undergraduate">Undergraduate</SelectItem>
                           <SelectItem value="graduate">Graduate</SelectItem>
                         </SelectContent>

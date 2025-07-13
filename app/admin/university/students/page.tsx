@@ -23,7 +23,8 @@ import {
   Mail,
   Eye,
   BarChart4,
-  AlertCircle
+  AlertCircle,
+  ChevronLeft
 } from 'lucide-react'
 import BackgroundNodes from '@/components/BackgroundNodes'
 
@@ -151,24 +152,32 @@ export default function AdminStudentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-6">
+    <div className="min-h-screen bg-black text-white">
+      {/* Background Effects */}
       <div className="fixed inset-0 bg-gradient-to-br from-black via-gray-900 to-black" />
       <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.1),transparent_50%)]" />
       <BackgroundNodes isMobile={false} />
       
-      <div className="relative z-10 max-w-6xl mx-auto">
-        <div className="flex items-center mb-8">
-          <Button 
-            variant="ghost" 
-            className="mr-4 hover:bg-white/10"
-            onClick={() => router.push('/admin/university')}
-          >
-            <ArrowLeft className="h-5 w-5 mr-2" />
-            Back
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold">Student Management</h1>
-            <p className="text-gray-400">Manage student enrollments and academic records</p>
+      <div className="relative z-10 container mx-auto pt-24 pb-8 px-4">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="bg-white/10 hover:bg-white/20"
+                onClick={() => router.push('/admin/university')}
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
+                  Student Management
+                </h1>
+                <p className="text-white/60 mt-1">Manage student enrollments and academic records</p>
+              </div>
+            </div>
           </div>
         </div>
         

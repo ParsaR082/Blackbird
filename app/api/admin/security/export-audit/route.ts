@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
         'Action Performed'
       ];
 
-      const csvRows = auditLog.map(event => [
+      const csvRows = auditLog.map((event: any) => [
         new Date(event.timestamp).toISOString(),
         event.eventType,
         event.severity,
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
 
       const csvContent = [
         csvHeaders.join(','),
-        ...csvRows.map(row => row.map(field => `"${field}"`).join(','))
+        ...csvRows.map((row: any) => row.map((field: any) => `"${field}"`).join(','))
       ].join('\n');
 
       return new NextResponse(csvContent, {

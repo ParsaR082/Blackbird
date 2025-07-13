@@ -579,4 +579,6 @@ export default function SecurityCenter() {
       </Card>
     </div>
   );
-} 
+}
+
+export { SecurityCenter }; 

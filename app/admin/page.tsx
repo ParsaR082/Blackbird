@@ -610,11 +610,11 @@ export default function AdminPage() {
                     <Button 
                       key={i}
                       variant="outline"
-                      className="flex items-center justify-start gap-2 bg-white/5 hover:bg-white/10"
+                      className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-center min-h-[40px]"
                       onClick={() => router.push(action.path)}
                     >
-                      <action.icon className="w-4 h-4" />
-                      <span>{action.name}</span>
+                      <action.icon className="w-4 h-4 flex-shrink-0" />
+                      <span className="truncate">{action.name}</span>
                     </Button>
                   ))}
                 </div>
@@ -622,7 +622,7 @@ export default function AdminPage() {
               <CardFooter>
                 <Button 
                   variant="ghost" 
-                  className="w-full justify-center bg-white/5 hover:bg-white/10"
+                  className="w-full justify-center bg-white/5 hover:bg-white/10 text-center"
                   onClick={() => router.push(module.path)}
                 >
                   View All
@@ -647,10 +647,10 @@ export default function AdminPage() {
               </div>
               <Button 
                 variant="outline" 
-                className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+                className="bg-white/10 hover:bg-white/20 text-white border-white/20 flex items-center justify-center gap-2"
                 onClick={() => router.push('/admin/products?action=create')}
               >
-                <PlusCircle className="w-4 h-4 mr-2" />
+                <PlusCircle className="w-4 h-4" />
                 Add Product
               </Button>
             </CardHeader>
@@ -678,10 +678,10 @@ export default function AdminPage() {
               </div>
               <Button 
                 variant="outline" 
-                className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+                className="bg-white/10 hover:bg-white/20 text-white border-white/20 flex items-center justify-center gap-2"
                 onClick={() => router.push('/admin/purchases')}
               >
-                <ShoppingCart className="w-4 h-4 mr-2" />
+                <ShoppingCart className="w-4 h-4" />
                 View Purchases
               </Button>
             </CardHeader>

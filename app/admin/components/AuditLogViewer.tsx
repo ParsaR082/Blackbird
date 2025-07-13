@@ -555,3 +555,5 @@ export default function AuditLogViewer() {
     </div>
   );
 } 
+
+export { AuditLogViewer }; 

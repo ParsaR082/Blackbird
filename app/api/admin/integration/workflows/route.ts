@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       .toArray();
 
     // Transform workflow data
-    const workflowStatus = workflows.map(workflow => ({
+    const workflowStatus = workflows.map((workflow: any) => ({
       id: workflow._id.toString(),
       name: workflow.name || 'Unnamed Workflow',
       status: workflow.status,

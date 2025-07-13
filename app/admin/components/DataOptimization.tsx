@@ -364,4 +364,6 @@ export default function DataOptimization() {
       </Card>
     </div>
   );
-} 
+}
+
+export { DataOptimization }; 
