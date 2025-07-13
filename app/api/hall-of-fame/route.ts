@@ -70,21 +70,23 @@ export async function GET(request: NextRequest) {
     })
 
     // Format the response
-    const formattedEntries = hallOfFameEntries.map((entry, index) => ({
-      id: entry._id.toString(),
-      user: {
-        id: entry.userId._id.toString(),
-        name: entry.userId.fullName,
-        username: entry.userId.username,
-        avatarUrl: entry.userId.avatarUrl
-      },
-      title: entry.title,
-      achievement: entry.achievement,
-      category: entry.category,
-      yearAchieved: entry.yearAchieved,
-      dateInducted: entry.dateInducted,
-      rank: index + 1
-    }))
+    const formattedEntries = hallOfFameEntries
+      .filter(entry => entry.userId) // Filter out entries with null userId
+      .map((entry, index) => ({
+        id: entry._id.toString(),
+        user: {
+          id: entry.userId._id.toString(),
+          name: entry.userId.fullName || 'Unknown User',
+          username: entry.userId.username || 'unknown',
+          avatarUrl: entry.userId.avatarUrl
+        },
+        title: entry.title,
+        achievement: entry.achievement,
+        category: entry.category,
+        yearAchieved: entry.yearAchieved,
+        dateInducted: entry.dateInducted,
+        rank: index + 1
+      }))
 
     return NextResponse.json({
       success: true,

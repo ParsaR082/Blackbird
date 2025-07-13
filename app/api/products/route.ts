@@ -79,23 +79,25 @@ export async function GET(request: NextRequest) {
     })
 
     // Format the response
-    const formattedProducts = products.map(product => ({
-      id: product._id.toString(),
-      name: product.name,
-      description: product.description,
-      price: product.price,
-      currency: product.currency,
-      category: product.category,
-      imageUrl: product.imageUrl,
-      features: product.features,
-      specifications: product.specifications,
-      stock: product.stock,
-      createdBy: {
-        name: product.createdBy.fullName,
-        username: product.createdBy.username
-      },
-      createdAt: product.createdAt
-    }))
+    const formattedProducts = products
+      .filter(product => product.createdBy) // Filter out products with null createdBy
+      .map(product => ({
+        id: product._id.toString(),
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        currency: product.currency,
+        category: product.category,
+        imageUrl: product.imageUrl,
+        features: product.features,
+        specifications: product.specifications,
+        stock: product.stock,
+        createdBy: {
+          name: product.createdBy.fullName || 'Unknown User',
+          username: product.createdBy.username || 'unknown'
+        },
+        createdAt: product.createdAt
+      }))
 
     return NextResponse.json({
       success: true,
