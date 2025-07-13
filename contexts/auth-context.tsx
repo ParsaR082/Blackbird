@@ -50,7 +50,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         setIsLoading(true)
         const response = await fetch('/api/auth/validate', {
-          cache: 'no-store'
+          cache: 'no-store',
+          credentials: 'include' // Ensure cookies are sent
         })
         
         if (!isMounted) return
@@ -58,8 +59,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (response.ok) {
           const userData = await response.json()
           setUser(userData)
+          console.log('[Auth] User authenticated:', userData.email)
         } else {
           setUser(null)
+          console.log('[Auth] Authentication failed:', response.status)
         }
       } catch (error) {
         console.error('Auth check error:', error)
@@ -81,7 +84,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true)
       const response = await fetch('/api/auth/validate', {
-        cache: 'no-store'
+        cache: 'no-store',
+        credentials: 'include' // Ensure cookies are sent
       })
       
       if (response.ok) {
@@ -120,7 +124,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           'x-csrf-token': csrfToken || ''
         },
         body: JSON.stringify({ identifier, password }),
-        cache: 'no-store'
+        cache: 'no-store',
+        credentials: 'include' // Ensure cookies are sent
       })
 
       const data = await response.json()

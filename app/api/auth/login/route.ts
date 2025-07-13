@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
     // Determine if we're in production
     const isProduction = process.env.NODE_ENV === 'production'
     
-    // Set cookie options
+    // Set cookie options - Railway compatible
     const cookieOptions = {
       name: 'session_token',
       value: sessionToken,
@@ -205,11 +205,20 @@ export async function POST(request: NextRequest) {
       path: '/',
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'lax' as const
+      sameSite: 'lax' as const,
+      // Remove domain setting to let browser handle it automatically
     }
     
     // Set session cookie
     cookies().set(cookieOptions)
+    
+    // Also set a response header for debugging
+    console.log(`[Login] Cookie set with options:`, {
+      secure: isProduction,
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/'
+    })
     
     console.log(`[Login] Session cookie set successfully for user: ${user.email}`)
 

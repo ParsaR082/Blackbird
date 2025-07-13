@@ -10,8 +10,10 @@ export async function GET(request: NextRequest) {
     // Get session token from cookie
     const sessionToken = cookies().get('session_token')?.value
     const requestUrl = request.url
+    const userAgent = request.headers.get('user-agent') || 'unknown'
     
     console.log(`[Validate] Validating session at ${requestUrl}`)
+    console.log(`[Validate] User-Agent: ${userAgent}`)
 
     if (!sessionToken) {
       console.log('[Validate] No session token found')
@@ -20,6 +22,8 @@ export async function GET(request: NextRequest) {
         { status: 401 }
       )
     }
+
+    console.log(`[Validate] Session token found: ${sessionToken.substring(0, 8)}...`)
 
     await connectToDatabase()
 

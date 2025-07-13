@@ -37,7 +37,8 @@ export async function middleware(req: NextRequest) {
       
       const validateRes = await fetch(validateUrl, {
         headers: {
-          Cookie: `session_token=${sessionToken}`
+          Cookie: `session_token=${sessionToken}`,
+          'User-Agent': 'Railway-Middleware/1.0'
         },
         cache: 'no-store'
       })
