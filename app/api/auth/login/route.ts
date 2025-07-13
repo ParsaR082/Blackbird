@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
       path: '/',
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'lax' as const,
+      sameSite: isProduction ? 'none' as const : 'lax' as const,
       // Remove domain setting to let browser handle it automatically
     }
     
@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
     console.log(`[Login] Cookie set with options:`, {
       secure: isProduction,
       httpOnly: true,
-      sameSite: 'lax',
+      sameSite: isProduction ? 'none' : 'lax',
       path: '/'
     })
     
