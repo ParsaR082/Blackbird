@@ -1,10 +1,11 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Shield } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useTheme } from '@/contexts/theme-context'
+import { useAuth } from '@/contexts/auth-context'
 import { useRouter } from 'next/navigation'
 
 const itemVariants = {
@@ -53,6 +54,7 @@ const quickAccessModules = [
 
 export function QuickAccess() {
   const { theme } = useTheme()
+  const { user, isAuthenticated } = useAuth()
   const router = useRouter()
   
   const handleNavigate = (path: string) => {
@@ -124,6 +126,54 @@ export function QuickAccess() {
                 </Button>
               </div>
             ))}
+            
+            {/* Admin Dashboard Access for Admin Users */}
+            {isAuthenticated && user?.role === 'ADMIN' && (
+              <div 
+                className="flex items-center justify-between p-4 border rounded-lg transition-all duration-300 hover:shadow-md cursor-pointer"
+                style={{
+                  borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)',
+                  backgroundColor: 'transparent'
+                }}
+                onClick={() => handleNavigate('/admin')}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = theme === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-slate-600 to-gray-800 text-white">
+                    <Shield className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium transition-colors duration-300" style={{ color: 'var(--text-color)' }}>
+                      Admin Dashboard
+                    </h3>
+                    <p className="text-sm transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>
+                      Manage users, events, and system settings
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  className="transition-colors duration-300"
+                  style={{ color: 'var(--text-secondary)' }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = 'var(--text-color)'
+                    e.currentTarget.style.backgroundColor = theme === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = 'var(--text-secondary)'
+                    e.currentTarget.style.backgroundColor = 'transparent'
+                  }}
+                >
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

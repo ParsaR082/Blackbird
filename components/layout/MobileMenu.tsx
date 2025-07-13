@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useAuth } from '@/contexts/auth-context'
 import { MAIN_NAV } from '@/constants'
 import { MobileSearch } from './MobileSearch'
 import { MobileMenuActions } from './MobileMenuActions'
@@ -14,6 +15,7 @@ interface MobileMenuProps {
 
 export function MobileMenu({ mobileMenuOpen, setMobileMenuOpen }: MobileMenuProps) {
   const pathname = usePathname()
+  const { user, isAuthenticated } = useAuth()
 
   return (
     <AnimatePresence>
@@ -55,6 +57,26 @@ export function MobileMenu({ mobileMenuOpen, setMobileMenuOpen }: MobileMenuProp
                   {item.title}
                 </Link>
               ))}
+              
+              {/* Admin Dashboard Link for Admin Users */}
+              {isAuthenticated && user?.role === 'ADMIN' && (
+                <Link
+                  href="/admin"
+                  className="text-sm font-medium transition-colors"
+                  style={{
+                    color: pathname === '/admin' ? 'var(--text-color)' : 'var(--text-secondary)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = 'var(--text-color)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = pathname === '/admin' ? 'var(--text-color)' : 'var(--text-secondary)'
+                  }}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Admin Dashboard
+                </Link>
+              )}
             </nav>
 
             <MobileMenuActions />
