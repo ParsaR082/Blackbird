@@ -41,27 +41,39 @@ const updateEventSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('[Admin Events] Starting POST request')
+    
     // Check if user is admin
     const currentUser = await getUserFromRequest(request)
+    console.log('[Admin Events] Current user:', currentUser ? { id: currentUser.id, role: currentUser.role } : 'null')
+    
     if (!currentUser || currentUser.role !== 'ADMIN') {
+      console.log('[Admin Events] Unauthorized access attempt')
       return NextResponse.json(
         { error: 'Unauthorized. Admin access required.' },
         { status: 403 }
       )
     }
 
+    console.log('[Admin Events] Admin access confirmed')
+
     await connectToDatabase()
+    console.log('[Admin Events] Database connected')
 
     const data = await request.json()
+    console.log('[Admin Events] Request data:', data)
     
     // Validate input
     const result = createEventSchema.safeParse(data)
     if (!result.success) {
+      console.log('[Admin Events] Validation failed:', result.error.format())
       return NextResponse.json(
         { error: 'Validation error', details: result.error.format() },
         { status: 400 }
       )
     }
+
+    console.log('[Admin Events] Validation passed')
 
     const eventData = result.data
 
@@ -69,6 +81,8 @@ export async function POST(request: NextRequest) {
     const dateTime = new Date(eventData.dateTime)
     const date = new Date(dateTime.getFullYear(), dateTime.getMonth(), dateTime.getDate())
     const time = `${dateTime.getHours().toString().padStart(2, '0')}:${dateTime.getMinutes().toString().padStart(2, '0')}`
+
+    console.log('[Admin Events] Parsed date/time:', { date, time })
 
     // Create event
     const event = await Event.create({
@@ -88,6 +102,8 @@ export async function POST(request: NextRequest) {
       createdBy: currentUser.id,
       status: 'upcoming'
     })
+
+    console.log('[Admin Events] Event created successfully:', event._id)
 
     return NextResponse.json({
       success: true,
@@ -115,7 +131,7 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
 
   } catch (error) {
-    console.error('Create event error:', error)
+    console.error('[Admin Events] Create event error:', error)
     return NextResponse.json(
       { error: 'Failed to create event' },
       { status: 500 }
@@ -271,7 +287,6 @@ export async function GET(request: NextRequest) {
 
     await connectToDatabase()
 
-    // Get query parameters
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
     const status = searchParams.get('status')
@@ -281,48 +296,27 @@ export async function GET(request: NextRequest) {
     // Build query
     const query: any = {}
     
+    if (category) {
+      query.category = category
+    }
+    
+    if (status) {
+      query.status = status
+    }
+    
     if (!includeInactive) {
       query.isActive = true
     }
 
-    if (category && ['workshops', 'hackathons', 'conferences', 'networking'].includes(category)) {
-      query.category = category
-    }
-
-    if (status && ['upcoming', 'registration-open', 'full', 'completed', 'cancelled'].includes(status)) {
-      query.status = status
-    }
-
-    // Define User schema
-    const UserSchema = new mongoose.Schema({
-      studentId: String,
-      phoneNumber: String,
-      username: String,
-      email: String,
-      password: String,
-      fullName: String,
-      role: String,
-      isVerified: Boolean,
-      avatarUrl: String,
-      createdAt: Date,
-      updatedAt: Date
-    })
-
-    const User = mongoose.models.User || mongoose.model('User', UserSchema)
-
-    // Get events with creator info
+    // Get events
     const events = await Event.find(query)
-      .populate({
-        path: 'createdBy',
-        model: User,
-        select: 'fullName username email'
-      })
       .sort({ createdAt: -1 })
       .limit(limit)
+      .populate('createdBy', 'fullName email username')
 
     // Get status counts
     const statusCounts = await Event.aggregate([
-      { $match: includeInactive ? {} : { isActive: true } },
+      { $match: { isActive: true } },
       {
         $group: {
           _id: '$status',
@@ -331,58 +325,32 @@ export async function GET(request: NextRequest) {
       }
     ])
 
-    const statusCountsFormatted = {
-      upcoming: 0,
-      'registration-open': 0,
-      full: 0,
-      completed: 0,
-      cancelled: 0
-    }
-
-    statusCounts.forEach(item => {
-      if (item._id && statusCountsFormatted.hasOwnProperty(item._id)) {
-        statusCountsFormatted[item._id as keyof typeof statusCountsFormatted] = item.count
-      }
-    })
-
-    // Format events
-    const formattedEvents = events.map(event => ({
-      id: event._id.toString(),
-      title: event.title,
-      description: event.description,
-      detailDescription: event.detailDescription,
-      date: event.date.toISOString().split('T')[0],
-      time: event.time,
-      duration: event.duration,
-      location: event.location,
-      category: event.category,
-      maxAttendees: event.maxAttendees,
-      currentAttendees: event.currentAttendees,
-      status: event.status,
-      featured: event.featured,
-      prerequisites: event.prerequisites,
-      whatYouWillLearn: event.whatYouWillLearn,
-      imageUrl: event.imageUrl,
-      isActive: event.isActive,
-      createdBy: {
-        id: event.createdBy._id.toString(),
-        name: event.createdBy.fullName,
-        username: event.createdBy.username,
-        email: event.createdBy.email
-      },
-      createdAt: event.createdAt,
-      updatedAt: event.updatedAt
-    }))
+    const statusCountsMap = statusCounts.reduce((acc, item) => {
+      acc[item._id] = item.count
+      return acc
+    }, {} as Record<string, number>)
 
     return NextResponse.json({
       success: true,
-      events: formattedEvents,
-      statusCounts: statusCountsFormatted,
-      total: formattedEvents.length
+      events: events.map(event => ({
+        id: event._id.toString(),
+        title: event.title,
+        category: event.category,
+        status: event.status,
+        currentAttendees: event.currentAttendees,
+        maxAttendees: event.maxAttendees,
+        featured: event.featured,
+        isActive: event.isActive,
+        createdBy: event.createdBy,
+        createdAt: event.createdAt,
+        updatedAt: event.updatedAt
+      })),
+      statusCounts: statusCountsMap,
+      total: events.length
     })
 
   } catch (error) {
-    console.error('Admin get events error:', error)
+    console.error('Get events error:', error)
     return NextResponse.json(
       { error: 'Failed to fetch events' },
       { status: 500 }
