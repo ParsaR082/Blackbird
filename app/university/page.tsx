@@ -206,10 +206,10 @@ export default function UniversityPage() {
       >
         {/* Header */}
         <motion.div className="mb-8 text-center" variants={itemVariants}>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold transition-all duration-300" style={{ color: 'var(--text-color)' }}>
             University Dashboard
           </h1>
-          <p className="text-white/60 mt-2 max-w-xl mx-auto">
+          <p className="mt-2 max-w-xl mx-auto transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>
             Manage your courses, study plans, and track your academic progress
           </p>
         </motion.div>
@@ -219,14 +219,17 @@ export default function UniversityPage() {
           <h2 className="text-2xl font-bold mb-4">Current Semester</h2>
           
           {currentEnrollment ? (
-            <Card className="bg-white/5 border-white/10">
+            <Card className="transition-colors duration-300" style={{
+              backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+              borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+            }}>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-xl">
+                    <CardTitle className="text-xl transition-colors duration-300" style={{ color: 'var(--text-color)' }}>
                       {currentEnrollment.term} {currentEnrollment.year} Semester
                     </CardTitle>
-                    <CardDescription className="text-white/60">
+                    <CardDescription className="transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>
                       {currentEnrollment.status === 'in-progress' ? 'In Progress' : 
                        currentEnrollment.status === 'completed' ? 'Completed' : 'Registered'}
                     </CardDescription>
@@ -236,29 +239,39 @@ export default function UniversityPage() {
               </CardHeader>
               <CardContent>
                 <div>
-                  <h3 className="text-sm font-medium text-white/60 mb-2">Enrolled Courses</h3>
+                  <h3 className="text-sm font-medium mb-2 transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>Enrolled Courses</h3>
                   <div className="space-y-3">
                     {currentEnrollment.courses.map((course) => (
-                      <div key={course.id} className="p-3 rounded-md bg-white/5 border border-white/10">
+                      <div key={course.id} className="p-3 rounded-md transition-colors duration-300" style={{
+                        backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)',
+                        borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)',
+                        borderWidth: '1px',
+                        borderStyle: 'solid'
+                      }}>
                         <div className="flex justify-between items-center">
                           <div>
                             <div className="flex items-center">
                               <BookOpen className="h-4 w-4 mr-2 text-blue-400" />
-                              <span className="font-medium">{course.courseCode}</span>
+                              <span className="font-medium transition-colors duration-300" style={{ color: 'var(--text-color)' }}>{course.courseCode}</span>
                             </div>
-                            <h4 className="text-sm mt-1">{course.title}</h4>
-                            <p className="text-xs text-white/60 mt-1">Prof. {course.professor.name}</p>
+                            <h4 className="text-sm mt-1 transition-colors duration-300" style={{ color: 'var(--text-color)' }}>{course.title}</h4>
+                            <p className="text-xs mt-1 transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>Prof. {course.professor.name}</p>
                           </div>
                           <div className="text-right">
-                            <Badge className="bg-white/10 text-white">{course.credits} Credits</Badge>
+                            <Badge className="transition-colors duration-300" style={{
+                              backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)',
+                              color: 'var(--text-color)'
+                            }}>{course.credits} Credits</Badge>
                             <div className="mt-1">
-                              <div className="w-full bg-white/10 rounded-full h-1.5 mt-1">
+                              <div className="w-full rounded-full h-1.5 mt-1 transition-colors duration-300" style={{
+                                backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)'
+                              }}>
                                 <div 
                                   className={`${getProgressColor(75)} h-1.5 rounded-full`} 
                                   style={{ width: `75%` }}
                                 />
                               </div>
-                              <p className="text-xs text-white/60 mt-1">75% Complete</p>
+                              <p className="text-xs mt-1 transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>75% Complete</p>
                             </div>
                           </div>
                         </div>
@@ -267,9 +280,17 @@ export default function UniversityPage() {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="border-t border-white/10 pt-4 flex justify-between">
+              <CardFooter className="pt-4 flex justify-between transition-colors duration-300" style={{
+                borderTopColor: theme === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)',
+                borderTopWidth: '1px',
+                borderTopStyle: 'solid'
+              }}>
                 <Link href="/university/courses">
-                  <Button variant="outline" className="border-white/10 hover:bg-white/10">
+                  <Button variant="outline" className="transition-colors duration-300" style={{
+                    borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)',
+                    color: 'var(--text-color)',
+                    backgroundColor: 'transparent'
+                  }}>
                     View Course Details
                   </Button>
                 </Link>
@@ -281,12 +302,15 @@ export default function UniversityPage() {
               </CardFooter>
             </Card>
           ) : (
-            <Card className="bg-white/5 border-white/10">
+            <Card className="transition-colors duration-300" style={{
+              backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+              borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+            }}>
               <CardContent className="pt-6 pb-6 text-center">
                 <div className="mb-4">
                   <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
-                  <h3 className="text-xl font-medium mb-2">No Current Enrollment</h3>
-                  <p className="text-white/60 max-w-md mx-auto">
+                  <h3 className="text-xl font-medium mb-2 transition-colors duration-300" style={{ color: 'var(--text-color)' }}>No Current Enrollment</h3>
+                  <p className="max-w-md mx-auto transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>
                     You haven&apos;t enrolled in any courses yet. Check available semesters below to enroll.
                   </p>
                 </div>
@@ -303,15 +327,18 @@ export default function UniversityPage() {
         
         {/* Academic Stats */}
         <motion.div className="mb-10 grid grid-cols-1 md:grid-cols-3 gap-4" variants={itemVariants}>
-          <Card className="bg-white/5 border-white/10">
+          <Card className="transition-colors duration-300" style={{
+            backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+            borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+          }}>
             <CardContent className="pt-6">
               <div className="flex items-center">
                 <div className="rounded-full bg-blue-500/20 p-3 mr-4">
                   <GraduationCap className="h-6 w-6 text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-white/60">Total Credits</p>
-                  <h3 className="text-2xl font-bold">
+                  <p className="text-sm transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>Total Credits</p>
+                  <h3 className="text-2xl font-bold transition-colors duration-300" style={{ color: 'var(--text-color)' }}>
                     {enrollments.reduce((total, enrollment) => total + enrollment.totalCredits, 0)}
                   </h3>
                 </div>
@@ -319,15 +346,18 @@ export default function UniversityPage() {
             </CardContent>
           </Card>
           
-          <Card className="bg-white/5 border-white/10">
+          <Card className="transition-colors duration-300" style={{
+            backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+            borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+          }}>
             <CardContent className="pt-6">
               <div className="flex items-center">
                 <div className="rounded-full bg-purple-500/20 p-3 mr-4">
                   <Award className="h-6 w-6 text-purple-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-white/60">GPA</p>
-                  <h3 className="text-2xl font-bold">
+                  <p className="text-sm transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>GPA</p>
+                  <h3 className="text-2xl font-bold transition-colors duration-300" style={{ color: 'var(--text-color)' }}>
                     {enrollments.length ? (
                       (enrollments.reduce((total, enrollment) => 
                         total + (enrollment.gpa || 0), 0) / 
@@ -340,15 +370,18 @@ export default function UniversityPage() {
             </CardContent>
           </Card>
           
-          <Card className="bg-white/5 border-white/10">
+          <Card className="transition-colors duration-300" style={{
+            backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+            borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+          }}>
             <CardContent className="pt-6">
               <div className="flex items-center">
                 <div className="rounded-full bg-green-500/20 p-3 mr-4">
                   <BarChart4 className="h-6 w-6 text-green-400" />
                 </div>
                 <div>
-                  <p className="text-sm text-white/60">Completion Rate</p>
-                  <h3 className="text-2xl font-bold">
+                  <p className="text-sm transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>Completion Rate</p>
+                  <h3 className="text-2xl font-bold transition-colors duration-300" style={{ color: 'var(--text-color)' }}>
                     {enrollments.length ? 
                       `${Math.round(enrollments.filter(e => e.status === 'completed').length / enrollments.length * 100)}%` 
                       : 'N/A'}
@@ -362,10 +395,15 @@ export default function UniversityPage() {
         {/* Year-based Semesters */}
         <motion.div variants={itemVariants}>
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold">Semester Overview</h2>
+            <h2 className="text-2xl font-bold transition-colors duration-300" style={{ color: 'var(--text-color)' }}>Semester Overview</h2>
             <Button 
               variant="outline" 
-              className="border-white/10 hover:bg-white/10"
+              className="transition-colors duration-300"
+              style={{
+                borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)',
+                color: 'var(--text-color)',
+                backgroundColor: 'transparent'
+              }}
               onClick={() => router.push('/university/semester-enrollment')}
             >
               Manage Enrollments
@@ -374,7 +412,10 @@ export default function UniversityPage() {
           
           <div className="mb-4">
             <Tabs value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
-              <TabsList className="bg-white/5 border border-white/10">
+              <TabsList className="transition-colors duration-300" style={{
+                backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+                borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
+              }}>
                 {years.map(year => (
                   <TabsTrigger 
                     key={year} 
