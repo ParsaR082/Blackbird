@@ -79,21 +79,7 @@ export function HomePageContent() {
         </motion.div>
         
         {/* Welcome Text - Moved much higher to avoid footer overlap */}
-        <motion.div 
-          className="absolute bottom-32 left-0 right-0 flex justify-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 1.5 }}
-        >
-          <div className="text-center px-4">
-            <h1 className="text-2xl font-light tracking-wide transition-colors duration-300" style={{ color: 'var(--text-color)' }}>
-              Welcome to the Portal
-            </h1>
-            <p className="text-sm mt-2 max-w-md transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>
-              Explore our interconnected universe of innovation, creativity, and discovery
-            </p>
-          </div>
-        </motion.div>
+        {/* Removed welcome text and description */}
       </div>
 
       {/* Mobile Layout */}
@@ -130,12 +116,7 @@ export function HomePageContent() {
               </motion.p>
             </div>
             
-            <h1 className="text-2xl font-light tracking-wide mt-6 transition-colors duration-300" style={{ color: 'var(--text-color)' }}>
-              Welcome to the Portal
-            </h1>
-            <p className="text-sm mt-2 max-w-md mx-auto mb-8 transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>
-              Explore our interconnected universe of innovation, creativity, and discovery
-            </p>
+            {/* Removed welcome text and description for mobile */}
             
             {/* Mobile Category Grid - Toggle based on logo click */}
             <AnimatePresence>

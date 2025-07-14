@@ -46,19 +46,7 @@ export default function HomePage() {
           </motion.div>
           
           {/* Subtitle */}
-          <motion.div 
-            className="mt-8 text-center"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 1.5 }}
-          >
-            <h1 className="text-2xl font-light text-white/80 tracking-wide">
-              Welcome to the Portal
-            </h1>
-            <p className="text-sm text-white/60 mt-2 max-w-md mx-auto">
-              Explore our interconnected universe of innovation, creativity, and discovery
-            </p>
-          </motion.div>
+          {/* Removed welcome text and description */}
         </div>
 
         {/* Mobile Layout */}
@@ -70,12 +58,7 @@ export default function HomePage() {
             transition={{ duration: 0.8 }}
           >
             <LogoBird />
-            <h1 className="text-2xl font-light text-white/80 tracking-wide mt-4">
-              Welcome to the Portal
-            </h1>
-            <p className="text-sm text-white/60 mt-2 max-w-md mx-auto">
-              Explore our interconnected universe of innovation, creativity, and discovery
-            </p>
+            {/* Removed welcome text and description for mobile */}
           </motion.div>
         </div>
       </div>
