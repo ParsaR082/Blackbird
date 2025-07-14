@@ -1,98 +1,158 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectToDatabase from '@/lib/mongodb'
-import { getUserFromRequest } from '@/lib/server-utils'
+import { Course } from '@/lib/models/university'
 import mongoose from 'mongoose'
 
-// Course Schema
-const CourseSchema = new mongoose.Schema({
-  name: String,
-  code: String,
-  credits: Number,
-  description: String,
-  instructor: String,
-  universityId: { type: mongoose.Schema.Types.ObjectId, ref: 'University' },
-  isActive: { type: Boolean, default: true },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
-})
-
-const Course = mongoose.models.Course || mongoose.model('Course', CourseSchema)
-
-// GET - Fetch courses for authenticated user
 export async function GET(request: NextRequest) {
   try {
-    const user = await getUserFromRequest(request)
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
     await connectToDatabase()
 
-    // Get courses (for now return all active courses)
-    const courses = await Course.find({ isActive: true })
-      .sort({ createdAt: -1 })
-      .lean()
+    // Get query parameters
+    const url = new URL(request.url)
+    const searchParams = url.searchParams
+    const department = searchParams.get('department')
+    const level = searchParams.get('level')
+    const semester = searchParams.get('semester')
+    const year = parseInt(searchParams.get('year') || new Date().getFullYear().toString())
+    const limit = parseInt(searchParams.get('limit') || '50')
+    const search = searchParams.get('search')
 
-    return NextResponse.json({ courses })
-  } catch (error) {
-    console.error('Error fetching courses:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch courses' },
-      { status: 500 }
-    )
-  }
-}
-
-// POST - Create new course (admin only)
-export async function POST(request: NextRequest) {
-  try {
-    const user = await getUserFromRequest(request)
-    if (!user || user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    // Build query
+    const query: any = { isActive: true }
+    
+    if (department) {
+      query.department = department
     }
 
-    const { name, code, credits, description, instructor, universityId } = await request.json()
-
-    if (!name || !code || !credits) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
+    if (level && ['undergraduate', 'graduate'].includes(level)) {
+      query.level = level
     }
 
-    await connectToDatabase()
-
-    // Check if course code already exists
-    const existingCourse = await Course.findOne({ code })
-    if (existingCourse) {
-      return NextResponse.json(
-        { error: 'Course code already exists' },
-        { status: 409 }
-      )
+    if (semester && ['Fall', 'Spring', 'Summer'].includes(semester)) {
+      query.semester = semester
     }
 
-    const course = await Course.create({
-      name,
-      code,
-      credits,
-      description,
-      instructor,
-      universityId,
-      createdAt: new Date(),
-      updatedAt: new Date()
+    if (year) {
+      query.year = year
+    }
+
+    if (search) {
+      query.$text = { $search: search }
+    }
+
+    // Define User schema for populated data
+    const UserSchema = new mongoose.Schema({
+      studentId: String,
+      phoneNumber: String,
+      username: String,
+      email: String,
+      password: String,
+      fullName: String,
+      role: String,
+      isVerified: Boolean,
+      avatarUrl: String,
+      createdAt: Date,
+      updatedAt: Date
     })
 
-    return NextResponse.json({ course }, { status: 201 })
+    const User = mongoose.models.User || mongoose.model('User', UserSchema)
+
+    // Get courses with creator info
+    const courses = await Course.find(query)
+      .populate({
+        path: 'createdBy',
+        model: User,
+        select: 'fullName username'
+      })
+      .sort({ department: 1, courseCode: 1 })
+      .limit(limit)
+
+    // Get department counts
+    const departmentAggregation = await Course.aggregate([
+      { $match: { isActive: true, year: year } },
+      { 
+        $group: { 
+          _id: '$department', 
+          count: { $sum: 1 } 
+        } 
+      }
+    ])
+
+    const departmentCounts: Record<string, number> = {}
+    departmentAggregation.forEach(item => {
+      if (item._id) {
+        departmentCounts[item._id] = item.count
+      }
+    })
+
+    // Get level counts
+    const levelCounts = await Course.aggregate([
+      { $match: { isActive: true, year: year } },
+      {
+        $group: {
+          _id: '$level',
+          count: { $sum: 1 }
+        }
+      }
+    ])
+
+    const levelCountsFormatted: Record<string, number> = {
+      undergraduate: 0,
+      graduate: 0
+    }
+
+    levelCounts.forEach(item => {
+      if (item._id && levelCountsFormatted.hasOwnProperty(item._id)) {
+        levelCountsFormatted[item._id] = item.count
+      }
+    })
+
+    // Format the response
+    const formattedCourses = courses.map(course => ({
+      id: course._id.toString(),
+      courseCode: course.courseCode,
+      title: course.title,
+      description: course.description,
+      credits: course.credits,
+      professor: {
+        name: course.professor.name,
+        email: course.professor.email,
+        department: course.professor.department
+      },
+      department: course.department,
+      level: course.level,
+      prerequisites: course.prerequisites,
+      semester: course.semester,
+      year: course.year,
+      maxStudents: course.maxStudents,
+      currentEnrollments: course.currentEnrollments,
+      enrollmentPercentage: Math.round((course.currentEnrollments / course.maxStudents) * 100),
+      isAvailable: course.currentEnrollments < course.maxStudents,
+      syllabus: course.syllabus,
+      createdBy: course.createdBy ? {
+        name: course.createdBy.fullName,
+        username: course.createdBy.username
+      } : null,
+      createdAt: course.createdAt
+    }))
+
+    return NextResponse.json({
+      success: true,
+      courses: formattedCourses,
+      departmentCounts,
+      levelCounts: levelCountsFormatted,
+      total: formattedCourses.length,
+      year,
+      availableYears: [2024, 2025, 2026] // Can be made dynamic
+    })
+
   } catch (error) {
-    console.error('Error creating course:', error)
+    console.error('Courses fetch error:', error)
     return NextResponse.json(
-      { error: 'Failed to create course' },
+      { 
+        success: false, 
+        error: 'Failed to fetch courses' 
+      },
       { status: 500 }
     )
   }
