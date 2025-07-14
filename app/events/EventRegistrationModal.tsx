@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/contexts/auth-context'
 import { X, User, UserPlus, Mail, Phone, Building, MessageSquare, AlertCircle, CheckCircle, Clock } from 'lucide-react'
+import jalaali from 'jalaali-js'
 
 interface Event {
   id: string
@@ -112,6 +113,22 @@ export default function EventRegistrationModal({
            guestInfo.phoneNumber.trim() !== ''
   }
 
+  // Helper to convert Gregorian date string to Persian date string
+  function toPersianDateString(dateStr: string) {
+    const d = new Date(dateStr)
+    const j = jalaali.toJalaali(d.getFullYear(), d.getMonth() + 1, d.getDate())
+    return `${j.jy}/${j.jm.toString().padStart(2, '0')}/${j.jd.toString().padStart(2, '0')}`
+  }
+
+  // Helper to format Gregorian date in a clear, unambiguous format
+  function formatGregorianDate(dateStr: string) {
+    const d = new Date(dateStr)
+    const month = d.toLocaleString('en-US', { month: 'short' })
+    const day = d.getDate()
+    const year = d.getFullYear()
+    return `${month} ${day}, ${year}`
+  }
+
   if (!isOpen) return null
 
   return (
@@ -155,7 +172,7 @@ export default function EventRegistrationModal({
             <h2 className="text-xl font-light text-white mb-2">Register for Event</h2>
             <p className="text-[#CCCCCC] text-sm">{event.title}</p>
             <p className="text-[#CCCCCC] text-xs">
-              {new Date(event.date).toLocaleDateString()} at {event.time} • {event.location}
+              {formatGregorianDate(event.date)} | {toPersianDateString(event.date)} at {event.time} • {event.location}
             </p>
           </div>
 

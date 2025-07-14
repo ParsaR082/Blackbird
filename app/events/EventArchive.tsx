@@ -17,6 +17,7 @@ import {
   Mic,
   Archive
 } from 'lucide-react'
+import jalaali from 'jalaali-js'
 
 interface ArchivedEvent {
   id: number
@@ -172,6 +173,22 @@ export default function EventArchive() {
     }
   }
 
+  // Helper to convert Gregorian date string to Persian date string
+  function toPersianDateString(dateStr: string) {
+    const d = new Date(dateStr)
+    const j = jalaali.toJalaali(d.getFullYear(), d.getMonth() + 1, d.getDate())
+    return `${j.jy}/${j.jm.toString().padStart(2, '0')}/${j.jd.toString().padStart(2, '0')}`
+  }
+
+  // Helper to format Gregorian date in a clear, unambiguous format
+  function formatGregorianDate(dateStr: string) {
+    const d = new Date(dateStr)
+    const month = d.toLocaleString('en-US', { month: 'short' })
+    const day = d.getDate()
+    const year = d.getFullYear()
+    return `${month} ${day}, ${year}`
+  }
+
   return (
     <div className="text-white">
       {/* Header */}
@@ -246,7 +263,7 @@ export default function EventArchive() {
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center gap-2 text-xs text-[#BBBBBB]">
                     <Calendar className="w-3 h-3" />
-                    <span>{new Date(event.date).toLocaleDateString()}</span>
+                    <span>{formatGregorianDate(event.date)} | {toPersianDateString(event.date)}</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-[#BBBBBB]">
                     <Clock className="w-3 h-3" />

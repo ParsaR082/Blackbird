@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import BackgroundNodes from '@/components/BackgroundNodes'
 import { useTheme } from '@/contexts/theme-context'
 import { useAuth } from '@/contexts/auth-context'
-import CreateEventModal from './CreateEventModal'
 import EditEventModal from './EditEventModal'
 import EventRegistrationModal from './EventRegistrationModal'
 import { 
@@ -28,7 +27,6 @@ import {
   Video,
   X,
   AlertCircle,
-  Plus,
   CheckCircle2,
   UserCheck,
   Edit,
@@ -78,7 +76,6 @@ export default function EventsPage() {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState<Event | null>(null)
   const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState(false)
@@ -187,13 +184,7 @@ export default function EventsPage() {
     setSelectedEvent(null)
   }
 
-  const openCreateModal = () => {
-    setIsCreateModalOpen(true)
-  }
 
-  const closeCreateModal = () => {
-    setIsCreateModalOpen(false)
-  }
 
   const openEditModal = (event: Event) => {
     setEditingEvent(event)
@@ -248,45 +239,7 @@ export default function EventsPage() {
     }
   }
 
-  const handleCreateEvent = async (eventData: any) => {
-    try {
-      const response = await fetch('/api/admin/events', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: eventData.title,
-          description: eventData.description,
-          dateTime: eventData.dateTime,
-          duration: eventData.duration,
-          location: eventData.location,
-          category: eventData.category,
-          maxAttendees: eventData.maxAttendees,
-          featured: eventData.tags.featured,
-          prerequisites: [],
-          whatYouWillLearn: []
-        }),
-      })
 
-      const data = await response.json()
-      
-      if (data.success) {
-        // Refresh events list
-        const eventsResponse = await fetch('/api/events')
-        const eventsData = await eventsResponse.json()
-        if (eventsData.success) {
-          setEvents(eventsData.events)
-          setCategoryCounts(eventsData.categoryCounts)
-        }
-        setIsCreateModalOpen(false)
-      } else {
-        console.error('Failed to create event:', data.error)
-      }
-    } catch (error) {
-      console.error('Create event error:', error)
-    }
-  }
 
   const handleEditEvent = async (eventData: any) => {
     try {
@@ -398,6 +351,15 @@ export default function EventsPage() {
     return `${j.jy}/${j.jm.toString().padStart(2, '0')}/${j.jd.toString().padStart(2, '0')}`
   }
 
+  // Helper to format Gregorian date in a clear, unambiguous format
+  function formatGregorianDate(dateStr: string) {
+    const d = new Date(dateStr)
+    const month = d.toLocaleString('en-US', { month: 'short' })
+    const day = d.getDate()
+    const year = d.getFullYear()
+    return `${month} ${day}, ${year}`
+  }
+
   // Modal Component
   const EventModal = () => {
     if (!selectedEvent) return null
@@ -481,7 +443,7 @@ export default function EventsPage() {
                 <Calendar className="w-4 h-4 text-[#2D8EFF]" />
                 <span className="text-sm font-medium text-white">Date & Time</span>
               </div>
-              <p className="text-[#CCCCCC] text-sm">{new Date(selectedEvent.date).toLocaleDateString()}</p>
+              <p className="text-[#CCCCCC] text-sm">{formatGregorianDate(selectedEvent.date)} | {toPersianDateString(selectedEvent.date)}</p>
               <p className="text-[#CCCCCC] text-sm">{selectedEvent.time} ({selectedEvent.duration})</p>
             </div>
 
@@ -582,13 +544,6 @@ export default function EventsPage() {
       
       {/* Modals */}
       {isModalOpen && <EventModal />}
-      {isCreateModalOpen && (
-        <CreateEventModal
-          isOpen={isCreateModalOpen}
-          onClose={closeCreateModal}
-          onSubmit={handleCreateEvent}
-        />
-      )}
       {isEditModalOpen && editingEvent && (
         <EditEventModal
           isOpen={isEditModalOpen}
@@ -754,7 +709,7 @@ export default function EventsPage() {
                         <div className={`flex flex-wrap items-center gap-4 text-xs transition-colors duration-300 ${theme === 'light' ? 'text-gray-600' : 'text-white/60'}`}>
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
-                            {new Date(event.date).toLocaleDateString()} <span className="mx-1">|</span> <span dir="ltr">{toPersianDateString(event.date)}</span>
+                            {formatGregorianDate(event.date)} <span className="mx-1">|</span> <span dir="ltr">{toPersianDateString(event.date)}</span>
                           </span>
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
@@ -927,21 +882,6 @@ export default function EventsPage() {
                 <h3 className={`text-lg font-light tracking-wide transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>Quick Actions</h3>
               </div>
               <div className="space-y-3">
-                {user && user.role === 'ADMIN' && (
-                  <motion.button
-                    className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm flex items-center justify-center gap-2 ${
-                      theme === 'light' 
-                        ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60' 
-                        : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60'
-                    }`}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={openCreateModal}
-                  >
-                    <Plus className="w-4 h-4" />
-                    Create Event
-                  </motion.button>
-                )}
                 <motion.button
                   className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm ${
                     theme === 'light' 

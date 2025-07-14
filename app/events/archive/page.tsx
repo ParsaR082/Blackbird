@@ -14,7 +14,7 @@ export default function EventArchivePage() {
       <BackgroundNodes isMobile={false} />
       
       {/* Main Content */}
-      <div className="relative z-10 min-h-screen px-4 py-8">
+      <div className="relative z-10 min-h-screen px-4 pt-24 pb-8">
         <EventArchive />
       </div>
     </div>
