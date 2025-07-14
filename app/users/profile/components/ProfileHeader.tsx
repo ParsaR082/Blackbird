@@ -23,12 +23,7 @@ export function ProfileHeader() {
           <h1 
             className="text-4xl font-bold transition-all duration-300" 
             style={{ 
-              background: theme === 'light' 
-                ? 'linear-gradient(to right, #000000, #374151, #6b7280)' 
-                : 'linear-gradient(to right, #ffffff, #e5e7eb, #9ca3af)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text'
+              color: 'var(--text-color)'
             }}
           >
             Profile Settings

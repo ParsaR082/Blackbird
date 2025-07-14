@@ -133,6 +133,7 @@ export interface UserAuth {
   id: string
   email: string
   fullName?: string
+  username?: string
   role: UserRole
   isVerified: boolean
   avatarUrl?: string | null

@@ -93,7 +93,7 @@ export class RateLimit {
 // Export preconfigured rate limiters
 export const loginLimiter = new RateLimit({
   interval: 60 * 1000,     // 1 minute
-  limit: 5                // 5 requests per minute
+  limit: 50                // 50 requests per minute
 });
 
 export const registerLimiter = new RateLimit({

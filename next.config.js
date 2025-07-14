@@ -27,6 +27,8 @@ const nextConfig = {
   env: {
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+    MONGODB_URI: process.env.MONGODB_URI,
+    CSRF_SECRET: process.env.CSRF_SECRET,
   },
   
   // Disable static optimization for pages that use API routes with cookies/headers

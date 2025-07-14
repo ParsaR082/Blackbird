@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Activity, TrendingUp, Users, Clock } from 'lucide-react'
+import { Calendar, Award, ShoppingBag, GraduationCap } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useTheme } from '@/contexts/theme-context'
 
@@ -16,32 +16,36 @@ const itemVariants = {
 
 const statsData = [
   {
-    title: "Active Projects",
-    value: "12",
-    change: "+2 from last month",
-    icon: Activity,
-    color: "text-blue-400"
+    title: "Upcoming Events",
+    value: "8",
+    change: "3 this week",
+    icon: Calendar,
+    color: "text-purple-400",
+    path: "/events"
   },
   {
-    title: "Modules Used",
-    value: "7",
-    change: "Out of 9 available",
-    icon: TrendingUp,
-    color: "text-green-400"
-  },
-  {
-    title: "Collaborators",
+    title: "Hall of Fame",
     value: "24",
-    change: "+3 new this week",
-    icon: Users,
-    color: "text-purple-400"
+    change: "2 new inductees",
+    icon: Award,
+    color: "text-amber-400",
+    path: "/hall-of-fame"
   },
   {
-    title: "Hours This Week",
-    value: "42",
-    change: "+8% from last week",
-    icon: Clock,
-    color: "text-orange-400"
+    title: "Products",
+    value: "16",
+    change: "4 new releases",
+    icon: ShoppingBag,
+    color: "text-blue-400",
+    path: "/product-playground"
+  },
+  {
+    title: "Courses",
+    value: "12",
+    change: "Fall semester open",
+    icon: GraduationCap,
+    color: "text-green-400",
+    path: "/university/courses"
   }
 ]
 
@@ -53,11 +57,12 @@ export function StatsCards() {
       {statsData.map((stat, index) => (
         <Card 
           key={index} 
-          className="backdrop-blur-sm border transition-colors duration-300"
+          className="backdrop-blur-sm border transition-colors duration-300 cursor-pointer hover:shadow-md"
           style={{
             backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
             borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)'
           }}
+          onClick={() => window.location.href = stat.path}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium transition-colors duration-300" style={{ color: 'var(--text-color)' }}>

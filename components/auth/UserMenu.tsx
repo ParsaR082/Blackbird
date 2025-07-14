@@ -100,6 +100,14 @@ export function UserMenu() {
             Dashboard
           </Link>
         </DropdownMenuItem>
+        {user?.role === 'ADMIN' && (
+          <DropdownMenuItem asChild>
+            <Link href="/admin">
+              <Shield className="mr-2 h-4 w-4" />
+              Admin Dashboard
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />

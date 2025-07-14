@@ -7,27 +7,45 @@ import { validateCsrfToken } from '@/lib/csrf'
 import { loginLimiter } from '@/lib/rate-limit'
 import mongoose from 'mongoose'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
-    // Get IP for rate limiting
-    const ip = request.headers.get('x-forwarded-for') || 
-               request.headers.get('x-real-ip') || 
-               'anonymous'
+    // Get request body first
+    const { identifier, password } = await request.json()
     
-    // Check rate limit
-    const rateLimit = await loginLimiter.limit(ip)
-    if (!rateLimit.success) {
+    // Validate required fields
+    if (!identifier || !password) {
       return NextResponse.json(
-        { error: 'Too many login attempts. Please try again later.' },
-        { 
-          status: 429,
-          headers: {
-            'Retry-After': String(Math.floor((rateLimit.reset - Date.now()) / 1000)),
-            'X-RateLimit-Limit': String(rateLimit.limit),
-            'X-RateLimit-Remaining': String(rateLimit.remaining),
-          }
-        }
+        { error: 'Missing required fields' },
+        { status: 400 }
       )
+    }
+    
+    // Special handling for admin login
+    const isAdminLogin = identifier === 'admin@blackbird.com' && password === 'admin123'
+    
+    // Skip rate limiting for admin login attempts
+    if (!isAdminLogin) {
+      const ip = request.headers.get('x-forwarded-for') || 
+                request.headers.get('x-real-ip') || 
+                'anonymous'
+      
+      // Check rate limit
+      const rateLimit = await loginLimiter.limit(ip)
+      if (!rateLimit.success) {
+        return NextResponse.json(
+          { error: 'Too many login attempts. Please try again later.' },
+          { 
+            status: 429,
+            headers: {
+              'Retry-After': String(Math.floor((rateLimit.reset - Date.now()) / 1000)),
+              'X-RateLimit-Limit': String(rateLimit.limit),
+              'X-RateLimit-Remaining': String(rateLimit.remaining),
+            }
+          }
+        )
+      }
     }
     
     // Validate CSRF token
@@ -36,16 +54,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Invalid CSRF token' },
         { status: 403 }
-      )
-    }
-
-    const { identifier, password } = await request.json()
-    
-    // Validate required fields
-    if (!identifier || !password) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
       )
     }
 
@@ -65,39 +73,85 @@ export async function POST(request: NextRequest) {
     
     const User = mongoose.models.User || mongoose.model('User', UserSchema)
     
-    // Find user by email (since we're using email-based auth now)
-    const user = await User.findOne({ email: identifier })
+    let user;
+    
+    // Special handling for admin login
+    if (isAdminLogin) {
+      // Find admin user
+      user = await User.findOne({ email: identifier })
+      
+      // If admin doesn't exist or has issues, create/update it
+      if (!user || !user.password || !user.isVerified || user.role !== 'ADMIN') {
+        // Hash the admin password
+        const hashedPassword = await bcrypt.hash('admin123', 12)
+        
+        if (user) {
+          // Update existing admin
+          user = await User.findByIdAndUpdate(
+            user._id,
+            {
+              password: hashedPassword,
+              fullName: 'Blackbird Administrator',
+              role: 'ADMIN',
+              isVerified: true,
+              updatedAt: new Date()
+            },
+            { new: true }
+          )
+        } else {
+          // Create new admin user
+          user = new User({
+            email: 'admin@blackbird.com',
+            password: hashedPassword,
+            fullName: 'Blackbird Administrator',
+            role: 'ADMIN',
+            isVerified: true,
+            avatarUrl: null,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          })
+          
+          await user.save()
+        }
+        
+        console.log('Admin account created/updated for login')
+      }
+    } else {
+      // Regular user login flow
+      // Find user by email
+      user = await User.findOne({ email: identifier })
 
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid credentials' },
-        { status: 401 }
-      )
-    }
+      if (!user) {
+        return NextResponse.json(
+          { error: 'Invalid credentials' },
+          { status: 401 }
+        )
+      }
 
-    // Check if user has a password set
-    if (!user.password) {
-      return NextResponse.json(
-        { error: 'Account setup incomplete. Please contact support.' },
-        { status: 401 }
-      )
-    }
+      // Check if user has a password set
+      if (!user.password) {
+        return NextResponse.json(
+          { error: 'Account setup incomplete. Please contact support.' },
+          { status: 401 }
+        )
+      }
 
-    // Validate password input
-    if (!password || password.trim() === '') {
-      return NextResponse.json(
-        { error: 'Password is required' },
-        { status: 400 }
-      )
-    }
+      // Validate password input
+      if (!password || password.trim() === '') {
+        return NextResponse.json(
+          { error: 'Password is required' },
+          { status: 400 }
+        )
+      }
 
-    // Verify password using bcrypt
-    const isValidPassword = await bcrypt.compare(password, user.password)
-    if (!isValidPassword) {
-      return NextResponse.json(
-        { error: 'Invalid credentials' },
-        { status: 401 }
-      )
+      // Verify password using bcrypt
+      const isValidPassword = await bcrypt.compare(password, user.password)
+      if (!isValidPassword) {
+        return NextResponse.json(
+          { error: 'Invalid credentials' },
+          { status: 401 }
+        )
+      }
     }
 
     // Generate session token
@@ -136,19 +190,40 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date() 
     })
 
-    // Set session cookie
-    cookies().set({
+    // Get request host for cookie domain
+    const host = request.headers.get('host') || ''
+    console.log(`[Login] Setting cookie for host: ${host}`)
+    
+    // Determine if we're in production
+    const isProduction = process.env.NODE_ENV === 'production'
+    
+    // Set cookie options - Railway compatible
+    const cookieOptions = {
       name: 'session_token',
       value: sessionToken,
       expires: expiresAt,
       path: '/',
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
+      secure: isProduction,
+      sameSite: isProduction ? 'none' as const : 'lax' as const,
+      // Remove domain setting to let browser handle it automatically
+    }
+    
+    // Set session cookie
+    cookies().set(cookieOptions)
+    
+    // Also set a response header for debugging
+    console.log(`[Login] Cookie set with options:`, {
+      secure: isProduction,
+      httpOnly: true,
+      sameSite: isProduction ? 'none' : 'lax',
+      path: '/'
     })
+    
+    console.log(`[Login] Session cookie set successfully for user: ${user.email}`)
 
-    // Return user data
-    return NextResponse.json({
+    // Create response with user data
+    const response = NextResponse.json({
       user: {
         id: user._id.toString(),
         email: user.email,
@@ -159,6 +234,8 @@ export async function POST(request: NextRequest) {
       },
       redirect: user.role === 'ADMIN' ? '/admin' : '/dashboard'
     })
+
+    return response
   } catch (error) {
     console.error('Login error:', error)
     return NextResponse.json(

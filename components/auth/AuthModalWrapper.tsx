@@ -16,7 +16,7 @@ interface AuthModalWrapperProps {
 
 function AuthModalWithParams(props: AuthModalWrapperProps) {
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirectTo') || '/dashboard'
+  const redirectTo = searchParams ? searchParams.get('redirectTo') || '/dashboard' : '/dashboard'
   
   return <AuthModal {...props} redirectTo={redirectTo} />
 }

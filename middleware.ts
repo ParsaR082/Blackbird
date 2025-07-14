@@ -18,8 +18,12 @@ export async function middleware(req: NextRequest) {
   if (protectedRoutes.some(route => pathname.startsWith(route))) {
     // Get the session token from cookie
     const sessionToken = req.cookies.get('session_token')?.value
+    const allCookies = req.cookies.getAll()
+    
+    console.log(`[Middleware] Checking ${pathname}, cookies:`, allCookies.map(c => ({ name: c.name, value: c.value ? `${c.value.substring(0, 8)}...` : null })))
     
     if (!sessionToken) {
+      console.log(`[Middleware] No session token found, redirecting from ${pathname} to login`)
       // Redirect to login if no session token
       const url = new URL('/auth/login', req.url)
       url.searchParams.set('redirectTo', pathname)
@@ -28,20 +32,34 @@ export async function middleware(req: NextRequest) {
     
     // Validate session token by calling the API
     try {
-      const validateRes = await fetch(new URL('/api/auth/validate', req.url), {
+      // Use NEXTAUTH_URL in production, local origin in development
+      const baseUrl =
+        process.env.NODE_ENV === 'production'
+          ? process.env.NEXTAUTH_URL || 'https://blackbird-production.up.railway.app'
+          : new URL('/', req.url).origin
+      const validateUrl = `${baseUrl}/api/auth/validate`
+      
+      console.log(`[Middleware] Validating session for ${pathname}, calling ${validateUrl}`)
+      
+      const validateRes = await fetch(validateUrl, {
         headers: {
-          Cookie: `session_token=${sessionToken}`
-        }
+          Cookie: `session_token=${sessionToken}`,
+          'User-Agent': 'Railway-Middleware/1.0'
+        },
+        cache: 'no-store'
       })
       
       if (!validateRes.ok) {
+        console.log(`[Middleware] Session validation failed with status ${validateRes.status}`)
         // Session is invalid, redirect to login
         const url = new URL('/auth/login', req.url)
         url.searchParams.set('redirectTo', pathname)
         return NextResponse.redirect(url)
       }
+      
+      console.log(`[Middleware] Session validated successfully for ${pathname}`)
     } catch (error) {
-      console.error('Session validation error:', error)
+      console.error('[Middleware] Session validation error:', error)
       // On error, redirect to login
       const url = new URL('/auth/login', req.url)
       url.searchParams.set('redirectTo', pathname)
@@ -55,7 +73,14 @@ export async function middleware(req: NextRequest) {
 // Configure middleware to run on specific paths
 export const config = {
   matcher: [
-    // Apply to all routes except static assets and API routes
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    // Apply only to protected routes and exclude API routes
+    '/dashboard/:path*',
+    '/admin/:path*',
+    '/profile/:path*',
+    '/settings/:path*',
+    '/training/:path*',
+    '/university/:path*',
+    '/users/:path*',
+    '/auth/:path*'
   ],
 } 

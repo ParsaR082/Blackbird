@@ -35,7 +35,7 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
     duration: 1,
     maxAttendees: 50,
     location: '',
-    category: 'Workshops',
+    category: 'workshops', // <-- lowercase default
     tags: {
       featured: false,
       upcoming: false,
@@ -87,7 +87,7 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
       duration: 1,
       maxAttendees: 50,
       location: '',
-      category: 'Workshops',
+      category: 'workshops',
       tags: {
         featured: false,
         upcoming: false,
@@ -144,10 +144,10 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
                 required
                 className="w-full px-2 py-1.5 sm:px-3 sm:py-2 bg-[#1E1E1E] border border-[#333] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#3498DB] focus:border-transparent text-xs sm:text-sm"
               >
-                <option value="Workshops">Workshops</option>
-                <option value="Hackathons">Hackathons</option>
-                <option value="Conferences">Conferences</option>
-                <option value="Networking">Networking</option>
+                <option value="workshops">Workshops</option>
+                <option value="hackathons">Hackathons</option>
+                <option value="conferences">Conferences</option>
+                <option value="networking">Networking</option>
               </select>
             </div>
           </div>

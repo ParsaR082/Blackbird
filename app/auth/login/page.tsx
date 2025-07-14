@@ -1,13 +1,41 @@
 'use client'
 
-import { Suspense } from 'react'
+import { Suspense, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useAuth } from '@/contexts/auth-context'
 import BackgroundNodes from '@/components/BackgroundNodes'
 import { LoginForm } from './components/LoginForm'
 import { useTheme } from '@/contexts/theme-context'
 
 function LoginContent() {
   const { theme } = useTheme()
+  const { user, isAuthenticated, isLoading } = useAuth()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams ? searchParams.get('redirectTo') || '/dashboard' : '/dashboard'
+  
+  useEffect(() => {
+    // If user is already authenticated, redirect them
+    if (!isLoading && isAuthenticated) {
+      console.log(`[LoginPage] User already authenticated, redirecting to ${redirectTo}`)
+      router.push(redirectTo)
+    }
+  }, [isAuthenticated, isLoading, router, redirectTo])
+  
+  // Show loading while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center transition-colors duration-300" style={{ backgroundColor: 'var(--bg-color)' }}>
+        <div className="transition-colors duration-300" style={{ color: 'var(--text-secondary)' }}>Loading...</div>
+      </div>
+    )
+  }
+  
+  // If already authenticated, don't render the login form
+  if (isAuthenticated) {
+    return null
+  }
   
   return (
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}>
