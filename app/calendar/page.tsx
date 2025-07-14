@@ -9,8 +9,11 @@ import {
   ChevronRight,
   X,
   Clock,
-  MapPin
+  MapPin,
+  Globe,
+  Sun
 } from 'lucide-react'
+import jalaali from 'jalaali-js'
 
 interface CalendarEvent {
   id: string
@@ -28,6 +31,14 @@ interface CalendarEvent {
   createdAt: string
 }
 
+type CalendarType = 'gregorian' | 'jalali'
+
+interface JalaliDate {
+  jy: number
+  jm: number
+  jd: number
+}
+
 export default function CalendarPage() {
   const [isMobile, setIsMobile] = useState(false)
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -38,6 +49,7 @@ export default function CalendarPage() {
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [removing, setRemoving] = useState<string | null>(null)
+  const [calendarType, setCalendarType] = useState<CalendarType>('gregorian')
 
   useEffect(() => {
     const checkMobile = () => {
@@ -70,45 +82,131 @@ export default function CalendarPage() {
     fetchCalendarEvents()
   }, [])
 
+  // Jalali month names in English
+  const jalaliMonths = [
+    'Farvardin', 'Ordibehesht', 'Khordad', 'Tir', 'Mordad', 'Shahrivar',
+    'Mehr', 'Aban', 'Azar', 'Dey', 'Bahman', 'Esfand'
+  ]
+
+  // Convert Gregorian date to Jalali
+  const toJalali = (date: Date): JalaliDate => {
+    return jalaali.toJalaali(date.getFullYear(), date.getMonth() + 1, date.getDate())
+  }
+
+  // Convert Jalali date to Gregorian
+  const toGregorian = (jalaliDate: JalaliDate): Date => {
+    const gregorian = jalaali.toGregorian(jalaliDate.jy, jalaliDate.jm, jalaliDate.jd)
+    return new Date(gregorian.gy, gregorian.gm - 1, gregorian.gd)
+  }
+
+  // Get current date in selected calendar type
+  const getCurrentDateInType = (): Date | JalaliDate => {
+    if (calendarType === 'jalali') {
+      return toJalali(currentDate)
+    }
+    return currentDate
+  }
+
   // Calendar logic
-  const getDaysInMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
+  const getDaysInMonth = (date: Date | JalaliDate) => {
+    if (calendarType === 'jalali') {
+      const jalaliDate = date as JalaliDate
+      return jalaali.jalaaliMonthLength(jalaliDate.jy, jalaliDate.jm)
+    } else {
+      const gregorianDate = date as Date
+      return new Date(gregorianDate.getFullYear(), gregorianDate.getMonth() + 1, 0).getDate()
+    }
   }
 
-  const getFirstDayOfMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth(), 1).getDay()
+  const getFirstDayOfMonth = (date: Date | JalaliDate) => {
+    if (calendarType === 'jalali') {
+      const jalaliDate = date as JalaliDate
+      // Convert first day of Jalali month to Gregorian to get weekday
+      const firstDayGregorian = toGregorian({ jy: jalaliDate.jy, jm: jalaliDate.jm, jd: 1 })
+      return firstDayGregorian.getDay()
+    } else {
+      const gregorianDate = date as Date
+      return new Date(gregorianDate.getFullYear(), gregorianDate.getMonth(), 1).getDay()
+    }
   }
 
-  const getMonthName = (date: Date) => {
-    return date.toLocaleString('default', { month: 'long' })
+  const getMonthName = (date: Date | JalaliDate) => {
+    if (calendarType === 'jalali') {
+      const jalaliDate = date as JalaliDate
+      return jalaliMonths[jalaliDate.jm - 1]
+    } else {
+      const gregorianDate = date as Date
+      return gregorianDate.toLocaleString('default', { month: 'long' })
+    }
   }
 
-  const getYear = (date: Date) => {
-    return date.getFullYear()
+  const getYear = (date: Date | JalaliDate) => {
+    if (calendarType === 'jalali') {
+      const jalaliDate = date as JalaliDate
+      return jalaliDate.jy
+    } else {
+      const gregorianDate = date as Date
+      return gregorianDate.getFullYear()
+    }
   }
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     setCurrentDate(prev => {
-      const newDate = new Date(prev)
-      if (direction === 'prev') {
-        newDate.setMonth(prev.getMonth() - 1)
+      if (calendarType === 'jalali') {
+        const currentJalali = toJalali(prev)
+        let newJy = currentJalali.jy
+        let newJm = currentJalali.jm
+
+        if (direction === 'prev') {
+          if (newJm === 1) {
+            newJm = 12
+            newJy -= 1
+          } else {
+            newJm -= 1
+          }
+        } else {
+          if (newJm === 12) {
+            newJm = 1
+            newJy += 1
+          } else {
+            newJm += 1
+          }
+        }
+
+        const newGregorian = toGregorian({ jy: newJy, jm: newJm, jd: 1 })
+        return newGregorian
       } else {
-        newDate.setMonth(prev.getMonth() + 1)
+        const newDate = new Date(prev)
+        if (direction === 'prev') {
+          newDate.setMonth(prev.getMonth() - 1)
+        } else {
+          newDate.setMonth(prev.getMonth() + 1)
+        }
+        return newDate
       }
-      return newDate
     })
   }
 
   const isToday = (day: number) => {
-    return today.getDate() === day && 
-           today.getMonth() === currentDate.getMonth() && 
-           today.getFullYear() === currentDate.getFullYear()
+    if (calendarType === 'jalali') {
+      const todayJalali = toJalali(today)
+      const currentJalali = toJalali(currentDate)
+      return todayJalali.jd === day && 
+             todayJalali.jm === currentJalali.jm && 
+             todayJalali.jy === currentJalali.jy
+    } else {
+      return today.getDate() === day && 
+             today.getMonth() === currentDate.getMonth() && 
+             today.getFullYear() === currentDate.getFullYear()
+    }
   }
 
   const generateCalendarDays = () => {
-    const daysInMonth = getDaysInMonth(currentDate)
-    const firstDay = getFirstDayOfMonth(currentDate)
+    const currentDateInType = getCurrentDateInType()
+    const daysInMonth = getDaysInMonth(currentDateInType)
+    const firstDay = getFirstDayOfMonth(currentDateInType)
     const days = []
+    
     for (let i = 0; i < firstDay; i++) {
       days.push(null)
     }
@@ -123,8 +221,27 @@ export default function CalendarPage() {
 
   // Get events for a specific day
   const getEventsForDay = (day: number) => {
-    const dateStr = new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toISOString().split('T')[0]
+    let dateStr: string
+    
+    if (calendarType === 'jalali') {
+      const currentJalali = toJalali(currentDate)
+      const dayGregorian = toGregorian({ jy: currentJalali.jy, jm: currentJalali.jm, jd: day })
+      dateStr = dayGregorian.toISOString().split('T')[0]
+    } else {
+      dateStr = new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toISOString().split('T')[0]
+    }
+    
     return calendarEvents.filter(event => event.date === dateStr)
+  }
+
+  // Get today's date string for display
+  const getTodayDisplay = () => {
+    if (calendarType === 'jalali') {
+      const todayJalali = toJalali(today)
+      return `${jalaliMonths[todayJalali.jm - 1].substring(0, 3)} ${todayJalali.jd}`
+    } else {
+      return today.toLocaleDateString('default', { month: 'short', day: 'numeric' })
+    }
   }
 
   // Remove event
@@ -150,6 +267,7 @@ export default function CalendarPage() {
 
   const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   const calendarDays = generateCalendarDays()
+  const currentDateInType = getCurrentDateInType()
 
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden">
@@ -181,6 +299,43 @@ export default function CalendarPage() {
           </p>
         </motion.div>
 
+        {/* Calendar Type Toggle */}
+        <motion.div 
+          className="max-w-2xl mx-auto mb-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.1 }}
+        >
+          <div className="flex items-center justify-center gap-2 bg-[#111111] border border-[#1F1F1F] rounded-lg p-1">
+            <motion.button
+              className={`flex items-center gap-2 px-3 py-2 rounded-md text-xs md:text-sm font-medium transition-all duration-200 ${
+                calendarType === 'gregorian' 
+                  ? 'bg-[#2D8EFF] text-black' 
+                  : 'text-white/60 hover:text-white'
+              }`}
+              onClick={() => setCalendarType('gregorian')}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Globe className="w-3 h-3" />
+              Gregorian
+            </motion.button>
+            <motion.button
+              className={`flex items-center gap-2 px-3 py-2 rounded-md text-xs md:text-sm font-medium transition-all duration-200 ${
+                calendarType === 'jalali' 
+                  ? 'bg-[#FFD700] text-black' 
+                  : 'text-white/60 hover:text-white'
+              }`}
+              onClick={() => setCalendarType('jalali')}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Sun className="w-3 h-3" />
+              Jalali
+            </motion.button>
+          </div>
+        </motion.div>
+
         {/* Quick Actions */}
         <motion.div 
           className="max-w-2xl mx-auto mb-4 md:mb-6"
@@ -196,7 +351,7 @@ export default function CalendarPage() {
             >
               <div className="text-[#2D8EFF] font-medium mb-1 text-xs md:text-sm">Today</div>
               <div className="text-[#CCCCCC] text-xs">
-                {today.toLocaleDateString('default', { month: 'short', day: 'numeric' })}
+                {getTodayDisplay()}
               </div>
             </motion.button>
             <motion.button
@@ -206,7 +361,7 @@ export default function CalendarPage() {
             >
               <div className="text-[#3AB54B] font-medium mb-1 text-xs md:text-sm">This Month</div>
               <div className="text-[#CCCCCC] text-xs">
-                {getDaysInMonth(currentDate)} days
+                {getDaysInMonth(currentDateInType)} days
               </div>
             </motion.button>
             <motion.button
@@ -216,7 +371,7 @@ export default function CalendarPage() {
             >
               <div className="text-[#FFD700] font-medium mb-1 text-xs md:text-sm">Year View</div>
               <div className="text-[#CCCCCC] text-xs">
-                {getYear(currentDate)}
+                {getYear(currentDateInType)}
               </div>
             </motion.button>
           </div>
@@ -242,12 +397,12 @@ export default function CalendarPage() {
               </motion.button>
               <motion.h2 
                 className="text-base md:text-lg font-light text-white tracking-wide"
-                key={`${getMonthName(currentDate)}-${getYear(currentDate)}`}
+                key={`${getMonthName(currentDateInType)}-${getYear(currentDateInType)}-${calendarType}`}
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                {getMonthName(currentDate)} {getYear(currentDate)}
+                {getMonthName(currentDateInType)} {getYear(currentDateInType)}
               </motion.h2>
               <motion.button
                 onClick={() => navigateMonth('next')}
@@ -328,7 +483,13 @@ export default function CalendarPage() {
               >
                 <X className="w-5 h-5" />
               </button>
-              <h3 className="text-lg font-semibold mb-4 text-white">Events on {new Date(currentDate.getFullYear(), currentDate.getMonth(), selectedDay).toLocaleDateString()}</h3>
+              <h3 className="text-lg font-semibold mb-4 text-white">
+                Events on {
+                  calendarType === 'jalali' 
+                    ? `${getMonthName(currentDateInType)} ${selectedDay}, ${getYear(currentDateInType)}`
+                    : new Date(currentDate.getFullYear(), currentDate.getMonth(), selectedDay).toLocaleDateString()
+                }
+              </h3>
               {loading ? (
                 <div className="text-center py-8 text-white/60">Loading...</div>
               ) : error ? (
