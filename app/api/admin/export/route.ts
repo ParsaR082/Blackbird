@@ -51,6 +51,22 @@ export async function POST(request: NextRequest) {
       dateFilter.$lte = new Date(endDate)
     }
 
+    // PDF export for analytics
+    if (type === 'analytics' && format === 'pdf') {
+      const analyticsData = await getAnalyticsDataForPDF({ eventId, category, dateFilter })
+      const pdfBuffer = await generateAnalyticsPDF(analyticsData)
+      return new NextResponse(pdfBuffer, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="analytics_report_${new Date().toISOString().split('T')[0]}.pdf"`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      })
+    }
+
     let csvContent = ''
     let filename = ''
 
@@ -59,17 +75,14 @@ export async function POST(request: NextRequest) {
         csvContent = await exportEvents({ eventId, status, category, dateFilter })
         filename = `events_export_${new Date().toISOString().split('T')[0]}.csv`
         break
-
       case 'registrations':
         csvContent = await exportRegistrations({ eventId, status, registrationType, dateFilter })
         filename = `registrations_export_${new Date().toISOString().split('T')[0]}.csv`
         break
-
       case 'analytics':
         csvContent = await exportAnalytics({ eventId, category, dateFilter })
         filename = `analytics_export_${new Date().toISOString().split('T')[0]}.csv`
         break
-
       default:
         return NextResponse.json(
           { error: 'Invalid export type' },
@@ -88,7 +101,6 @@ export async function POST(request: NextRequest) {
         'Expires': '0'
       }
     })
-
   } catch (error) {
     console.error('Export error:', error)
     return NextResponse.json(
@@ -458,4 +470,176 @@ async function exportAnalytics(filters: any) {
   }
 
   return csvContent
+} 
+
+// Helper to get analytics data for PDF
+async function getAnalyticsDataForPDF(filters: any) {
+  // Use the same aggregation as exportAnalytics, but return the array
+  const { eventId, category, dateFilter } = filters
+  const baseMatch: any = { isActive: true }
+  if (eventId) baseMatch._id = new mongoose.Types.ObjectId(eventId)
+  if (category) baseMatch.category = category
+  if (Object.keys(dateFilter).length > 0) baseMatch.createdAt = dateFilter
+  const analyticsData = await Event.aggregate([
+    { $match: baseMatch },
+    {
+      $lookup: {
+        from: 'eventregistrations',
+        localField: '_id',
+        foreignField: 'eventId',
+        as: 'registrations'
+      }
+    },
+    {
+      $addFields: {
+        totalRegistrations: { $size: '$registrations' },
+        userRegistrations: {
+          $size: {
+            $filter: {
+              input: '$registrations',
+              cond: { $eq: ['$$this.registrationType', 'user'] }
+            }
+          }
+        },
+        guestRegistrations: {
+          $size: {
+            $filter: {
+              input: '$registrations',
+              cond: { $eq: ['$$this.registrationType', 'guest'] }
+            }
+          }
+        },
+        activeRegistrations: {
+          $size: {
+            $filter: {
+              input: '$registrations',
+              cond: { $eq: ['$$this.status', 'registered'] }
+            }
+          }
+        },
+        waitlistedRegistrations: {
+          $size: {
+            $filter: {
+              input: '$registrations',
+              cond: { $eq: ['$$this.status', 'waitlisted'] }
+            }
+          }
+        },
+        cancelledRegistrations: {
+          $size: {
+            $filter: {
+              input: '$registrations',
+              cond: { $eq: ['$$this.status', 'cancelled'] }
+            }
+          }
+        },
+        attendedRegistrations: {
+          $size: {
+            $filter: {
+              input: '$registrations',
+              cond: { $eq: ['$$this.status', 'attended'] }
+            }
+          }
+        },
+        fillRate: {
+          $cond: [
+            { $gt: ['$maxAttendees', 0] },
+            { $multiply: [{ $divide: ['$currentAttendees', '$maxAttendees'] }, 100] },
+            0
+          ]
+        }
+      }
+    },
+    {
+      $project: {
+        registrations: 0
+      }
+    }
+  ])
+  return analyticsData
+}
+
+// PDF generation helper
+import PDFDocument from 'pdfkit'
+import { ChartJSNodeCanvas } from 'chartjs-node-canvas'
+
+async function generateAnalyticsPDF(analyticsData) {
+  const doc = new PDFDocument({ margin: 40 })
+  const buffers: Buffer[] = []
+  doc.on('data', buffers.push.bind(buffers))
+  doc.on('end', () => {})
+
+  doc.fontSize(20).text('Analytics Report', { align: 'center' })
+  doc.moveDown()
+  doc.fontSize(12).text(`Generated at: ${new Date().toLocaleString()}`)
+  doc.moveDown()
+
+  // Table header
+  doc.fontSize(14).text('Event Analytics', { underline: true })
+  doc.moveDown(0.5)
+
+  // Table columns
+  const headers = [
+    'Title', 'Category', 'Date', 'Status', 'Max', 'Current', 'Fill %', 'Total', 'Users', 'Guests', 'Active', 'Waitlist', 'Cancelled', 'Attended', 'Attend %', 'Cancel %'
+  ]
+  doc.fontSize(10)
+  doc.text(headers.join(' | '))
+  doc.moveDown(0.5)
+
+  for (const event of analyticsData) {
+    const attendanceRate = event.totalRegistrations > 0 
+      ? ((event.attendedRegistrations / event.totalRegistrations) * 100).toFixed(2)
+      : '0'
+    const cancellationRate = event.totalRegistrations > 0 
+      ? ((event.cancelledRegistrations / event.totalRegistrations) * 100).toFixed(2)
+      : '0'
+    const row = [
+      event.title,
+      event.category,
+      event.date ? event.date.toISOString().split('T')[0] : '',
+      event.status,
+      event.maxAttendees,
+      event.currentAttendees,
+      event.fillRate ? event.fillRate.toFixed(2) : '0',
+      event.totalRegistrations,
+      event.userRegistrations,
+      event.guestRegistrations,
+      event.activeRegistrations,
+      event.waitlistedRegistrations,
+      event.cancelledRegistrations,
+      event.attendedRegistrations,
+      attendanceRate,
+      cancellationRate
+    ]
+    doc.text(row.join(' | '))
+  }
+  doc.moveDown()
+
+  // Example: Add a chart (e.g., total registrations per event)
+  if (analyticsData.length > 0) {
+    const chartCanvas = new ChartJSNodeCanvas({ width: 600, height: 300 })
+    const chartConfig = {
+      type: 'bar',
+      data: {
+        labels: analyticsData.map(e => e.title),
+        datasets: [{
+          label: 'Total Registrations',
+          data: analyticsData.map(e => e.totalRegistrations),
+          backgroundColor: 'rgba(54, 162, 235, 0.5)'
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: { x: { title: { display: true, text: 'Event' } }, y: { title: { display: true, text: 'Registrations' } } }
+      }
+    }
+    const image = await chartCanvas.renderToBuffer(chartConfig)
+    doc.addPage()
+    doc.fontSize(16).text('Total Registrations per Event', { align: 'center' })
+    doc.moveDown()
+    doc.image(image, { fit: [500, 250], align: 'center' })
+  }
+
+  doc.end()
+  return Buffer.concat(buffers)
 } 

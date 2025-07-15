@@ -53,6 +53,7 @@ import { DataOptimization } from './components/DataOptimization'
 import { SecurityCenter } from './components/SecurityCenter'
 import AuditLogViewer from './components/AuditLogViewer'
 import { TwoFactorAuth } from './components/TwoFactorAuth'
+import RoadmapsManager from './components/RoadmapsManager';
 
 interface User {
   id: string
@@ -90,7 +91,7 @@ export default function AdminPage() {
   const [isLoggingIn, setIsLoggingIn] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [showUserModal, setShowUserModal] = useState(false)
-  const [activeSection, setActiveSection] = useState<'dashboard' | 'users' | 'content' | 'notifications' | 'settings' | 'analytics' | 'workflows' | 'advanced-users' | 'monitoring' | 'integration' | 'optimization' | 'security' | 'audit' | 'mfa'>('dashboard')
+  const [activeSection, setActiveSection] = useState<'dashboard' | 'users' | 'content' | 'notifications' | 'settings' | 'analytics' | 'workflows' | 'advanced-users' | 'monitoring' | 'integration' | 'optimization' | 'security' | 'audit' | 'mfa' | 'roadmaps'>('dashboard')
   const { user, isAuthenticated, isLoading, login, logout } = useAuth()
   const router = useRouter()
   
@@ -538,6 +539,7 @@ export default function AdminPage() {
               { id: 'security', label: 'Security', icon: Shield },
               { id: 'audit', label: 'Audit Log', icon: Eye },
               { id: 'mfa', label: '2FA', icon: Lock },
+              { id: 'roadmaps', label: 'Roadmaps', icon: Workflow },
               { id: 'settings', label: 'Settings', icon: Settings }
             ].map((tab) => (
               <Button
@@ -923,6 +925,11 @@ export default function AdminPage() {
         {/* Two Factor Auth Section */}
         {activeSection === 'mfa' && (
           <TwoFactorAuth />
+        )}
+
+        {/* Roadmaps Section */}
+        {activeSection === 'roadmaps' && (
+          <RoadmapsManager />
         )}
 
         {/* Settings Section */}

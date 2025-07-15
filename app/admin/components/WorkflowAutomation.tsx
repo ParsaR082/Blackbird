@@ -31,7 +31,8 @@ import {
   FileText,
   Calendar,
   Target,
-  Zap
+  Zap,
+  BookOpen
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -72,6 +73,11 @@ export function WorkflowAutomation({ className }: WorkflowAutomationProps) {
   const [loading, setLoading] = useState(true)
   const [isCreatingWorkflow, setIsCreatingWorkflow] = useState(false)
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null)
+  const [journals, setJournals] = useState<any[]>([])
+  const [journalContent, setJournalContent] = useState('')
+  const [journalTags, setJournalTags] = useState<string[]>([])
+  const [journalVisibility, setJournalVisibility] = useState<'private' | 'admins' | 'custom'>('private')
+  const [allowedAdmins, setAllowedAdmins] = useState<string[]>([])
   const [activeTab, setActiveTab] = useState('workflows')
 
   // Form state
@@ -256,6 +262,51 @@ export function WorkflowAutomation({ className }: WorkflowAutomationProps) {
     fetchTasks()
   }, [])
 
+  useEffect(() => {
+    if (activeTab === 'journaling') {
+      fetchJournals()
+    }
+    // eslint-disable-next-line
+  }, [activeTab])
+
+  async function fetchJournals() {
+    try {
+      const res = await fetch('/api/admin/journals')
+      if (res.ok) {
+        setJournals(await res.json())
+      }
+    } catch (e) {
+      toast.error('Failed to load journals')
+    }
+  }
+
+  async function saveJournal() {
+    try {
+      const res = await fetch('/api/admin/journals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: journalContent,
+          tags: journalTags,
+          visibility: journalVisibility,
+          allowedAdmins: journalVisibility === 'custom' ? allowedAdmins : []
+        })
+      })
+      if (res.ok) {
+        setJournalContent('')
+        setJournalTags([])
+        setJournalVisibility('private')
+        setAllowedAdmins([])
+        fetchJournals()
+        toast.success('Journal saved')
+      } else {
+        toast.error('Failed to save journal')
+      }
+    } catch (e) {
+      toast.error('Failed to save journal')
+    }
+  }
+
   if (loading) {
     return (
       <div className={`flex items-center justify-center p-8 ${className}`}>
@@ -284,10 +335,13 @@ export function WorkflowAutomation({ className }: WorkflowAutomationProps) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="workflows">Workflows</TabsTrigger>
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
+          <TabsTrigger value="journaling">
+            <BookOpen className="w-4 h-4 mr-1" /> Journaling
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="workflows" className="space-y-6">
@@ -615,6 +669,83 @@ export function WorkflowAutomation({ className }: WorkflowAutomationProps) {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="journaling" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Admin Journaling</CardTitle>
+              <CardDescription>Write your daily journal, add tags, and set visibility.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Textarea
+                value={journalContent}
+                onChange={e => setJournalContent(e.target.value)}
+                placeholder="Write your journal entry..."
+                rows={5}
+              />
+              <div className="flex gap-2 items-center">
+                <Label>Tags:</Label>
+                <Input
+                  value={journalTags.join(', ')}
+                  onChange={e => setJournalTags(e.target.value.split(',').map(t => t.trim()))}
+                  placeholder="tag1, tag2, ..."
+                  className="w-64"
+                />
+              </div>
+              <div className="flex gap-4 items-center">
+                <Label>Visibility:</Label>
+                <Select value={journalVisibility} onValueChange={v => setJournalVisibility(v as any)}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="private">Only Me</SelectItem>
+                    <SelectItem value="admins">All Admins</SelectItem>
+                    <SelectItem value="custom">Specific Admins</SelectItem>
+                  </SelectContent>
+                </Select>
+                {journalVisibility === 'custom' && (
+                  <Input
+                    value={allowedAdmins.join(', ')}
+                    onChange={e => setAllowedAdmins(e.target.value.split(',').map(t => t.trim()))}
+                    placeholder="admin1, admin2, ..."
+                    className="w-64"
+                  />
+                )}
+              </div>
+              <Button variant="outline" onClick={saveJournal}>
+                Save Journal
+              </Button>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Journal Entries</CardTitle>
+              <CardDescription>Entries visible to you</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {journals.length === 0 ? (
+                <div className="text-muted-foreground">No journal entries found.</div>
+              ) : (
+                journals.map(journal => (
+                  <div key={journal._id} className="border rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="font-semibold">{journal.author}</span>
+                      <span className="text-xs text-muted-foreground">{new Date(journal.createdAt).toLocaleString()}</span>
+                      <Badge className="ml-2">{journal.visibility}</Badge>
+                    </div>
+                    <div className="mb-2">{journal.content}</div>
+                    <div className="flex gap-2 flex-wrap">
+                      {journal.tags && journal.tags.map((tag: string) => (
+                        <Badge key={tag} variant="outline">{tag}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
