@@ -382,7 +382,23 @@ export default function AdminPage() {
         { label: "Templates", value: "6" },
         { label: "Sent Today", value: "15" }
       ]
-    }
+    },
+    {
+      title: "Roadmaps Management",
+      description: "Create and manage learning roadmaps, levels, milestones, and challenges",
+      icon: Workflow,
+      color: "text-pink-400",
+      bgColor: "bg-pink-500/10",
+      borderColor: "border-pink-500/20",
+      path: "/admin/roadmaps",
+      actions: [
+        { name: "Manage Roadmaps", icon: Edit3, path: "/admin/roadmaps" },
+      ],
+      stats: [
+        { label: "Roadmaps", value: "-" },
+        { label: "Levels", value: "-" }
+      ]
+    },
   ];
 
   // If not authenticated or not admin, show login page
@@ -539,7 +555,6 @@ export default function AdminPage() {
               { id: 'security', label: 'Security', icon: Shield },
               { id: 'audit', label: 'Audit Log', icon: Eye },
               { id: 'mfa', label: '2FA', icon: Lock },
-              { id: 'roadmaps', label: 'Roadmaps', icon: Workflow },
               { id: 'settings', label: 'Settings', icon: Settings }
             ].map((tab) => (
               <Button
