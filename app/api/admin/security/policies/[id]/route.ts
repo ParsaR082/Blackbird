@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
+import { connectToDatabase } from '@/lib/mongodb';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { ObjectId } from 'mongodb';
 
 export async function PATCH(
   request: NextRequest,
@@ -21,12 +22,12 @@ export async function PATCH(
       return NextResponse.json({ error: 'Enabled flag is required' }, { status: 400 });
     }
 
-    const mongoose = await connectToDatabase();
-    const db = mongoose.connection.db;
+    await connectToDatabase();
+    const db = (await import('mongoose')).default.connection.db;
 
     // Update policy
     const result = await db.collection('securityPolicies').updateOne(
-      { _id: id },
+      { _id: new ObjectId(id) },
       { 
         $set: { 
           enabled,

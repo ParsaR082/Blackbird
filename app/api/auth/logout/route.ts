@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import connectToDatabase from '@/lib/mongodb'
+import { connectToDatabase } from '@/lib/mongodb'
 import mongoose from 'mongoose'
 
 export async function POST(request: NextRequest) {

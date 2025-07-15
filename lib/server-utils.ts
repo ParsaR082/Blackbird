@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { cookies } from 'next/headers'
-import connectToDatabase from './mongodb'
+import { connectToDatabase } from './mongodb'
 import mongoose from 'mongoose'
 
 // Get user from request

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
+import { connectToDatabase } from '@/lib/mongodb';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
@@ -17,8 +17,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Enabled flag is required' }, { status: 400 });
     }
 
-    const mongoose = await connectToDatabase();
-    const db = mongoose.connection.db;
+    await connectToDatabase();
+    const db = (await import('mongoose')).default.connection.db;
 
     // Update auto-optimization setting
     await db.collection('settings').updateOne(
@@ -55,8 +55,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const mongoose = await connectToDatabase();
-    const db = mongoose.connection.db;
+    await connectToDatabase();
+    const db = (await import('mongoose')).default.connection.db;
 
     // Get auto-optimization setting
     const setting = await db.collection('settings').findOne({ key: 'autoOptimization' });

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
+import { connectToDatabase } from '@/lib/mongodb';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
@@ -17,8 +17,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Task ID is required' }, { status: 400 });
     }
 
-    const mongoose = await connectToDatabase();
-    const db = mongoose.connection.db;
+    await connectToDatabase();
+    const db = (await import('mongoose')).default.connection.db;
 
     // Update task status to running
     await db.collection('optimizationTasks').updateOne(

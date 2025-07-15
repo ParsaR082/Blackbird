@@ -12,7 +12,7 @@ export async function connectToDatabase() {
 // MongoDB Client for NextAuth
 import { MongoClient } from 'mongodb'
 
-const client = new MongoClient(MONGODB_URI!)
+const client = new MongoClient(process.env.MONGODB_URI!)
 const clientPromise = client.connect()
 
 export { clientPromise }
