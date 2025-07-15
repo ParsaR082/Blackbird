@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import type { Roadmap, Level, Milestone, Challenge } from '@/app/roadmaps/types';
 
 export default function RoadmapsManager() {
+  // Top-level state for roadmaps
   const [roadmaps, setRoadmaps] = useState<Roadmap[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -10,9 +11,33 @@ export default function RoadmapsManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  // Levels management
   const [managingLevelsId, setManagingLevelsId] = useState<string | null>(null);
   const [levels, setLevels] = useState<Level[]>([]);
   const [levelsLoading, setLevelsLoading] = useState(false);
+  const [newLevelTitle, setNewLevelTitle] = useState('');
+  const [newLevelOrder, setNewLevelOrder] = useState(1);
+  const [editingLevelId, setEditingLevelId] = useState<string | null>(null);
+  const [editLevelTitle, setEditLevelTitle] = useState('');
+  const [editLevelOrder, setEditLevelOrder] = useState(1);
+  const [managingMilestonesLevelId, setManagingMilestonesLevelId] = useState<string | null>(null);
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [milestonesLoading, setMilestonesLoading] = useState(false);
+  const [newMilestoneTitle, setNewMilestoneTitle] = useState('');
+  const [newMilestoneDesc, setNewMilestoneDesc] = useState('');
+  const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null);
+  const [editMilestoneTitle, setEditMilestoneTitle] = useState('');
+  const [editMilestoneDesc, setEditMilestoneDesc] = useState('');
+  const [managingChallengesMilestoneId, setManagingChallengesMilestoneId] = useState<string | null>(null);
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [challengesLoading, setChallengesLoading] = useState(false);
+  const [newChallengeTitle, setNewChallengeTitle] = useState('');
+  const [newChallengeDesc, setNewChallengeDesc] = useState('');
+  const [newChallengeType, setNewChallengeType] = useState<'quiz' | 'project' | 'reading'>('project');
+  const [editingChallengeId, setEditingChallengeId] = useState<string | null>(null);
+  const [editChallengeTitle, setEditChallengeTitle] = useState('');
+  const [editChallengeDesc, setEditChallengeDesc] = useState('');
+  const [editChallengeType, setEditChallengeType] = useState<'quiz' | 'project' | 'reading'>('project');
 
   // Fetch all roadmaps
   const fetchRoadmaps = () => {
@@ -101,15 +126,6 @@ export default function RoadmapsManager() {
   };
 
   if (managingLevelsId) {
-    const [newLevelTitle, setNewLevelTitle] = useState('');
-    const [newLevelOrder, setNewLevelOrder] = useState(1);
-    const [editingLevelId, setEditingLevelId] = useState<string | null>(null);
-    const [editLevelTitle, setEditLevelTitle] = useState('');
-    const [editLevelOrder, setEditLevelOrder] = useState(1);
-    const [managingMilestonesLevelId, setManagingMilestonesLevelId] = useState<string | null>(null);
-    const [milestones, setMilestones] = useState<Milestone[]>([]);
-    const [milestonesLoading, setMilestonesLoading] = useState(false);
-
     // Add level
     const handleAddLevel = async () => {
       setLevelsLoading(true);
@@ -172,15 +188,6 @@ export default function RoadmapsManager() {
     };
     // Milestones view
     if (managingMilestonesLevelId) {
-      const [newMilestoneTitle, setNewMilestoneTitle] = useState('');
-      const [newMilestoneDesc, setNewMilestoneDesc] = useState('');
-      const [editingMilestoneId, setEditingMilestoneId] = useState<string | null>(null);
-      const [editMilestoneTitle, setEditMilestoneTitle] = useState('');
-      const [editMilestoneDesc, setEditMilestoneDesc] = useState('');
-      const [managingChallengesMilestoneId, setManagingChallengesMilestoneId] = useState<string | null>(null);
-      const [challenges, setChallenges] = useState<Challenge[]>([]);
-      const [challengesLoading, setChallengesLoading] = useState(false);
-
       // Add milestone
       const handleAddMilestone = async () => {
         setMilestonesLoading(true);
@@ -199,6 +206,7 @@ export default function RoadmapsManager() {
           setMilestonesLoading(false);
         }
       };
+
       // Edit milestone
       const startEditMilestone = (ms: Milestone) => {
         setEditingMilestoneId(ms.id);
@@ -242,14 +250,6 @@ export default function RoadmapsManager() {
       };
       // Challenges view
       if (managingChallengesMilestoneId) {
-        const [newChallengeTitle, setNewChallengeTitle] = useState('');
-        const [newChallengeDesc, setNewChallengeDesc] = useState('');
-        const [newChallengeType, setNewChallengeType] = useState<'quiz' | 'project' | 'reading'>('project');
-        const [editingChallengeId, setEditingChallengeId] = useState<string | null>(null);
-        const [editChallengeTitle, setEditChallengeTitle] = useState('');
-        const [editChallengeDesc, setEditChallengeDesc] = useState('');
-        const [editChallengeType, setEditChallengeType] = useState<'quiz' | 'project' | 'reading'>('project');
-
         // Add challenge
         const handleAddChallenge = async () => {
           setChallengesLoading(true);

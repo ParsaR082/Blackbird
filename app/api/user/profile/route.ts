@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import connectToDatabase from '@/lib/mongodb'
+import { connectToDatabase } from '@/lib/mongodb'
 import mongoose from 'mongoose'
 import bcrypt from 'bcrypt'
 import { RateLimit } from '@/lib/rate-limit'

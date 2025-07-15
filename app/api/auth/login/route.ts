@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import connectToDatabase from '@/lib/mongodb'
+import { connectToDatabase } from '@/lib/mongodb'
 import * as bcrypt from 'bcrypt'
 import { cookies } from 'next/headers'
 import { v4 as uuidv4 } from 'uuid'

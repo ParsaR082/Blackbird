@@ -5,7 +5,7 @@ import GoogleProvider from 'next-auth/providers/google'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { clientPromise } from './mongodb'
 import bcrypt from 'bcrypt'
-import connectToDatabase from './mongodb'
+import { connectToDatabase } from './mongodb'
 import mongoose from 'mongoose'
 
 // Extend NextAuth types

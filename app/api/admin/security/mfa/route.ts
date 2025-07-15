@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
+import { connectToDatabase } from '@/lib/mongodb';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
@@ -11,8 +11,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const mongoose = await connectToDatabase();
-    const db = mongoose.connection.db;
+    await connectToDatabase();
+    const db = (await import('mongoose')).default.connection.db;
 
     // Get MFA settings
     const settings = await db.collection('securitySettings').findOne({ key: 'mfa' });
@@ -44,8 +44,8 @@ export async function PATCH(request: NextRequest) {
     }
 
     const updates = await request.json();
-    const mongoose = await connectToDatabase();
-    const db = mongoose.connection.db;
+    await connectToDatabase();
+    const db = (await import('mongoose')).default.connection.db;
 
     // Update MFA settings
     await db.collection('securitySettings').updateOne(

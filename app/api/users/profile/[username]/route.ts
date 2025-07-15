@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import connectToDatabase from '@/lib/mongodb'
+import { connectToDatabase } from '@/lib/mongodb'
 import mongoose from 'mongoose'
 import { HallOfFame } from '@/lib/models/hall-of-fame'
 

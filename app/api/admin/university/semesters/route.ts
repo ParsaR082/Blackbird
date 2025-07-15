@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import connectToDatabase from '@/lib/mongodb'
+import { connectToDatabase } from '@/lib/mongodb'
 import { Semester } from '@/lib/models/university'
 import { validateAdmin } from '@/lib/server-utils'
 

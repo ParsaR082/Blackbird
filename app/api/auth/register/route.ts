@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import connectToDatabase from '@/lib/mongodb'
+import { connectToDatabase } from '@/lib/mongodb'
 import * as bcrypt from 'bcrypt'
 import { z } from 'zod'
 import { validateCsrfToken } from '@/lib/csrf'

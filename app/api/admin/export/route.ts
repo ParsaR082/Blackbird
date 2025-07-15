@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import connectToDatabase from '@/lib/mongodb'
+import { connectToDatabase } from '@/lib/mongodb'
 import { Event, EventRegistration } from '@/lib/models/event'
 import { getUserFromRequest } from '@/lib/server-utils'
 import { z } from 'zod'
@@ -7,7 +7,7 @@ import mongoose from 'mongoose'
 
 const exportSchema = z.object({
   type: z.enum(['events', 'registrations', 'analytics']),
-  format: z.enum(['csv']).optional().default('csv'),
+  format: z.enum(['csv', 'pdf']).optional().default('csv'),
   eventId: z.string().optional(),
   status: z.string().optional(),
   category: z.string().optional(),
@@ -563,7 +563,7 @@ async function getAnalyticsDataForPDF(filters: any) {
 import PDFDocument from 'pdfkit'
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas'
 
-async function generateAnalyticsPDF(analyticsData) {
+async function generateAnalyticsPDF(analyticsData: any[]) {
   const doc = new PDFDocument({ margin: 40 })
   const buffers: Buffer[] = []
   doc.on('data', buffers.push.bind(buffers))
@@ -618,7 +618,7 @@ async function generateAnalyticsPDF(analyticsData) {
   // Example: Add a chart (e.g., total registrations per event)
   if (analyticsData.length > 0) {
     const chartCanvas = new ChartJSNodeCanvas({ width: 600, height: 300 })
-    const chartConfig = {
+    const chartConfig: import('chart.js').ChartConfiguration<'bar'> = {
       type: 'bar',
       data: {
         labels: analyticsData.map(e => e.title),

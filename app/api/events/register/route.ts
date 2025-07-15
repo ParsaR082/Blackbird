@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import connectToDatabase from '@/lib/mongodb'
+import { connectToDatabase } from '@/lib/mongodb'
 import { Event, EventRegistration } from '@/lib/models/event'
 import { getUserFromRequest } from '@/lib/server-utils'
 import { z } from 'zod'
