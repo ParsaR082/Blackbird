@@ -71,14 +71,6 @@ const RoadmapCard: React.FC<RoadmapCardProps> = ({ roadmap, onEdit, onRefresh, s
             {getStatusBadge(status)}
           </h3>
           <p className="text-gray-500 text-sm truncate">{highlight(roadmap.description, searchTerm)}</p>
-          <div className="w-full h-2 bg-gray-200 dark:bg-gray-800 rounded mt-2 relative">
-            <div
-              className="h-2 rounded bg-blue-500 transition-all"
-              style={{ width: `${progress}%` }}
-              title={`Progress: ${progress}%`}
-            />
-            <span className="absolute right-2 top-0 text-xs text-blue-700 dark:text-blue-300" style={{ lineHeight: '2rem' }}>{progress}%</span>
-          </div>
         </div>
       </div>
       {/* Stats placeholder */}

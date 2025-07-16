@@ -10,7 +10,11 @@ export async function GET(req: NextRequest, { params }: { params: { roadmapId: s
   if (!level) return NextResponse.json([], { status: 404 });
   const milestone = level.milestones.id(params.milestoneId);
   if (!milestone) return NextResponse.json([], { status: 404 });
-  return NextResponse.json(milestone.challenges || []);
+  const challenges = (milestone.challenges || []).map((ch: any) => ({
+    ...ch.toObject(),
+    id: ch._id?.toString() || ''
+  }));
+  return NextResponse.json(challenges);
 }
 
 export async function POST(req: NextRequest, { params }: { params: { roadmapId: string, levelId: string, milestoneId: string } }) {

@@ -1,20 +1,37 @@
 import * as React from "react"
-
+import { Ripple, RippleHandle } from "./Ripple"
 import { cn } from "@/lib/utils"
 
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm",
-      className
-    )}
-    {...props}
-  />
-))
+>(({ className, onClick, role, ...props }, ref) => {
+  const rippleRef = React.useRef<RippleHandle>(null);
+
+  const handleClick = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    if (onClick || role === "button") {
+      rippleRef.current?.createRipple(e);
+    }
+    onClick?.(e);
+  };
+
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "rounded-lg border bg-card text-card-foreground shadow-sm relative overflow-hidden cursor-pointer transition-all",
+        className
+      )}
+      onClick={handleClick}
+      role={role}
+      tabIndex={role === "button" ? 0 : undefined}
+      {...props}
+    >
+      {props.children}
+      {(onClick || role === "button") && <Ripple ref={rippleRef} />}
+    </div>
+  );
+})
 Card.displayName = "Card"
 
 const CardHeader = React.forwardRef<

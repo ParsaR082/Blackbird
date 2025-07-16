@@ -22,8 +22,10 @@ import {
   Settings
 } from 'lucide-react';
 
+type RoadmapWithMongoId = Roadmap & { _id?: string };
+
 interface AddEditModalProps {
-  roadmap: Roadmap | null;
+  roadmap: RoadmapWithMongoId | null;
   onClose: (refresh?: boolean) => void;
 }
 
@@ -63,7 +65,11 @@ const AddEditModal: React.FC<AddEditModalProps> = ({ roadmap, onClose }) => {
       unlockRequirements: ''
     };
     setLevels([...levels, newLevel]);
-    setExpandedLevels(prev => new Set([...prev, newLevel.id]));
+    setExpandedLevels(prev => {
+      const arr = Array.from(prev);
+      arr.push(newLevel.id);
+      return new Set(arr);
+    });
   };
 
   const updateLevel = (levelId: string, updates: Partial<Level>) => {
@@ -75,9 +81,8 @@ const AddEditModal: React.FC<AddEditModalProps> = ({ roadmap, onClose }) => {
   const deleteLevel = (levelId: string) => {
     setLevels(prev => prev.filter(level => level.id !== levelId));
     setExpandedLevels(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(levelId);
-      return newSet;
+      const arr = Array.from(prev);
+      return new Set(arr.filter(id => id !== levelId));
     });
   };
 
@@ -105,9 +110,11 @@ const AddEditModal: React.FC<AddEditModalProps> = ({ roadmap, onClose }) => {
       if (level.id !== levelId) return level;
       return {
         ...level,
-        milestones: level.milestones.map(milestone =>
-          milestone.id === milestoneId ? { ...milestone, ...updates } : milestone
-        )
+        milestones: Array.isArray(level.milestones)
+          ? level.milestones.map(milestone =>
+              milestone.id === milestoneId ? { ...milestone, ...updates } : milestone
+            )
+          : []
       };
     }));
   };
@@ -178,25 +185,25 @@ const AddEditModal: React.FC<AddEditModalProps> = ({ roadmap, onClose }) => {
 
   const toggleLevelExpansion = (levelId: string) => {
     setExpandedLevels(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(levelId)) {
-        newSet.delete(levelId);
+      const arr = Array.from(prev);
+      if (arr.includes(levelId)) {
+        return new Set(arr.filter(id => id !== levelId));
       } else {
-        newSet.add(levelId);
+        arr.push(levelId);
+        return new Set(arr);
       }
-      return newSet;
     });
   };
 
   const toggleMilestoneExpansion = (milestoneId: string) => {
     setExpandedMilestones(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(milestoneId)) {
-        newSet.delete(milestoneId);
+      const arr = Array.from(prev);
+      if (arr.includes(milestoneId)) {
+        return new Set(arr.filter(id => id !== milestoneId));
       } else {
-        newSet.add(milestoneId);
+        arr.push(milestoneId);
+        return new Set(arr);
       }
-      return newSet;
     });
   };
 
@@ -204,13 +211,31 @@ const AddEditModal: React.FC<AddEditModalProps> = ({ roadmap, onClose }) => {
     e.preventDefault();
     setLoading(true);
     try {
+      // حذف id از همه سطوح حتی در حالت ویرایش
+      const cleanLevels = levels.map((level, index) => ({
+        title: level.title,
+        order: index + 1,
+        unlockRequirements: level.unlockRequirements,
+        milestones: level.milestones.map(milestone => ({
+          title: milestone.title,
+          description: milestone.description,
+          dueDate: milestone.dueDate,
+          reward: milestone.reward,
+          challenges: milestone.challenges.map(challenge => ({
+            title: challenge.title,
+            description: challenge.description,
+            type: challenge.type,
+            resources: challenge.resources || []
+          }))
+        }))
+      }));
       const roadmapData = {
-        ...(isEdit ? { id: roadmap!.id } : {}),
+        ...(isEdit ? { id: roadmap?._id || roadmap?.id } : {}),
         title,
         description,
         icon,
         visibility,
-        levels: levels.map((level, index) => ({ ...level, order: index + 1 }))
+        levels: cleanLevels
       };
 
       const response = await fetch('/api/roadmaps', {

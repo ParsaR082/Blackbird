@@ -1,11 +1,16 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Map, Award, Users, ArrowRight, ArrowLeft, CheckCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Map, Award, Users, ArrowLeft, CheckCircle } from 'lucide-react';
 import BackgroundNodes from '@/components/BackgroundNodes';
 import { useTheme } from '@/contexts/theme-context';
 import type { Roadmap, Level, Milestone, Challenge, UserProgress } from './types';
+import RoadmapList from './components/RoadmapList';
+import LevelList from './components/LevelList';
+import MilestoneList from './components/MilestoneList';
+import ChallengeList from './components/ChallengeList';
+import Toast from './Toast';
 
 const mockUserId = '663b1e1f1f1f1f1f1f1f1f1f'; // Replace with real user ID from auth
 
@@ -21,13 +26,42 @@ export default function RoadmapsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
+  // Add toast state
+  const [toast, setToast] = useState<{ visible: boolean; message: string; type?: 'success' | 'error' | 'info' }>({ visible: false, message: '' });
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToast({ visible: true, message, type });
+  };
+  const closeToast = () => setToast({ ...toast, visible: false });
+  // Add signup state
+  const [signedUpRoadmaps, setSignedUpRoadmaps] = useState<{ [roadmapId: string]: boolean }>({});
+  const handleSignUp = (roadmapId: string) => {
+    setSignedUpRoadmaps((prev) => ({ ...prev, [roadmapId]: true }));
+    showToast('Signed up for roadmap!', 'success');
+  };
+  // Use completedLevels from userProgress
+  const handleCompleteLevel = async (levelId: string) => {
+    if (!userProgress || !selectedRoadmap) return;
+    if (userProgress.completedLevels?.includes(levelId)) return;
+    const updated = {
+      ...userProgress,
+      roadmapId: selectedRoadmap.id,
+      completedLevels: [...(userProgress.completedLevels || []), levelId],
+    };
+    setUserProgress(updated);
+    await fetch(`/api/roadmaps/progress/${mockUserId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated),
+    });
+    showToast('Level marked as complete!', 'success');
+  };
 
   // Fetch all roadmaps on mount
   useEffect(() => {
     setLoading(true);
     fetch('/api/roadmaps')
       .then(res => res.json())
-      .then(data => setRoadmaps(data))
+      .then(data => setRoadmaps(data.map((rm: any) => ({ ...rm, id: rm.id || rm._id }))))
       .catch(() => setError('Failed to load roadmaps'))
       .finally(() => setLoading(false));
   }, []);
@@ -38,7 +72,7 @@ export default function RoadmapsPage() {
     setLoading(true);
     fetch(`/api/roadmaps/${selectedRoadmap.id}/levels`)
       .then(res => res.json())
-      .then(data => setLevels(data))
+      .then(data => setLevels(data.map((lvl: any) => ({ ...lvl, id: lvl.id || lvl._id }))))
       .catch(() => setError('Failed to load levels'))
       .finally(() => setLoading(false));
   }, [selectedRoadmap]);
@@ -49,7 +83,7 @@ export default function RoadmapsPage() {
     setLoading(true);
     fetch(`/api/roadmaps/${selectedRoadmap.id}/levels/${selectedLevel.id}/milestones`)
       .then(res => res.json())
-      .then(data => setMilestones(data))
+      .then(data => setMilestones(data.map((ms: any) => ({ ...ms, id: ms.id || ms._id }))))
       .catch(() => setError('Failed to load milestones'))
       .finally(() => setLoading(false));
   }, [selectedRoadmap, selectedLevel]);
@@ -60,7 +94,7 @@ export default function RoadmapsPage() {
     setLoading(true);
     fetch(`/api/roadmaps/${selectedRoadmap.id}/levels/${selectedLevel.id}/milestones/${selectedMilestone.id}/challenges`)
       .then(res => res.json())
-      .then(data => setChallenges(data))
+      .then(data => setChallenges(data.map((ch: any) => ({ ...ch, id: ch.id || ch._id }))))
       .catch(() => setError('Failed to load challenges'))
       .finally(() => setLoading(false));
   }, [selectedRoadmap, selectedLevel, selectedMilestone]);
@@ -88,113 +122,152 @@ export default function RoadmapsPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updated),
     });
+    showToast('Challenge marked as complete!', 'success');
   };
+
+  // Reset navigation
+  const resetToRoadmaps = () => {
+    setSelectedRoadmap(null);
+    setSelectedLevel(null);
+    setSelectedMilestone(null);
+    setLevels([]);
+    setMilestones([]);
+    setChallenges([]);
+    setUserProgress(null);
+    setError(null);
+  };
+
+  // Animated container
+  const AnimatedContainer = ({ children }: { children: React.ReactNode }) => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.4 }}
+    >
+      {children}
+    </motion.div>
+  );
 
   // Step 1: Roadmap selection
   if (!selectedRoadmap) {
-    if (loading) return <div className="pt-24 text-center">Loading roadmaps...</div>;
-    if (error) return <div className="pt-24 text-center text-red-500">{error}</div>;
     return (
       <div className="min-h-screen pt-24 pb-8 px-4">
         <BackgroundNodes />
-        <motion.div className="text-center mb-12">
-          <h1 className="text-3xl font-light mb-2">Development Roadmaps</h1>
-          <p className="text-sm max-w-md mx-auto text-gray-500">Choose a roadmap to start your journey.</p>
-        </motion.div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {roadmaps.map((roadmap) => (
-            <div key={roadmap.id} className="bg-white/10 rounded-xl p-6 flex flex-col items-center cursor-pointer hover:scale-105 transition" onClick={() => setSelectedRoadmap(roadmap)}>
-              <Map className="w-8 h-8" />
-              <h2 className="text-xl font-semibold mt-2">{roadmap.title}</h2>
-              <p className="text-gray-400 text-sm mt-1">{roadmap.description}</p>
-            </div>
-          ))}
-        </div>
+        <AnimatedContainer>
+          <div className="text-center mb-12">
+            <h1 className="text-3xl font-light mb-2">Development Roadmaps</h1>
+            <p className="text-sm max-w-md mx-auto text-gray-500">Choose a roadmap to start your journey.</p>
+          </div>
+          <RoadmapList
+            roadmaps={roadmaps}
+            loading={loading}
+            error={error}
+            onSelectRoadmap={(roadmap) => setSelectedRoadmap({
+              ...roadmap,
+              levels: roadmap.levels || [],
+              visibility: roadmap.visibility || 'public',
+            })}
+          />
+        </AnimatedContainer>
       </div>
     );
   }
 
   // Step 2: Level selection
   if (!selectedLevel) {
-    if (loading) return <div className="pt-24 text-center">Loading levels...</div>;
-    if (error) return <div className="pt-24 text-center text-red-500">{error}</div>;
+    // If user is not signed up for this roadmap, show signup prompt
+    if (!signedUpRoadmaps[selectedRoadmap.id]) {
+      return (
+        <div className="min-h-screen pt-24 pb-8 px-4">
+          <BackgroundNodes />
+          <AnimatedContainer>
+            <button className="mb-4 text-blue-400" onClick={resetToRoadmaps}><ArrowLeft className="inline w-4 h-4 mr-1" />Back to Roadmaps</button>
+            <h2 className="text-2xl font-semibold mb-6">{selectedRoadmap.title}</h2>
+            <p className="mb-8 text-gray-500">You must sign up for this roadmap to access its content.</p>
+            <button className="px-8 py-3 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition" onClick={() => handleSignUp(selectedRoadmap.id)}>
+              Sign Up for Roadmap
+            </button>
+          </AnimatedContainer>
+        </div>
+      );
+    }
+    // Calculate progress based on completedLevels from userProgress
+    const roadmapLevels = levels;
+    const completed = userProgress?.completedLevels?.length || 0;
+    const percent = roadmapLevels.length > 0 ? Math.round((completed / roadmapLevels.length) * 100) : 0;
     return (
       <div className="min-h-screen pt-24 pb-8 px-4">
         <BackgroundNodes />
-        <button className="mb-4 text-blue-400" onClick={() => setSelectedRoadmap(null)}><ArrowLeft className="inline w-4 h-4 mr-1" />Back to Roadmaps</button>
-        <h2 className="text-2xl font-semibold mb-6">{selectedRoadmap.title} - Levels</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {levels.map((level) => (
-            <div key={level.id} className="bg-white/10 rounded-xl p-6 flex flex-col items-center cursor-pointer hover:scale-105 transition" onClick={() => setSelectedLevel(level)}>
-              <Award className="w-8 h-8 mb-2" />
-              <h3 className="text-lg font-semibold">{level.title}</h3>
-              <span className="text-xs text-gray-400">Level {level.order}</span>
+        <AnimatedContainer>
+          <button className="mb-4 text-blue-400" onClick={resetToRoadmaps}><ArrowLeft className="inline w-4 h-4 mr-1" />Back to Roadmaps</button>
+          <h2 className="text-2xl font-semibold mb-6">{selectedRoadmap.title} - Levels</h2>
+          <LevelList
+            levels={levels}
+            userProgress={userProgress}
+            loading={loading}
+            error={error}
+            onSelectLevel={(level) => setSelectedLevel(level)}
+          />
+          <div className="mt-8 text-center">
+            <p className="text-sm text-gray-500">Progress: {percent}%</p>
+            <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+              <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${percent}%` }}></div>
             </div>
-          ))}
-        </div>
+          </div>
+        </AnimatedContainer>
       </div>
     );
   }
 
   // Step 3: Milestone selection
   if (!selectedMilestone) {
-    if (loading) return <div className="pt-24 text-center">Loading milestones...</div>;
-    if (error) return <div className="pt-24 text-center text-red-500">{error}</div>;
     return (
       <div className="min-h-screen pt-24 pb-8 px-4">
         <BackgroundNodes />
-        <button className="mb-4 text-blue-400" onClick={() => setSelectedLevel(null)}><ArrowLeft className="inline w-4 h-4 mr-1" />Back to Levels</button>
-        <h2 className="text-2xl font-semibold mb-6">{selectedLevel.title} - Milestones</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {milestones.map((milestone) => (
-            <div key={milestone.id} className="bg-white/10 rounded-xl p-6 flex flex-col items-center cursor-pointer hover:scale-105 transition" onClick={() => setSelectedMilestone(milestone)}>
-              <Users className="w-8 h-8 mb-2" />
-              <h4 className="text-md font-semibold">{milestone.title}</h4>
-              <span className="text-xs text-gray-400">{milestone.description}</span>
-            </div>
-          ))}
-        </div>
+        <AnimatedContainer>
+          <button className="mb-4 text-blue-400" onClick={() => setSelectedLevel(null)}><ArrowLeft className="inline w-4 h-4 mr-1" />Back to Levels</button>
+          <h2 className="text-2xl font-semibold mb-6">{selectedLevel.title} - Milestones</h2>
+          <MilestoneList
+            milestones={milestones}
+            loading={loading}
+            error={error}
+            onSelectMilestone={(milestone) => setSelectedMilestone(milestone)}
+          />
+        </AnimatedContainer>
       </div>
     );
   }
 
   // Step 4: Challenge view
-  if (loading) return <div className="pt-24 text-center">Loading challenges...</div>;
-  if (error) return <div className="pt-24 text-center text-red-500">{error}</div>;
+  // If all challenges in the selected level are complete, show 'Mark Level as Complete' button
+  const allChallengesComplete = selectedLevel && selectedLevel.milestones.every(m => m.challenges.every(c => userProgress?.completedChallenges?.includes(c.id)));
+  const levelIsCompleted = userProgress?.completedLevels?.includes(selectedLevel?.id || '');
   return (
     <div className="min-h-screen pt-24 pb-8 px-4">
       <BackgroundNodes />
-      <button className="mb-4 text-blue-400" onClick={() => setSelectedMilestone(null)}><ArrowLeft className="inline w-4 h-4 mr-1" />Back to Milestones</button>
-      <h2 className="text-2xl font-semibold mb-6">{selectedMilestone.title} - Challenges</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-        {challenges.map((challenge) => {
-          const completed = userProgress?.completedChallenges?.includes(challenge.id);
-          return (
-            <div key={challenge.id} className={`rounded-xl p-6 flex flex-col items-start ${completed ? 'bg-green-100/10 border-green-400' : 'bg-white/10'}`}>
-              <CheckCircle className={`w-6 h-6 mb-2 ${completed ? 'text-green-400' : 'text-gray-400'}`} />
-              <h5 className="text-md font-semibold">{challenge.title}</h5>
-              <p className="text-xs text-gray-400 mb-2">{challenge.description}</p>
-              <span className="text-xs text-blue-400">Type: {challenge.type}</span>
-              {!completed && (
-                <button className="mt-2 bg-green-500 text-white px-3 py-1 rounded" onClick={() => handleCompleteChallenge(challenge.id)}>
-                  Mark as Complete
-                </button>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      {/* Achievements */}
-      {userProgress?.achievements?.length ? (
-        <div className="mt-12">
-          <h3 className="text-lg font-bold mb-2">Achievements</h3>
-          <ul className="flex flex-wrap gap-4">
-            {userProgress.achievements.map((ach, i) => (
-              <li key={i} className="bg-yellow-100 text-yellow-800 px-4 py-2 rounded shadow">{ach}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+      <AnimatedContainer>
+        <button className="mb-4 text-blue-400" onClick={() => setSelectedMilestone(null)}><ArrowLeft className="inline w-4 h-4 mr-1" />Back to Milestones</button>
+        <h2 className="text-2xl font-semibold mb-6">{selectedMilestone.title} - Challenges</h2>
+        <ChallengeList
+          challenges={challenges}
+          userProgress={userProgress}
+          loading={loading}
+          error={error}
+          onCompleteChallenge={handleCompleteChallenge}
+        />
+        {allChallengesComplete && selectedLevel && !levelIsCompleted && (
+          <button className="mt-8 px-8 py-3 rounded-lg bg-green-500 text-white hover:bg-green-600 transition" onClick={() => handleCompleteLevel(selectedLevel.id)}>
+            Mark Level as Complete
+          </button>
+        )}
+      </AnimatedContainer>
+      <Toast
+        isVisible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onClose={closeToast}
+      />
     </div>
   );
 } 

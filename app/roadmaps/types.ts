@@ -40,5 +40,6 @@ export interface UserProgress {
   currentLevelId: string;
   currentMilestoneId: string;
   completedChallenges: string[];
+  completedLevels: string[];
   achievements: string[];
 } 
