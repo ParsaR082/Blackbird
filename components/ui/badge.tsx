@@ -1,9 +1,10 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
+import { Ripple, RippleHandle } from "./Ripple"
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 relative overflow-hidden",
   {
     variants: {
       variant: {
@@ -32,9 +33,27 @@ export interface BadgeProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof badgeVariants> {}
 
-function Badge({ className, variant, ...props }: BadgeProps) {
+function Badge({ className, variant, onClick, role, ...props }: BadgeProps) {
+  const rippleRef = React.useRef<RippleHandle>(null);
+
+  const handleClick = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    if (onClick || role === "button") {
+      rippleRef.current?.createRipple(e);
+    }
+    onClick?.(e);
+  };
+
   return (
-    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+    <div
+      className={cn(badgeVariants({ variant }), className)}
+      onClick={handleClick}
+      role={role}
+      tabIndex={role === "button" ? 0 : undefined}
+      {...props}
+    >
+      {props.children}
+      {(onClick || role === "button") && <Ripple ref={rippleRef} />}
+    </div>
   )
 }
 

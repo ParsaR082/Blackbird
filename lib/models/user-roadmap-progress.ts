@@ -6,6 +6,7 @@ const UserRoadmapProgressSchema = new Schema({
   currentLevelId: String,
   currentMilestoneId: String,
   completedChallenges: [String],
+  completedLevels: [String],
   achievements: [String],
 });
 

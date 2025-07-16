@@ -8,7 +8,15 @@ export async function GET(req: NextRequest, { params }: { params: { roadmapId: s
   if (!roadmap) return NextResponse.json([], { status: 404 });
   const level = roadmap.levels.id(params.levelId);
   if (!level) return NextResponse.json([], { status: 404 });
-  return NextResponse.json(level.milestones || []);
+  const milestones = (level.milestones || []).map((ms: any) => ({
+    ...ms.toObject(),
+    id: ms._id?.toString() || '',
+    challenges: (ms.challenges || []).map((ch: any) => ({
+      ...ch.toObject(),
+      id: ch._id?.toString() || ''
+    }))
+  }));
+  return NextResponse.json(milestones);
 }
 
 export async function POST(req: NextRequest, { params }: { params: { roadmapId: string, levelId: string } }) {

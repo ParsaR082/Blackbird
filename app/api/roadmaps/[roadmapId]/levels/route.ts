@@ -6,7 +6,19 @@ export async function GET(req: NextRequest, { params }: { params: { roadmapId: s
   await connectToDatabase();
   const roadmap = await Roadmap.findById(params.roadmapId);
   if (!roadmap) return NextResponse.json([], { status: 404 });
-  return NextResponse.json(roadmap.levels || []);
+  const levels = (roadmap.levels || []).map((lvl: any) => ({
+    ...lvl.toObject(),
+    id: lvl._id?.toString() || '',
+    milestones: (lvl.milestones || []).map((ms: any) => ({
+      ...ms.toObject(),
+      id: ms._id?.toString() || '',
+      challenges: (ms.challenges || []).map((ch: any) => ({
+        ...ch.toObject(),
+        id: ch._id?.toString() || ''
+      }))
+    }))
+  }));
+  return NextResponse.json(levels);
 }
 
 export async function POST(req: NextRequest, { params }: { params: { roadmapId: string } }) {

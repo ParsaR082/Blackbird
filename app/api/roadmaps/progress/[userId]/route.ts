@@ -4,8 +4,10 @@ import { connectToDatabase } from '@/lib/mongodb';
 
 export async function GET(req: NextRequest, { params }: { params: { userId: string } }) {
   await connectToDatabase();
-  const progress = await UserRoadmapProgress.findOne({ userId: params.userId });
-  if (!progress) return NextResponse.json({}, { status: 404 });
+  let progress = await UserRoadmapProgress.findOne({ userId: params.userId });
+  if (!progress) {
+    progress = await UserRoadmapProgress.create({ userId: params.userId, completedChallenges: [], achievements: [] });
+  }
   return NextResponse.json(progress);
 }
 
