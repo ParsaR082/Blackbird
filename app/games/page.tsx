@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useTheme } from '@/contexts/theme-context'
+import { useAuth } from '@/contexts/auth-context'
 
 // Lazy load BackgroundNodes for better performance
 const BackgroundNodes = lazy(() => import('@/components/BackgroundNodes'))
@@ -62,6 +63,7 @@ export default function GamesPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [isRandomMatchLoading, setIsRandomMatchLoading] = useState(false)
   const { theme } = useTheme()
+  const { user } = useAuth()
 
   // Pagination configuration
   const gamesPerPage = 3
@@ -646,6 +648,24 @@ export default function GamesPage() {
                     SOON
                   </div>
                 </motion.button>
+
+                {/* Admin-only Add a Game Button */}
+                {user && user.role === 'ADMIN' && (
+                  <motion.button
+                    className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                      theme === 'light' 
+                        ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60 focus:ring-black/50 focus:ring-offset-white' 
+                        : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60 focus:ring-white/50 focus:ring-offset-black'
+                    }`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => window.location.href = '/games/create'}
+                    aria-label="Add a Game"
+                  >
+                    <Star className={`w-5 h-5 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} aria-hidden="true" />
+                    <span className="flex-1 text-left">Add a Game</span>
+                  </motion.button>
+                )}
                 {/* Hidden accessibility helpers */}
                 {featuredGames.length === 0 && (
                   <div id="no-games-warning" className="sr-only">
