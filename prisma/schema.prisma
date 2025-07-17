@@ -212,6 +212,18 @@ model ScheduleItem {
   course        Course?   @relation(fields: [courseId], references: [id], onDelete: SetNull)
 }
 
+model Game {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  description   String
+  link          String
+  imageUrl      String
+  category      String
+  color         String
+  isMultiplayer Boolean  @default(false)
+  createdAt     DateTime @default(now())
+}
+
 // Enums
 enum Role {
   ADMIN
