@@ -1,3 +1,4 @@
+"use client";
 import * as React from "react"
 import { Ripple, RippleHandle } from "./Ripple"
 import { cn } from "@/lib/utils"
