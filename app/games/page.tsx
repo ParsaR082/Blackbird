@@ -364,7 +364,7 @@ export default function GamesPage() {
         </motion.div>
 
         {/* Main Gaming Interface */}
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="max-w-6xl mx-auto flex flex-col gap-8">
           {/* Featured Games */}
           <motion.div 
             className="lg:col-span-2"
@@ -566,84 +566,13 @@ export default function GamesPage() {
             </div>
           </motion.div>
 
-          {/* Sidebar */}
+          {/* Quick Actions (moved below Featured Games) */}
           <motion.div 
             className="space-y-6"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.6 }}
           >
-            {/* Player Stats */}
-            <div className="border rounded-lg backdrop-blur-sm p-6 transition-colors duration-300" style={{
-              backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
-              borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
-            }}>
-              <div className="flex items-center gap-3 mb-4">
-                <Trophy className={`w-5 h-5 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
-                <h3 className={`text-lg font-light tracking-wide transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>Player Stats</h3>
-              </div>
-              <div className="space-y-3">
-                {playerStats.map((stat, index) => (
-                  <motion.div 
-                    key={stat.label}
-                    className="flex items-center justify-between"
-                    initial={{ opacity: 0, x: 10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.4, delay: index * 0.1 }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <stat.icon className={`w-4 h-4 transition-colors duration-300 ${theme === 'light' ? 'text-gray-700' : 'text-white/70'}`} />
-                      <span className={`text-sm transition-colors duration-300 ${theme === 'light' ? 'text-gray-700' : 'text-white/70'}`}>{stat.label}</span>
-                    </div>
-                    <span className={`text-sm font-light transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>{stat.value}</span>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-
-            {/* Global Leaderboard */}
-            <div className="border rounded-lg backdrop-blur-sm p-6 transition-colors duration-300" style={{
-              backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
-              borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
-            }}>
-              <div className="flex items-center gap-3 mb-4">
-                <Award className={`w-5 h-5 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
-                <h3 className={`text-lg font-light tracking-wide transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>Global Leaderboard</h3>
-              </div>
-              <div className="space-y-3">
-                {leaderboardData.map((player, index) => (
-                  <motion.div 
-                    key={player.player}
-                    className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all duration-300 ${
-                      theme === 'light' ? 'hover:bg-black/5' : 'hover:bg-white/5'
-                    }`}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: index * 0.1 }}
-                  >
-                    <div className={`flex items-center justify-center w-6 h-6 rounded-full border text-xs font-bold transition-colors duration-300 ${
-                      theme === 'light' 
-                        ? 'bg-black/20 border-black/30 text-black' 
-                        : 'bg-white/20 border-white/30 text-white'
-                    }`}>
-                      {player.rank}
-                    </div>
-                    <div className={`w-8 h-8 rounded-full border flex items-center justify-center font-bold text-xs transition-colors duration-300 ${
-                      theme === 'light' 
-                        ? 'bg-black/20 border-black/30 text-black' 
-                        : 'bg-white/20 border-white/30 text-white'
-                    }`}>
-                      {player.avatar}
-                    </div>
-                    <div className="flex-1">
-                      <p className={`text-sm font-light transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>{player.player}</p>
-                      <p className={`text-xs transition-colors duration-300 ${theme === 'light' ? 'text-gray-500' : 'text-white/50'}`}>{player.score.toLocaleString()} pts</p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-
             {/* Quick Actions */}
             <div className="border rounded-lg backdrop-blur-sm p-6 transition-colors duration-300" style={{
               backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
@@ -717,7 +646,6 @@ export default function GamesPage() {
                     SOON
                   </div>
                 </motion.button>
-                
                 {/* Hidden accessibility helpers */}
                 {featuredGames.length === 0 && (
                   <div id="no-games-warning" className="sr-only">
