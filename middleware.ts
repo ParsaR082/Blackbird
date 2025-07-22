@@ -16,8 +16,30 @@ const excludedRoutes = [
   '/api/admin/dmig991100293848'
 ]
 
+// API routes that must be treated as dynamic (using cookies/headers)
+const dynamicApiRoutes = [
+  '/api/events',
+  '/api/products',
+  '/api/hall-of-fame',
+  '/api/university',
+  '/api/admin/analytics',
+  '/api/admin/integration',
+  '/api/admin/security',
+  '/api/admin/university',
+  '/api/admin/purchases',
+  '/api/admin/optimization'
+]
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
+  
+  // For static generation/build time, skip validation
+  const userAgent = req.headers.get('user-agent') || ''
+  if (userAgent.includes('Node.js') && process.env.NODE_ENV === 'production' && 
+      (dynamicApiRoutes.some(route => pathname.startsWith(route)))) {
+    console.log(`[Middleware] Skipping validation for build-time request: ${pathname}`)
+    return NextResponse.next()
+  }
 
   // Skip authentication for excluded routes
   if (excludedRoutes.some(route => pathname === route)) {

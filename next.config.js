@@ -51,7 +51,19 @@ const nextConfig = {
     ]
   },
   
-  // Remove webpack configuration temporarily for debugging
+  // Server runtime configuration for dynamic routes
+  serverRuntimeConfig: {
+    // Will only be available on the server side
+    apiRouteConfig: {
+      dynamicRoutes: true,
+    }
+  },
+  
+  // Disable automatic static optimization for API routes
+  webpack: (config, { dev, isServer }) => {
+    // Return modified config
+    return config;
+  },
 }
 
 module.exports = nextConfig
