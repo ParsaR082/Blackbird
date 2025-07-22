@@ -16,8 +16,18 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   
+  // Experimental features configuration
   experimental: {
     serverComponentsExternalPackages: ['mongodb', 'mongoose'],
+    outputFileTracingExcludes: {
+      '*': [
+        'node_modules/@swc/core-linux-x64-gnu',
+        'node_modules/@swc/core-linux-x64-musl',
+        'node_modules/@esbuild/linux-x64',
+        // API routes that cause issues
+        'app/api/**/*',
+      ],
+    },
   },
   
   // Optimize for Railway deployment
@@ -64,6 +74,10 @@ const nextConfig = {
     // Return modified config
     return config;
   },
+
+  // Configure dynamic routes
+  // This is the key configuration to skip problematic routes during export
+  distDir: process.env.EXPORT_MODE ? '.export' : '.next',
 }
 
 module.exports = nextConfig
