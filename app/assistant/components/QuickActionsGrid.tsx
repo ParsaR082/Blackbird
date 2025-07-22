@@ -1,14 +1,39 @@
 import { motion } from 'framer-motion'
-import { Brain, Code, FileText, Terminal } from 'lucide-react'
+import { Calendar, BookOpen, MessageSquare, TrendingUp } from 'lucide-react'
 
 const quickActions = [
-  { icon: Brain, label: 'Neural Analysis', description: 'Advanced AI-powered code review and optimization' },
-  { icon: Code, label: 'Code Generation', description: 'Automated code synthesis and pattern recognition' },
-  { icon: FileText, label: 'Documentation', description: 'Intelligent documentation and API reference generation' },
-  { icon: Terminal, label: 'System Integration', description: 'Terminal automation and system command execution' }
+  { 
+    icon: Calendar, 
+    label: 'Daily Study Routine', 
+    description: 'Create personalized study schedules based on your courses',
+    actionType: 'daily-routine'
+  },
+  { 
+    icon: BookOpen, 
+    label: 'Study Suggestions', 
+    description: 'Get insights on courses and academic planning',
+    actionType: 'study-suggestions'
+  },
+  { 
+    icon: MessageSquare, 
+    label: 'Feedback Analyzer', 
+    description: 'Refine course feedback for professional communication',
+    actionType: 'feedback-analyzer'
+  },
+  { 
+    icon: TrendingUp, 
+    label: 'Result Predictor', 
+    description: 'Analyze performance and predict academic outcomes',
+    actionType: 'result-predictor'
+  }
 ]
 
-export function QuickActionsGrid({ theme }: { theme: string }) {
+interface QuickActionsGridProps {
+  theme: string
+  onActionClick: (actionType: string, label: string) => void
+}
+
+export function QuickActionsGrid({ theme, onActionClick }: QuickActionsGridProps) {
   return (
     <motion.div 
       className="max-w-4xl mx-auto mb-12"
@@ -26,6 +51,7 @@ export function QuickActionsGrid({ theme }: { theme: string }) {
             transition={{ duration: 0.6, delay: index * 0.1 }}
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
+            onClick={() => onActionClick(action.actionType, action.label)}
           >
             {/* Glow effect */}
             <motion.div

@@ -102,7 +102,7 @@ const AddEditModal: React.FC<AddEditModalProps> = ({ roadmap, onClose }) => {
     updateLevel(levelId, {
       milestones: [...level.milestones, newMilestone]
     });
-    setExpandedMilestones(prev => new Set([...prev, newMilestone.id]));
+    setExpandedMilestones(prev => new Set([...Array.from(prev), newMilestone.id]));
   };
 
   const updateMilestone = (levelId: string, milestoneId: string, updates: Partial<Milestone>) => {

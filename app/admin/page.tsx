@@ -54,6 +54,7 @@ import { SecurityCenter } from './components/SecurityCenter'
 import AuditLogViewer from './components/AuditLogViewer'
 import { TwoFactorAuth } from './components/TwoFactorAuth'
 import RoadmapsManager from './components/RoadmapsManager';
+import { AssistantManager } from './components/AssistantManager';
 
 interface User {
   id: string
@@ -91,7 +92,7 @@ export default function AdminPage() {
   const [isLoggingIn, setIsLoggingIn] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [showUserModal, setShowUserModal] = useState(false)
-  const [activeSection, setActiveSection] = useState<'dashboard' | 'users' | 'content' | 'notifications' | 'settings' | 'analytics' | 'workflows' | 'advanced-users' | 'monitoring' | 'integration' | 'optimization' | 'security' | 'audit' | 'mfa' | 'roadmaps'>('dashboard')
+  const [activeSection, setActiveSection] = useState<'dashboard' | 'users' | 'content' | 'notifications' | 'settings' | 'analytics' | 'workflows' | 'advanced-users' | 'monitoring' | 'integration' | 'optimization' | 'security' | 'audit' | 'mfa' | 'roadmaps' | 'assistant'>('dashboard')
   const { user, isAuthenticated, isLoading, login, logout } = useAuth()
   const router = useRouter()
   
@@ -555,6 +556,7 @@ export default function AdminPage() {
               { id: 'security', label: 'Security', icon: Shield },
               { id: 'audit', label: 'Audit Log', icon: Eye },
               { id: 'mfa', label: '2FA', icon: Lock },
+              { id: 'assistant', label: 'Assistant', icon: Shield },
               { id: 'settings', label: 'Settings', icon: Settings }
             ].map((tab) => (
               <Button
@@ -945,6 +947,11 @@ export default function AdminPage() {
         {/* Roadmaps Section */}
         {activeSection === 'roadmaps' && (
           <RoadmapsManager />
+        )}
+
+        {/* Assistant Section */}
+        {activeSection === 'assistant' && (
+          <AssistantManager theme="dark" />
         )}
 
         {/* Settings Section */}

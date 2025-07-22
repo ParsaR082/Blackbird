@@ -79,11 +79,57 @@ export async function validateAdmin(request: NextRequest) {
     return { isValid: false, error: 'Unauthorized', status: 401 }
   }
   
-  if (user.role !== 'ADMIN') {
+  if (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
     return { isValid: false, error: 'Forbidden: Admin access required', status: 403 }
   }
   
   return { isValid: true, user: user }
+}
+
+// Helper to check if user is super admin
+export async function validateSuperAdmin(request: NextRequest) {
+  console.log('[Super Admin Validation] Starting validation')
+  const user = await getUserFromRequest(request)
+  console.log('[Super Admin Validation] User:', user ? { id: user.id, role: user.role } : 'null')
+  
+  if (!user) {
+    console.log('[Super Admin Validation] No user found')
+    return { isValid: false, error: 'Unauthorized', status: 401 }
+  }
+  
+  if (user.role !== 'SUPER_ADMIN') {
+    console.log('[Super Admin Validation] User is not super admin')
+    return { isValid: false, error: 'Forbidden: Super Admin access required', status: 403 }
+  }
+  
+  console.log('[Super Admin Validation] Super admin access confirmed')
+  return { isValid: true, user: user }
+}
+
+// Check if a user is a super admin (for preventing role changes)
+export async function isSuperAdmin(userId: string): Promise<boolean> {
+  try {
+    await connectToDatabase()
+    
+    const UserSchema = new mongoose.Schema({
+      email: String,
+      password: String,
+      fullName: String,
+      role: String,
+      isVerified: Boolean,
+      avatarUrl: String,
+      createdAt: Date,
+      updatedAt: Date
+    })
+    
+    const User = mongoose.models.User || mongoose.model('User', UserSchema)
+    const user = await User.findById(userId)
+    
+    return user?.role === 'SUPER_ADMIN'
+  } catch (error) {
+    console.error('Error checking super admin status:', error)
+    return false
+  }
 }
 
 // Format error response

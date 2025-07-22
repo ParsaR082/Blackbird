@@ -4,9 +4,10 @@ import AddEditModal from './roadmaps/AddEditModal';
 import SearchBar from './roadmaps/SearchBar';
 import StatsPanel from './roadmaps/StatsPanel';
 import SidePanel from './roadmaps/SidePanel';
+import AnalyticsDashboard from './roadmaps/AnalyticsDashboard';
 import type { Roadmap } from '@/app/roadmaps/types';
 import LevelTree from './roadmaps/LevelTree';
-import { BarChart4, Activity, Info, Plus, Download, Upload, Trash2, Eye, EyeOff, Settings, Filter, Search, Grid, List } from 'lucide-react';
+import { BarChart4, Activity, Info, Plus, Download, Upload, Trash2, Eye, EyeOff, Settings, Filter, Search, Grid, List, TrendingUp } from 'lucide-react';
 
 export default function RoadmapsManager() {
   const [roadmaps, setRoadmaps] = useState<Roadmap[]>([]);
@@ -27,6 +28,8 @@ export default function RoadmapsManager() {
   const [selectedRoadmap, setSelectedRoadmap] = useState<Roadmap | null>(null);
   const [showSidePanel, setShowSidePanel] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [activeTab, setActiveTab] = useState<'roadmaps' | 'analytics'>('roadmaps');
+  const [analyticsRoadmapId, setAnalyticsRoadmapId] = useState<string | null>(null);
 
   // Fetch all roadmaps
   const fetchRoadmaps = () => {
@@ -62,6 +65,12 @@ export default function RoadmapsManager() {
   const handleClosePanel = () => {
     setShowSidePanel(false);
     setSelectedRoadmap(null);
+  };
+
+  // Handler to view analytics
+  const handleViewAnalytics = (roadmapId: string) => {
+    setAnalyticsRoadmapId(roadmapId);
+    setActiveTab('analytics');
   };
 
   // Deep search logic
@@ -186,24 +195,45 @@ export default function RoadmapsManager() {
     if (filteredRoadmaps.length > 0 && focusedIndex === -1) {
       setFocusedIndex(0);
     }
-  }, [filteredRoadmaps.length, search, statusFilter]);
-
-  useEffect(() => {
-    if (focusedIndex >= 0 && filteredRoadmaps[focusedIndex]) {
-      const el = cardRefs.current[filteredRoadmaps[focusedIndex].id];
-      if (el) el.focus();
-    }
-  }, [focusedIndex, filteredRoadmaps]);
+  }, [filteredRoadmaps.length, search, statusFilter, focusedIndex]);
 
   const handleGridKeyDown = (e: React.KeyboardEvent) => {
-    if (filteredRoadmaps.length === 0) return;
-    if (focusedIndex === -1) setFocusedIndex(0);
-    if (['ArrowRight', 'ArrowDown'].includes(e.key)) {
-      e.preventDefault();
-      setFocusedIndex(i => Math.min(i + 1, filteredRoadmaps.length - 1));
-    } else if (['ArrowLeft', 'ArrowUp'].includes(e.key)) {
-      e.preventDefault();
-      setFocusedIndex(i => Math.max(i - 1, 0));
+    if (viewMode !== 'grid') return;
+    const cols = window.innerWidth >= 1024 ? 3 : window.innerWidth >= 768 ? 2 : 1;
+    let newIndex = focusedIndex;
+    
+    switch (e.key) {
+      case 'ArrowRight':
+        e.preventDefault();
+        newIndex = Math.min(focusedIndex + 1, filteredRoadmaps.length - 1);
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        newIndex = Math.max(focusedIndex - 1, 0);
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        newIndex = Math.min(focusedIndex + cols, filteredRoadmaps.length - 1);
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        newIndex = Math.max(focusedIndex - cols, 0);
+        break;
+      case 'Enter':
+      case ' ':
+        e.preventDefault();
+        if (filteredRoadmaps[focusedIndex]) {
+          handleOpenPanel(filteredRoadmaps[focusedIndex]);
+        }
+        break;
+    }
+    
+    if (newIndex !== focusedIndex) {
+      setFocusedIndex(newIndex);
+      const roadmapId = filteredRoadmaps[newIndex]?.id;
+      if (roadmapId && cardRefs.current[roadmapId]) {
+        cardRefs.current[roadmapId]?.focus();
+      }
     }
   };
 
@@ -242,186 +272,123 @@ export default function RoadmapsManager() {
 
   return (
     <div className="space-y-6">
-      {/* Header Section */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white mb-2">Roadmaps Management</h1>
-          <p className="text-gray-400">Manage learning roadmaps, levels, milestones, and challenges</p>
+          <h1 className="text-3xl font-bold text-white">Roadmaps Management</h1>
+          <p className="text-gray-400 mt-1">Create, edit, and manage learning roadmaps</p>
         </div>
-        <div className="flex items-center gap-3">
+        
+        {/* Tab Navigation */}
+        <div className="flex gap-2">
           <button
-            onClick={handleAdd}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            onClick={() => setActiveTab('roadmaps')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+              activeTab === 'roadmaps' 
+                ? 'bg-blue-600 text-white shadow-lg' 
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            }`}
           >
-            <Plus className="w-4 h-4" />
-            Create Roadmap
+            <Grid className="w-4 h-4 inline mr-2" />
+            Roadmaps
           </button>
-          <div className="flex items-center gap-2 bg-gray-800 rounded-lg p-1">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-2 rounded ${viewMode === 'grid' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'}`}
-              title="Grid view"
-            >
-              <Grid className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 rounded ${viewMode === 'list' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'}`}
-              title="List view"
-            >
-              <List className="w-4 h-4" />
-            </button>
-          </div>
+          <button
+            onClick={() => setActiveTab('analytics')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+              activeTab === 'analytics' 
+                ? 'bg-blue-600 text-white shadow-lg' 
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            }`}
+          >
+            <TrendingUp className="w-4 h-4 inline mr-2" />
+            Analytics
+          </button>
         </div>
       </div>
 
-      {/* Stats Panel */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-500/20 rounded-lg">
-              <BarChart4 className="w-5 h-5 text-blue-400" />
+      {/* Content based on active tab */}
+      {activeTab === 'roadmaps' ? (
+        <>
+          {/* Action Bar */}
+          <div className="flex flex-col lg:flex-row gap-4 lg:items-center justify-between">
+            <div className="flex flex-col md:flex-row gap-4 flex-1">
+                             <SearchBar value={search} onChange={setSearch} />
+              <div className="flex gap-2">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+                >
+                  <option value="all">All Status</option>
+                  <option value="published">Published</option>
+                  <option value="draft">Draft</option>
+                  <option value="archived">Archived</option>
+                </select>
+                <button
+                  onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                  className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors duration-300"
+                  title={`Switch to ${viewMode === 'grid' ? 'list' : 'grid'} view`}
+                >
+                  {viewMode === 'grid' ? <List className="w-4 h-4" /> : <Grid className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
-            <div>
-              <p className="text-2xl font-bold text-white">{stats.total}</p>
-              <p className="text-sm text-gray-400">Total Roadmaps</p>
+            
+            <div className="flex gap-2">
+              {selected.length > 0 && (
+                <>
+                  <button
+                    onClick={() => handleBulkAction('delete')}
+                    disabled={bulkActionLoading}
+                    className="px-3 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg transition-colors duration-300 text-sm"
+                  >
+                    <Trash2 className="w-4 h-4 inline mr-1" />
+                    Delete ({selected.length})
+                  </button>
+                  <button
+                    onClick={() => handleBulkAction('publish')}
+                    disabled={bulkActionLoading}
+                    className="px-3 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg transition-colors duration-300 text-sm"
+                  >
+                    <Eye className="w-4 h-4 inline mr-1" />
+                    Publish
+                  </button>
+                </>
+              )}
+              <button
+                onClick={handleExport}
+                className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors duration-300 text-sm"
+                title="Export roadmaps"
+              >
+                <Download className="w-4 h-4 inline mr-1" />
+                Export
+              </button>
+              <button
+                onClick={handleImportClick}
+                className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors duration-300 text-sm"
+                title="Import roadmaps"
+              >
+                <Upload className="w-4 h-4 inline mr-1" />
+                Import
+              </button>
+              <button
+                onClick={handleAdd}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-300 font-medium"
+              >
+                <Plus className="w-4 h-4 inline mr-2" />
+                Add Roadmap
+              </button>
             </div>
-          </div>
-        </div>
-        <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-500/20 rounded-lg">
-              <Eye className="w-5 h-5 text-green-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-white">{stats.published}</p>
-              <p className="text-sm text-gray-400">Published</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-yellow-500/20 rounded-lg">
-              <Settings className="w-5 h-5 text-yellow-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-white">{stats.draft}</p>
-              <p className="text-sm text-gray-400">Draft</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-gray-500/20 rounded-lg">
-              <EyeOff className="w-5 h-5 text-gray-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-white">{stats.archived}</p>
-              <p className="text-sm text-gray-400">Archived</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-500/20 rounded-lg">
-              <Activity className="w-5 h-5 text-purple-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-white">{stats.totalLevels}</p>
-              <p className="text-sm text-gray-400">Total Levels</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-500/20 rounded-lg">
-              <Info className="w-5 h-5 text-indigo-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-white">{stats.totalMilestones}</p>
-              <p className="text-sm text-gray-400">Milestones</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Search and Filters */}
-      <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
-        <div className="flex flex-col lg:flex-row gap-4">
-          {/* Search */}
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search roadmaps, levels, milestones..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-          
-          {/* Status Filter */}
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-gray-400" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Status</option>
-              <option value="published">Published</option>
-              <option value="draft">Draft</option>
-              <option value="archived">Archived</option>
-            </select>
           </div>
 
-          {/* Bulk Actions */}
-          {selected.length > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-400">{selected.length} selected</span>
-              <button
-                onClick={() => handleBulkAction('publish')}
-                disabled={bulkActionLoading}
-                className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50"
-              >
-                Publish
-              </button>
-              <button
-                onClick={() => handleBulkAction('archive')}
-                disabled={bulkActionLoading}
-                className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 disabled:opacity-50"
-              >
-                Archive
-              </button>
-              <button
-                onClick={() => handleBulkAction('delete')}
-                disabled={bulkActionLoading}
-                className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-50"
-              >
-                Delete
-              </button>
+          {/* Import/Export Messages */}
+          {(importError || importSuccess) && (
+            <div className={`p-4 rounded-lg ${importError ? 'bg-red-600/20 border border-red-600/50 text-red-200' : 'bg-green-600/20 border border-green-600/50 text-green-200'}`}>
+              {importError || importSuccess}
             </div>
           )}
-        </div>
 
-        {/* Import/Export */}
-        <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-700">
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-2 px-3 py-1 bg-gray-700 text-white rounded text-sm hover:bg-gray-600"
-          >
-            <Download className="w-4 h-4" />
-            Export
-          </button>
-          <button
-            onClick={handleImportClick}
-            className="flex items-center gap-2 px-3 py-1 bg-gray-700 text-white rounded text-sm hover:bg-gray-600"
-          >
-            <Upload className="w-4 h-4" />
-            Import
-          </button>
+          {/* Hidden file input */}
           <input
             ref={fileInputRef}
             type="file"
@@ -429,93 +396,190 @@ export default function RoadmapsManager() {
             onChange={handleImport}
             className="hidden"
           />
-          {importError && <span className="text-red-400 text-sm">{importError}</span>}
-          {importSuccess && <span className="text-green-400 text-sm">{importSuccess}</span>}
-        </div>
-      </div>
 
-      {/* Roadmaps Grid/List */}
-      <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
-        {filteredRoadmaps.length > 0 && (
-          <div className="flex items-center gap-2 mb-4">
-            <input
-              type="checkbox"
-              checked={selectAll}
-              onChange={(e) => handleSelectAll(e.target.checked)}
-              className="accent-blue-600"
-            />
-            <span className="text-sm text-gray-400">Select all ({filteredRoadmaps.length})</span>
-          </div>
-        )}
-        
-        <div 
-          className={
-            viewMode === 'grid' 
-              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-              : "space-y-4"
-          }
-          onKeyDown={handleGridKeyDown}
-          tabIndex={0}
-          role="grid"
-          aria-label="Roadmaps grid"
-        >
-          {filteredRoadmaps.map((rm, idx) => (
-            <div
-              key={rm.id}
-              ref={el => { cardRefs.current[rm.id] = el; }}
-              tabIndex={0}
-              role="gridcell"
-              aria-label={`Roadmap: ${rm.title}`}
-              className={
-                focusedIndex === idx
-                  ? 'outline outline-2 outline-blue-600 rounded-md'
-                  : ''
-              }
-              onFocus={() => setFocusedIndex(idx)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  handleOpenPanel(rm);
-                }
-              }}
-            >
-              <RoadmapCard
-                roadmap={rm}
-                onEdit={handleEdit}
-                onRefresh={fetchRoadmaps}
-                selected={selected.includes(rm.id)}
-                onSelect={checked => handleSelect(rm.id, checked)}
-                searchTerm={search}
-                onOpenPanel={() => handleOpenPanel(rm)}
-              />
-            </div>
-          ))}
-          {filteredRoadmaps.length === 0 && (
-            <div className="col-span-full text-center text-gray-400 italic py-12">
-              {search || statusFilter !== 'all' ? 'No roadmaps match your search criteria.' : 'No roadmaps found. Create your first roadmap to get started.'}
+          {/* Loading state */}
+          {loading && (
+            <div className="flex items-center justify-center py-12">
+              <div className="flex items-center gap-3 text-gray-400">
+                <div className="w-6 h-6 border-2 border-gray-600 border-t-blue-600 rounded-full animate-spin"></div>
+                <span>Loading roadmaps...</span>
+              </div>
             </div>
           )}
-        </div>
-      </div>
 
-      {/* SidePanel for roadmap details/analytics */}
-      <SidePanel open={showSidePanel} onClose={handleClosePanel} title={selectedRoadmap?.title || 'Roadmap Details'}>
-        {selectedRoadmap && (
-          <div className="space-y-6">
-            <EditableRoadmapDetails roadmap={selectedRoadmap} onUpdated={fetchRoadmaps} />
-            <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-white mb-4">Hierarchy</h3>
-              <LevelTree levels={selectedRoadmap.levels || []} />
+          {/* Error state */}
+          {error && (
+            <div className="text-center py-12">
+              <div className="bg-red-600/20 border border-red-600/50 rounded-lg p-6 max-w-md mx-auto">
+                <h3 className="text-red-200 font-semibold mb-2">Error Loading Roadmaps</h3>
+                <p className="text-red-300 text-sm mb-4">{error}</p>
+                <button
+                  onClick={fetchRoadmaps}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-300"
+                >
+                  Try Again
+                </button>
+              </div>
             </div>
-          </div>
-        )}
-      </SidePanel>
+          )}
 
-      {showModal && (
-        <AddEditModal
-          roadmap={editingRoadmap}
-          onClose={handleModalClose}
-        />
+          {/* Content */}
+          {!loading && !error && (
+            <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+              {filteredRoadmaps.length > 0 && (
+                <div className="flex items-center gap-2 mb-4">
+                  <input
+                    type="checkbox"
+                    checked={selectAll}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    className="accent-blue-600"
+                  />
+                  <span className="text-sm text-gray-400">Select all ({filteredRoadmaps.length})</span>
+                </div>
+              )}
+              
+              <div 
+                className={
+                  viewMode === 'grid' 
+                    ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                    : "space-y-4"
+                }
+                onKeyDown={handleGridKeyDown}
+                tabIndex={0}
+                role="grid"
+                aria-label="Roadmaps grid"
+              >
+                {filteredRoadmaps.map((rm, idx) => (
+                  <div
+                    key={rm.id}
+                    ref={el => { cardRefs.current[rm.id] = el; }}
+                    tabIndex={0}
+                    role="gridcell"
+                    aria-label={`Roadmap: ${rm.title}`}
+                    className={
+                      focusedIndex === idx
+                        ? 'outline outline-2 outline-blue-600 rounded-md'
+                        : ''
+                    }
+                    onFocus={() => setFocusedIndex(idx)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleOpenPanel(rm);
+                      }
+                    }}
+                  >
+                    <RoadmapCard
+                      roadmap={rm}
+                      onEdit={handleEdit}
+                      onRefresh={fetchRoadmaps}
+                      selected={selected.includes(rm.id)}
+                      onSelect={checked => handleSelect(rm.id, checked)}
+                      searchTerm={search}
+                      onOpenPanel={() => handleOpenPanel(rm)}
+                      onViewAnalytics={() => handleViewAnalytics(rm.id)}
+                    />
+                  </div>
+                ))}
+                
+                {filteredRoadmaps.length === 0 && (
+                  <div className="col-span-full text-center text-gray-400 italic py-12">
+                    {search || statusFilter !== 'all' ? 'No roadmaps match your search criteria.' : 'No roadmaps found. Create your first roadmap to get started.'}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* SidePanel for roadmap details/analytics */}
+          <SidePanel open={showSidePanel} onClose={handleClosePanel} title={selectedRoadmap?.title || 'Roadmap Details'}>
+            {selectedRoadmap && (
+              <div className="space-y-6">
+                <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-white">Roadmap Details</h3>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEdit(selectedRoadmap)}
+                        className="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors duration-300"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleViewAnalytics(selectedRoadmap.id)}
+                        className="px-3 py-1 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors duration-300"
+                      >
+                        Analytics
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div><span className="text-gray-400">Title:</span> <span className="text-white">{selectedRoadmap.title}</span></div>
+                    <div><span className="text-gray-400">Description:</span> <span className="text-white">{selectedRoadmap.description}</span></div>
+                    <div><span className="text-gray-400">Visibility:</span> <span className="text-white capitalize">{selectedRoadmap.visibility}</span></div>
+                    <div><span className="text-gray-400">Levels:</span> <span className="text-white">{selectedRoadmap.levels?.length || 0}</span></div>
+                  </div>
+                </div>
+                                 <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+                   <h3 className="text-lg font-semibold text-white mb-4">Hierarchy</h3>
+                   <LevelTree roadmapId={selectedRoadmap.id} onRefresh={fetchRoadmaps} />
+                 </div>
+              </div>
+            )}
+          </SidePanel>
+
+          {showModal && (
+            <AddEditModal
+              roadmap={editingRoadmap}
+              onClose={handleModalClose}
+            />
+          )}
+        </>
+      ) : (
+        <>
+          {/* Analytics Tab Content */}
+          <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-6">
+            {/* Roadmap Selector for Analytics */}
+            {!analyticsRoadmapId && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-white mb-4">Select Roadmap for Analytics</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {roadmaps.map((roadmap) => (
+                    <button
+                      key={roadmap.id}
+                      onClick={() => setAnalyticsRoadmapId(roadmap.id)}
+                      className="p-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-left transition-colors duration-300"
+                    >
+                      <h4 className="font-semibold text-white mb-1">{roadmap.title}</h4>
+                      <p className="text-sm text-gray-400 line-clamp-2">{roadmap.description}</p>
+                      <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                        <span>{roadmap.levels?.length || 0} levels</span>
+                        <span>•</span>
+                        <span className="capitalize">{roadmap.visibility}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Analytics Dashboard */}
+            {analyticsRoadmapId && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-white">Roadmap Analytics</h3>
+                  <button
+                    onClick={() => setAnalyticsRoadmapId(null)}
+                    className="px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors duration-300"
+                  >
+                    Back to Selection
+                  </button>
+                </div>
+                <AnalyticsDashboard roadmapId={analyticsRoadmapId} />
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       <style jsx global>{`

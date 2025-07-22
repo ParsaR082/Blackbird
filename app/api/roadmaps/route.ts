@@ -45,4 +45,21 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: 'Roadmap not found' }, { status: 404 });
   }
   return NextResponse.json(roadmap);
+}
+
+export async function DELETE(req: NextRequest) {
+  await connectToDatabase();
+  const url = new URL(req.url);
+  const roadmapId = url.searchParams.get('id');
+  
+  if (!roadmapId) {
+    return NextResponse.json({ error: 'Missing roadmap id' }, { status: 400 });
+  }
+  
+  const roadmap = await Roadmap.findByIdAndDelete(roadmapId);
+  if (!roadmap) {
+    return NextResponse.json({ error: 'Roadmap not found' }, { status: 404 });
+  }
+  
+  return NextResponse.json({ message: 'Roadmap deleted successfully' });
 } 

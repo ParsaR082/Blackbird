@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import Image from 'next/image'
 import BackgroundNodes from '@/components/BackgroundNodes'
 import { useTheme } from '@/contexts/theme-context'
 import { Trophy, Calendar, User, ExternalLink } from 'lucide-react'
@@ -262,9 +263,11 @@ export default function HallOfFamePage() {
                             borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
                           }}>
                             {entry.user.avatarUrl ? (
-                              <img 
-                                src={entry.user.avatarUrl} 
+                              <Image
+                                src={entry.user.avatarUrl}
                                 alt={entry.user.name}
+                                width={48}
+                                height={48}
                                 className="w-full h-full rounded-full object-cover"
                               />
                             ) : (

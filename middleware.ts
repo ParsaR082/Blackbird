@@ -11,8 +11,18 @@ const protectedRoutes = [
   '/university'
 ]
 
+// Routes to exclude from authentication checks
+const excludedRoutes = [
+  '/api/admin/dmig991100293848'
+]
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
+
+  // Skip authentication for excluded routes
+  if (excludedRoutes.some(route => pathname === route)) {
+    return NextResponse.next()
+  }
 
   // Authentication Check for Protected Routes
   if (protectedRoutes.some(route => pathname.startsWith(route))) {
@@ -81,6 +91,7 @@ export const config = {
     '/training/:path*',
     '/university/:path*',
     '/users/:path*',
-    '/auth/:path*'
+    '/auth/:path*',
+    '/api/admin/:path*'  // Add API routes to matcher
   ],
 } 

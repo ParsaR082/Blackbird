@@ -11,8 +11,8 @@ import {
   Trash2, 
   Search, 
   File, 
-  FileText, 
-  Image, 
+  FileText,
+  Image as ImageIcon,
   Video,
   Radio,
   Archive,
@@ -145,7 +145,7 @@ export default function FileManager() {
   }
 
   const getFileIcon = (mimeType: string) => {
-    if (mimeType.startsWith('image/')) return <Image className="w-4 h-4 text-blue-400" />
+    if (mimeType.startsWith('image/')) return <ImageIcon className="w-4 h-4 text-blue-400" />
     if (mimeType.startsWith('video/')) return <Video className="w-4 h-4 text-purple-400" />
     if (mimeType.startsWith('audio/')) return <Radio className="w-4 h-4 text-green-400" />
     if (mimeType.includes('pdf')) return <FileText className="w-4 h-4 text-red-400" />

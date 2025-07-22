@@ -1,9 +1,16 @@
-import request from 'supertest';
-import { createServer } from 'http';
-import { apiResolver } from 'next/dist/server/api-utils/node';
-import handler from '../../app/api/roadmaps/[roadmapId]/levels/route';
+import { NextRequest } from 'next/server';
+import { GET, POST } from '../../app/api/roadmaps/[roadmapId]/levels/route';
 import { connectToDatabase } from '../../lib/mongodb';
 import { Roadmap } from '../../lib/models/roadmap';
+
+// Mock NextRequest
+const createMockRequest = (url: string, options?: RequestInit): NextRequest => {
+  const init = options ? {
+    ...options,
+    signal: options.signal || undefined
+  } : undefined;
+  return new NextRequest(new URL(url, 'http://localhost'), init);
+};
 
 describe('/api/roadmaps/[roadmapId]/levels', () => {
   let roadmapId: string;
@@ -15,20 +22,32 @@ describe('/api/roadmaps/[roadmapId]/levels', () => {
     roadmapId = roadmap._id.toString();
   });
 
+  afterAll(async () => {
+    // Clean up test data
+    await Roadmap.findByIdAndDelete(roadmapId);
+  });
+
   it('GET should return an array of levels', async () => {
-    const server = createServer((req, res) => apiResolver(req, res, { roadmapId }, handler, {}));
-    const res = await request(server).get(`/api/roadmaps/${roadmapId}/levels`);
-    expect(res.statusCode).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
-    server.close();
+    const req = createMockRequest(`http://localhost/api/roadmaps/${roadmapId}/levels`);
+    const res = await GET(req, { params: { roadmapId } });
+    const data = await res.json();
+    
+    expect(res.status).toBe(200);
+    expect(Array.isArray(data)).toBe(true);
   });
 
   it('POST should add a new level', async () => {
-    const server = createServer((req, res) => apiResolver(req, res, { roadmapId }, handler, {}));
     const level = { title: 'Test Level', order: 1, milestones: [] };
-    const res = await request(server).post(`/api/roadmaps/${roadmapId}/levels`).send(level);
-    expect(res.statusCode).toBe(200);
-    expect(res.body.some((l: any) => l.title === 'Test Level')).toBe(true);
-    server.close();
+    const req = createMockRequest(`http://localhost/api/roadmaps/${roadmapId}/levels`, {
+      method: 'POST',
+      body: JSON.stringify(level),
+      headers: { 'Content-Type': 'application/json' }
+    });
+    
+    const res = await POST(req, { params: { roadmapId } });
+    const data = await res.json();
+    
+    expect(res.status).toBe(200);
+    expect(data.some((l: any) => l.title === 'Test Level')).toBe(true);
   });
-}); 
+});

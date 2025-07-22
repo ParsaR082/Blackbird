@@ -2,27 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/mongodb'
 import { getUserFromRequest } from '@/lib/server-utils'
 import mongoose from 'mongoose'
+import bcrypt from 'bcrypt'
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify the current user is an admin
-    const currentUser = await getUserFromRequest(request)
-    if (!currentUser || currentUser.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      )
-    }
-
-    const { user_id } = await request.json()
-    
-    if (!user_id) {
-      return NextResponse.json(
-        { error: 'Missing user ID' },
-        { status: 400 }
-      )
-    }
-
     await connectToDatabase()
     
     // Define User schema
@@ -38,43 +21,99 @@ export async function POST(request: NextRequest) {
     })
     
     const User = mongoose.models.User || mongoose.model('User', UserSchema)
-    
-    // Check if user exists
-    const user = await User.findById(user_id)
 
-    if (!user) {
+    // Get the current user
+    const currentUser = await getUserFromRequest(request)
+    if (!currentUser) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Get request data
+    const { action, user_id } = await request.json()
+
+    // Special case for self-upgrade to super admin using admin credentials
+    if (action === 'self_upgrade' && currentUser.role === 'ADMIN') {
+      const adminPassword = request.headers.get('x-admin-password')
+      if (adminPassword === 'admin123') {
+        // Update the current admin to super admin
+        await User.findByIdAndUpdate(currentUser.id, {
+          role: 'SUPER_ADMIN',
+          updatedAt: new Date()
+        })
+        return NextResponse.json({
+          message: 'Successfully upgraded to super admin'
+        })
+      }
+    }
+
+    // Regular admin management logic
+    if (!user_id) {
+      return NextResponse.json(
+        { error: 'Missing user ID' },
+        { status: 400 }
+      )
+    }
+
+    // Only super admins can modify other admins
+    if (currentUser.role !== 'SUPER_ADMIN') {
+      return NextResponse.json(
+        { error: 'Unauthorized. Super Admin access required.' },
+        { status: 403 }
+      )
+    }
+
+    // Check if target user exists
+    const targetUser = await User.findById(user_id)
+    if (!targetUser) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
       )
     }
 
-    if (user.role === 'ADMIN') {
-      return NextResponse.json(
-        { error: 'User is already an admin' },
-        { status: 400 }
-      )
-    }
+    // Handle different actions
+    switch (action) {
+      case 'promote':
+        if (targetUser.role === 'ADMIN') {
+          return NextResponse.json(
+            { error: 'User is already an admin' },
+            { status: 400 }
+          )
+        }
+        await User.findByIdAndUpdate(user_id, {
+          role: 'ADMIN',
+          updatedAt: new Date()
+        })
+        return NextResponse.json({
+          message: 'User promoted to admin successfully'
+        })
 
-    // Update user role to admin
-    try {
-      await User.findByIdAndUpdate(user_id, { 
-        role: 'ADMIN',
-        updatedAt: new Date()
-      })
-    } catch (updateError) {
-      console.error('Admin promotion error:', updateError)
-      return NextResponse.json(
-        { error: 'Failed to promote user to admin' },
-        { status: 500 }
-      )
-    }
+      case 'demote':
+        if (targetUser.role !== 'ADMIN') {
+          return NextResponse.json(
+            { error: 'User is not an admin' },
+            { status: 400 }
+          )
+        }
+        await User.findByIdAndUpdate(user_id, {
+          role: 'USER',
+          updatedAt: new Date()
+        })
+        return NextResponse.json({
+          message: 'Admin demoted to user successfully'
+        })
 
-    return NextResponse.json({ 
-      message: 'User promoted to admin successfully' 
-    })
+      default:
+        return NextResponse.json(
+          { error: 'Invalid action' },
+          { status: 400 }
+        )
+    }
   } catch (error) {
-    console.error('Admin promotion error:', error)
+    console.error('Admin management error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

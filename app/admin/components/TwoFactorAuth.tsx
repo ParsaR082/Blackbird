@@ -1,16 +1,17 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Shield, 
-  Smartphone, 
-  Mail, 
-  Key, 
-  CheckCircle, 
+import {
+  Shield,
+  Smartphone,
+  Mail,
+  Key,
+  CheckCircle,
   XCircle,
   RefreshCw,
   Download,
@@ -386,7 +387,13 @@ export default function TwoFactorAuth() {
               </p>
               {totpQrCode && (
                 <div className="inline-block p-4 bg-white rounded-lg">
-                  <img src={totpQrCode} alt="TOTP QR Code" className="w-48 h-48" />
+                  <Image
+                    src={totpQrCode}
+                    alt="TOTP QR Code"
+                    width={192}
+                    height={192}
+                    className="w-48 h-48"
+                  />
                 </div>
               )}
             </div>

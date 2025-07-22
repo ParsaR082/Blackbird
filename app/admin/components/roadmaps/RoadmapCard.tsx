@@ -28,6 +28,7 @@ interface RoadmapCardProps {
   onSelect?: (checked: boolean) => void;
   searchTerm?: string;
   onOpenPanel?: () => void;
+  onViewAnalytics?: () => void;
 }
 
 function highlight(text: string, term: string) {
@@ -37,7 +38,7 @@ function highlight(text: string, term: string) {
   return <>{text.slice(0, idx)}<mark className="bg-yellow-200 px-0.5 rounded">{text.slice(idx, idx + term.length)}</mark>{text.slice(idx + term.length)}</>;
 }
 
-const RoadmapCard: React.FC<RoadmapCardProps> = ({ roadmap, onEdit, onRefresh, selected = false, onSelect, searchTerm = '', onOpenPanel }) => {
+const RoadmapCard: React.FC<RoadmapCardProps> = ({ roadmap, onEdit, onRefresh, selected = false, onSelect, searchTerm = '', onOpenPanel, onViewAnalytics }) => {
   // Remove expanded state
   // const [expanded, setExpanded] = useState(false);
   const progress = getMockProgress(roadmap);
@@ -80,6 +81,9 @@ const RoadmapCard: React.FC<RoadmapCardProps> = ({ roadmap, onEdit, onRefresh, s
       </div>
       <div className="flex gap-2 mt-auto">
         <button className="bg-blue-500 text-white px-3 py-1 rounded" onClick={e => { e.stopPropagation(); onEdit(roadmap); }} title="Edit roadmap">Edit</button>
+        {onViewAnalytics && (
+          <button className="bg-purple-500 text-white px-3 py-1 rounded" onClick={e => { e.stopPropagation(); onViewAnalytics(); }} title="View analytics">Analytics</button>
+        )}
         <button className="bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded" onClick={e => { e.stopPropagation(); onRefresh(); }} title="Refresh roadmap">Refresh</button>
       </div>
       {/* Remove expanded tree from here */}

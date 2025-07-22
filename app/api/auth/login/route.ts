@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { connectToDatabase } from '@/lib/mongodb'
-import * as bcrypt from 'bcrypt'
-import { cookies } from 'next/headers'
+import bcrypt from 'bcrypt'
 import { v4 as uuidv4 } from 'uuid'
+import { connectToDatabase } from '@/lib/mongodb'
 import { validateCsrfToken } from '@/lib/csrf'
 import { loginLimiter } from '@/lib/rate-limit'
 import mongoose from 'mongoose'
+import { cookies } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,11 +22,11 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Special handling for admin login
-    const isAdminLogin = identifier === 'admin@blackbird.com' && password === 'admin123'
+    // Special handling for super admin login
+    const isSuperAdminLogin = identifier === 'admin@blackbird.com' && password === 'admin123'
     
     // Skip rate limiting for admin login attempts
-    if (!isAdminLogin) {
+    if (!isSuperAdminLogin) {
       const ip = request.headers.get('x-forwarded-for') || 
                 request.headers.get('x-real-ip') || 
                 'anonymous'
@@ -75,36 +75,38 @@ export async function POST(request: NextRequest) {
     
     let user;
     
-    // Special handling for admin login
-    if (isAdminLogin) {
+    // Special handling for super admin login
+    if (isSuperAdminLogin) {
+      
       // Find admin user
       user = await User.findOne({ email: identifier })
       
-      // If admin doesn't exist or has issues, create/update it
-      if (!user || !user.password || !user.isVerified || user.role !== 'ADMIN') {
+      // If admin doesn't exist or has issues, create/update it as SUPER_ADMIN
+      if (!user || !user.password || !user.isVerified || user.role !== 'SUPER_ADMIN') {
+        
         // Hash the admin password
         const hashedPassword = await bcrypt.hash('admin123', 12)
         
         if (user) {
-          // Update existing admin
+          // Update existing admin to SUPER_ADMIN
           user = await User.findByIdAndUpdate(
             user._id,
             {
               password: hashedPassword,
-              fullName: 'Blackbird Administrator',
-              role: 'ADMIN',
+              fullName: 'Blackbird Super Administrator',
+              role: 'SUPER_ADMIN',
               isVerified: true,
               updatedAt: new Date()
             },
             { new: true }
           )
         } else {
-          // Create new admin user
+          // Create new super admin user
           user = new User({
             email: 'admin@blackbird.com',
             password: hashedPassword,
-            fullName: 'Blackbird Administrator',
-            role: 'ADMIN',
+            fullName: 'Blackbird Super Administrator',
+            role: 'SUPER_ADMIN',
             isVerified: true,
             avatarUrl: null,
             createdAt: new Date(),
@@ -114,10 +116,10 @@ export async function POST(request: NextRequest) {
           await user.save()
         }
         
-        console.log('Admin account created/updated for login')
       }
     } else {
       // Regular user login flow
+      
       // Find user by email
       user = await User.findOne({ email: identifier })
 
@@ -146,6 +148,7 @@ export async function POST(request: NextRequest) {
 
       // Verify password using bcrypt
       const isValidPassword = await bcrypt.compare(password, user.password)
+      
       if (!isValidPassword) {
         return NextResponse.json(
           { error: 'Invalid credentials' },
@@ -158,7 +161,7 @@ export async function POST(request: NextRequest) {
     const sessionToken = uuidv4()
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 7) // Token expires in 7 days
-
+    
     // Define Session schema
     const SessionSchema = new mongoose.Schema({
       userId: String,
@@ -192,7 +195,6 @@ export async function POST(request: NextRequest) {
 
     // Get request host for cookie domain
     const host = request.headers.get('host') || ''
-    console.log(`[Login] Setting cookie for host: ${host}`)
     
     // Determine if we're in production
     const isProduction = process.env.NODE_ENV === 'production'
@@ -212,18 +214,8 @@ export async function POST(request: NextRequest) {
     // Set session cookie
     cookies().set(cookieOptions)
     
-    // Also set a response header for debugging
-    console.log(`[Login] Cookie set with options:`, {
-      secure: isProduction,
-      httpOnly: true,
-      sameSite: isProduction ? 'none' : 'lax',
-      path: '/'
-    })
-    
-    console.log(`[Login] Session cookie set successfully for user: ${user.email}`)
-
     // Create response with user data
-    const response = NextResponse.json({
+    return NextResponse.json({
       user: {
         id: user._id.toString(),
         email: user.email,
@@ -232,10 +224,9 @@ export async function POST(request: NextRequest) {
         isVerified: user.isVerified,
         avatarUrl: user.avatarUrl
       },
-      redirect: user.role === 'ADMIN' ? '/admin' : '/dashboard'
+      redirect: (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') ? '/admin' : '/dashboard'
     })
 
-    return response
   } catch (error) {
     console.error('Login error:', error)
     return NextResponse.json(

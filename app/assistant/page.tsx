@@ -4,15 +4,18 @@ import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import BackgroundNodes from '@/components/BackgroundNodes'
 import { useTheme } from '@/contexts/theme-context'
+import { useAuth } from '@/contexts/auth-context'
 import { AssistantHeader } from './components/AssistantHeader'
 import { QuickActionsGrid } from './components/QuickActionsGrid'
 import { ChatInterface } from './components/ChatInterface'
 import { AssistantSidebar } from './components/AssistantSidebar'
 import { StatusIndicator } from './components/StatusIndicator'
+import { useRouter } from 'next/navigation'
 
 export default function AssistantPage() {
   const [isMobile, setIsMobile] = useState(false)
   const [isConnected, setIsConnected] = useState(true)
+  const [selectedAction, setSelectedAction] = useState<{ type: string; label: string } | undefined>()
   const [systemStatus, setSystemStatus] = useState({
     neuralLoad: 47.3,
     processingUnits: 8,
@@ -21,6 +24,8 @@ export default function AssistantPage() {
     quantumState: 'Stable'
   })
   const { theme } = useTheme()
+  const { user, isAuthenticated, isLoading } = useAuth()
+  const router = useRouter()
 
   useEffect(() => {
     const checkMobile = () => {
@@ -32,6 +37,13 @@ export default function AssistantPage() {
     
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/auth/login?redirectTo=/assistant')
+    }
+  }, [isAuthenticated, isLoading, router])
 
   // Simulate real-time system status updates
   useEffect(() => {
@@ -46,6 +58,31 @@ export default function AssistantPage() {
     return () => clearInterval(interval)
   }, [])
 
+  const handleActionClick = (actionType: string, label: string) => {
+    setSelectedAction({ type: actionType, label })
+  }
+
+  const handleActionComplete = () => {
+    setSelectedAction(undefined)
+  }
+
+  // Show loading screen while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--bg-color)' }}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-white">Loading Blackbird Assistant...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Don't render if not authenticated (will redirect)
+  if (!isAuthenticated) {
+    return null
+  }
+
   return (
     <div className="min-h-screen overflow-hidden transition-colors duration-300" style={{ backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}>
       {/* Interactive Background */}
@@ -57,7 +94,7 @@ export default function AssistantPage() {
         <AssistantHeader theme={theme} />
         
         {/* Quick Actions Grid */}
-        <QuickActionsGrid theme={theme} />
+        <QuickActionsGrid theme={theme} onActionClick={handleActionClick} />
         
         {/* Main Interface */}
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -68,7 +105,11 @@ export default function AssistantPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
           >
-            <ChatInterface theme={theme} />
+            <ChatInterface 
+              theme={theme} 
+              selectedAction={selectedAction}
+              onActionComplete={handleActionComplete}
+            />
           </motion.div>
 
           {/* Sidebar */}
