@@ -17,6 +17,7 @@ process.env.NODE_ENV = 'production';
 const dirs = [
   '.next/standalone',
   '.next/static',
+  'public',
 ];
 
 dirs.forEach(dir => {
@@ -43,9 +44,41 @@ function copyFileSync(source, target) {
   }
 }
 
+// Copy entire directory recursively
+function copyDirSync(src, dest) {
+  if (!fs.existsSync(dest)) {
+    fs.mkdirSync(dest, { recursive: true });
+  }
+  
+  const entries = fs.readdirSync(src, { withFileTypes: true });
+  
+  for (const entry of entries) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+    
+    if (entry.isDirectory()) {
+      copyDirSync(srcPath, destPath);
+    } else {
+      copyFileSync(srcPath, destPath);
+    }
+  }
+  
+  console.log(`Copied directory: ${src} -> ${dest}`);
+}
+
 // Copy server.js to the root and standalone directory
 if (fs.existsSync('server.js')) {
   copyFileSync('server.js', '.next/standalone/');
+}
+
+// Copy public directory to standalone
+if (fs.existsSync('public')) {
+  copyDirSync('public', '.next/standalone/public');
+}
+
+// Copy .next/static to standalone/.next/static
+if (fs.existsSync('.next/static')) {
+  copyDirSync('.next/static', '.next/standalone/.next/static');
 }
 
 // Create a minimal package.json for the standalone directory
@@ -58,6 +91,9 @@ const minimalPackageJson = {
   },
   dependencies: {
     "next": "^14.0.0"
+  },
+  engines: {
+    "node": ">=18.17.0"
   }
 };
 
@@ -74,6 +110,7 @@ const envContent = `
 NODE_ENV=production
 NEXT_TELEMETRY_DISABLED=1
 NEXT_SHARP_PATH=/tmp/node_modules/sharp
+NEXT_RUNTIME=nodejs
 `;
 
 fs.writeFileSync('.env.production', envContent);
@@ -89,10 +126,29 @@ module.exports = {
   },
   swcMinify: true,
   poweredByHeader: false,
+  // Force all API routes to be dynamic
+  async headers() {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, max-age=0',
+          },
+        ],
+      },
+    ];
+  },
 };
 `;
 
 fs.writeFileSync('.next/standalone/next.config.js', standaloneNextConfig);
 console.log('Created next.config.js in standalone directory');
+
+// Create a Procfile for Railway
+const procfileContent = 'web: cd .next/standalone && node server.js';
+fs.writeFileSync('Procfile', procfileContent);
+console.log('Created Procfile for Railway');
 
 console.log('✅ Railway deployment preparation complete!'); 

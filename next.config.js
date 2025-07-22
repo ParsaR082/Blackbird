@@ -1,13 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Railway-specific optimizations
+  // Use standalone output for deployment
   output: 'standalone',
   
+  // Image optimization configuration
   images: {
     domains: ['supabase.co', 'avatars.githubusercontent.com', 'lh3.googleusercontent.com'],
-    unoptimized: true, // Set to true for Railway deployment
+    unoptimized: true, // Required for standalone deployment without image optimization service
   },
   
+  // Skip type checking and linting during build for faster builds
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -18,7 +20,12 @@ const nextConfig = {
   
   // Experimental features configuration
   experimental: {
+    // External packages that should be bundled with the server code
     serverComponentsExternalPackages: ['mongodb', 'mongoose'],
+    
+    // Disable static export for API routes
+    disableStaticExport: true,
+    
     // Exclude problematic files from tracing
     outputFileTracingExcludes: {
       '*': [
@@ -29,7 +36,7 @@ const nextConfig = {
     },
   },
   
-  // Optimize for Railway deployment
+  // Optimize for production
   swcMinify: true,
   
   // Environment-specific configurations
@@ -39,6 +46,27 @@ const nextConfig = {
     MONGODB_URI: process.env.MONGODB_URI,
     CSRF_SECRET: process.env.CSRF_SECRET,
   },
+  
+  // Ensure all API routes are treated as dynamic
+  async headers() {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, max-age=0',
+          },
+        ],
+      },
+    ];
+  },
+  
+  // Disable compression during development for better debugging
+  compress: process.env.NODE_ENV === 'production',
+  
+  // Disable powered by header for security
+  poweredByHeader: false,
 }
 
 module.exports = nextConfig

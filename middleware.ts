@@ -30,90 +30,66 @@ const dynamicApiRoutes = [
   '/api/admin/optimization'
 ]
 
-export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  // Skip middleware processing during build time
+  const isBuildTime = process.env.NODE_ENV === 'production' && !request.cookies.has('next-auth.session-token');
   
-  // For static generation/build time, skip validation
-  const userAgent = req.headers.get('user-agent') || ''
-  if (userAgent.includes('Node.js') && process.env.NODE_ENV === 'production' && 
-      (dynamicApiRoutes.some(route => pathname.startsWith(route)))) {
-    console.log(`[Middleware] Skipping validation for build-time request: ${pathname}`)
-    return NextResponse.next()
-  }
-
-  // Skip authentication for excluded routes
-  if (excludedRoutes.some(route => pathname === route)) {
-    return NextResponse.next()
-  }
-
-  // Authentication Check for Protected Routes
-  if (protectedRoutes.some(route => pathname.startsWith(route))) {
-    // Get the session token from cookie
-    const sessionToken = req.cookies.get('session_token')?.value
-    const allCookies = req.cookies.getAll()
-    
-    console.log(`[Middleware] Checking ${pathname}, cookies:`, allCookies.map(c => ({ name: c.name, value: c.value ? `${c.value.substring(0, 8)}...` : null })))
-    
-    if (!sessionToken) {
-      console.log(`[Middleware] No session token found, redirecting from ${pathname} to login`)
-      // Redirect to login if no session token
-      const url = new URL('/auth/login', req.url)
-      url.searchParams.set('redirectTo', pathname)
-      return NextResponse.redirect(url)
+  // For API routes, ensure they're treated as dynamic
+  if (pathname.startsWith('/api/')) {
+    // During build time, return a mock response for API routes
+    if (isBuildTime) {
+      return NextResponse.next();
     }
     
-    // Validate session token by calling the API
-    try {
-      // Use NEXTAUTH_URL in production, local origin in development
-      const baseUrl =
-        process.env.NODE_ENV === 'production'
-          ? process.env.NEXTAUTH_URL || 'https://blackbird-production.up.railway.app'
-          : new URL('/', req.url).origin
-      const validateUrl = `${baseUrl}/api/auth/validate`
-      
-      console.log(`[Middleware] Validating session for ${pathname}, calling ${validateUrl}`)
-      
-      const validateRes = await fetch(validateUrl, {
-        headers: {
-          Cookie: `session_token=${sessionToken}`,
-          'User-Agent': 'Railway-Middleware/1.0'
-        },
-        cache: 'no-store'
-      })
-      
-      if (!validateRes.ok) {
-        console.log(`[Middleware] Session validation failed with status ${validateRes.status}`)
-        // Session is invalid, redirect to login
-        const url = new URL('/auth/login', req.url)
-        url.searchParams.set('redirectTo', pathname)
-        return NextResponse.redirect(url)
-      }
-      
-      console.log(`[Middleware] Session validated successfully for ${pathname}`)
-    } catch (error) {
-      console.error('[Middleware] Session validation error:', error)
-      // On error, redirect to login
-      const url = new URL('/auth/login', req.url)
-      url.searchParams.set('redirectTo', pathname)
-      return NextResponse.redirect(url)
-    }
+    // Add headers to ensure dynamic behavior
+    const response = NextResponse.next();
+    response.headers.set('Cache-Control', 'no-store, max-age=0');
+    response.headers.set('Surrogate-Control', 'no-store');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    return response;
   }
 
-  return NextResponse.next()
+  // Check if the route is protected
+  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
+  const isExcludedRoute = excludedRoutes.some(route => pathname.startsWith(route));
+
+  // If it's not a protected route or it's excluded, continue
+  if (!isProtectedRoute || isExcludedRoute) {
+    return NextResponse.next();
+  }
+
+  // Skip auth check during build time
+  if (isBuildTime) {
+    return NextResponse.next();
+  }
+
+  // Check for authentication
+  const authCookie = request.cookies.get('next-auth.session-token');
+  
+  // If no auth cookie, redirect to login
+  if (!authCookie) {
+    const url = new URL('/auth/login', request.url);
+    url.searchParams.set('callbackUrl', encodeURI(request.url));
+    return NextResponse.redirect(url);
+  }
+
+  return NextResponse.next();
 }
 
-// Configure middleware to run on specific paths
 export const config = {
   matcher: [
-    // Apply only to protected routes and exclude API routes
-    '/dashboard/:path*',
-    '/admin/:path*',
-    '/profile/:path*',
-    '/settings/:path*',
-    '/training/:path*',
-    '/university/:path*',
-    '/users/:path*',
-    '/auth/:path*',
-    '/api/admin/:path*'  // Add API routes to matcher
+    /*
+     * Match all request paths except:
+     * 1. /api/auth/* (authentication routes)
+     * 2. /_next/* (Next.js internals)
+     * 3. /fonts/* (static font files)
+     * 4. /images/* (static image files)
+     * 5. /favicon.ico, /logo.svg (static files at root)
+     */
+    '/((?!api/auth|_next|fonts|images|favicon.ico|logo.svg).*)',
+    '/api/:path*',
   ],
 } 
