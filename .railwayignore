@@ -1,0 +1,13 @@
+# Ignore files that aren't needed in production
+.git
+.github
+node_modules
+.next/cache
+.export/cache
+__tests__
+docs
+scripts
+*.log
+.env.local
+.env.development
+README.md 

@@ -5,7 +5,7 @@ const nextConfig = {
   
   images: {
     domains: ['supabase.co', 'avatars.githubusercontent.com', 'lh3.googleusercontent.com'],
-    unoptimized: process.env.NODE_ENV === 'production',
+    unoptimized: true, // Set to true for Railway deployment
   },
   
   typescript: {
@@ -19,13 +19,12 @@ const nextConfig = {
   // Experimental features configuration
   experimental: {
     serverComponentsExternalPackages: ['mongodb', 'mongoose'],
+    // Exclude problematic files from tracing
     outputFileTracingExcludes: {
       '*': [
         'node_modules/@swc/core-linux-x64-gnu',
         'node_modules/@swc/core-linux-x64-musl',
         'node_modules/@esbuild/linux-x64',
-        // API routes that cause issues
-        'app/api/**/*',
       ],
     },
   },
@@ -40,44 +39,6 @@ const nextConfig = {
     MONGODB_URI: process.env.MONGODB_URI,
     CSRF_SECRET: process.env.CSRF_SECRET,
   },
-  
-  // Disable static optimization for pages that use API routes with cookies/headers
-  async rewrites() {
-    return []
-  },
-  
-  // Ensure API routes are treated as dynamic
-  async headers() {
-    return [
-      {
-        source: '/api/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-store, max-age=0',
-          },
-        ],
-      },
-    ]
-  },
-  
-  // Server runtime configuration for dynamic routes
-  serverRuntimeConfig: {
-    // Will only be available on the server side
-    apiRouteConfig: {
-      dynamicRoutes: true,
-    }
-  },
-  
-  // Disable automatic static optimization for API routes
-  webpack: (config, { dev, isServer }) => {
-    // Return modified config
-    return config;
-  },
-
-  // Configure dynamic routes
-  // This is the key configuration to skip problematic routes during export
-  distDir: process.env.EXPORT_MODE ? '.export' : '.next',
 }
 
 module.exports = nextConfig

@@ -1,0 +1,17 @@
+[build]
+builder = "nixpacks"
+buildCommand = "npm run build"
+
+[deploy]
+startCommand = "node server.js"
+healthcheckPath = "/"
+healthcheckTimeout = 100
+restartPolicyType = "on-failure"
+restartPolicyMaxRetries = 5
+
+[nixpacks]
+nodejs-version = "20"
+
+[variables]
+NODE_ENV = "production"
+NEXT_TELEMETRY_DISABLED = "1" 
