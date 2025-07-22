@@ -11,9 +11,13 @@
 # next.js
 /.next/
 /out/
+/.export/
+/.export*/
 
 # production
 /build
+/dist
+/standalone
 
 # misc
 .DS_Store
@@ -26,6 +30,7 @@ yarn-error.log*
 
 # local env files
 # .env*.local (commented out to allow AI modification)
+.env.production
 
 # vercel
 .vercel
@@ -34,3 +39,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts 
 /generated/prisma
+
+# Large build artifacts
+*.pack
