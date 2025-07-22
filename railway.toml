@@ -4,7 +4,7 @@ buildCommand = "npm run railway-deploy"
 
 [deploy]
 startCommand = "cd .next/standalone && node server.js"
-healthcheckPath = "/api/health"
+healthcheckPath = "/"
 healthcheckTimeout = 3
 restartPolicyType = "always"
 restartPolicyMaxRetries = 5
