@@ -3,6 +3,7 @@ const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
 const path = require('path');
+const fs = require('fs');
 
 // Load environment variables from .env file if available
 try {
@@ -10,6 +11,12 @@ try {
   console.log('Environment variables loaded from .env file');
 } catch (error) {
   console.log('Failed to load dotenv, continuing without it:', error.message);
+}
+
+// Handle DATABASE_URL environment variable
+if (process.env.MONGODB_URI && !process.env.DATABASE_URL) {
+  console.log('Setting DATABASE_URL from MONGODB_URI');
+  process.env.DATABASE_URL = process.env.MONGODB_URI;
 }
 
 // Configure environment
@@ -22,6 +29,7 @@ console.log('Starting server with environment:');
 console.log(`- NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
 console.log(`- PORT: ${port}`);
 console.log(`- MONGODB_URI: ${process.env.MONGODB_URI ? 'set (hidden)' : 'not set'}`);
+console.log(`- DATABASE_URL: ${process.env.DATABASE_URL ? 'set (hidden)' : 'not set'}`);
 console.log(`- NEXTAUTH_URL: ${process.env.NEXTAUTH_URL || 'not set'}`);
 
 // Initialize Next.js with custom configuration
@@ -61,7 +69,8 @@ app.prepare().then(() => {
           res.end(JSON.stringify({
             status: 'ok',
             timestamp: new Date().toISOString(),
-            environment: process.env.NODE_ENV || 'unknown'
+            environment: process.env.NODE_ENV || 'unknown',
+            database: process.env.DATABASE_URL ? 'configured' : 'not configured'
           }));
           return;
         }
