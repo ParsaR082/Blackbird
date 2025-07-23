@@ -71,10 +71,45 @@ if (fs.existsSync('server.js')) {
   copyFileSync('server.js', '.next/standalone/');
 }
 
-// Copy .env file to standalone directory if it exists
-if (fs.existsSync('.env')) {
-  copyFileSync('.env', '.next/standalone/');
-  console.log('Copied .env file to standalone directory');
+// Copy all possible environment files to standalone directory
+const envFiles = ['.env', '.env.local', '.env.production'];
+for (const envFile of envFiles) {
+  if (fs.existsSync(envFile)) {
+    copyFileSync(envFile, '.next/standalone/');
+    console.log(`Copied ${envFile} file to standalone directory`);
+  } else {
+    console.log(`${envFile} file not found, skipping`);
+  }
+}
+
+// Create a fallback .env file with critical variables from railway.toml if no .env exists
+if (!fs.existsSync('.next/standalone/.env')) {
+  try {
+    console.log('No .env file found, creating a fallback from railway.toml variables');
+    if (fs.existsSync('railway.toml')) {
+      const railwayToml = fs.readFileSync('railway.toml', 'utf8');
+      const envVars = [];
+      
+      // Extract variables from railway.toml
+      const varSection = railwayToml.match(/\[variables\]([\s\S]*?)(\[|$)/);
+      if (varSection && varSection[1]) {
+        const lines = varSection[1].trim().split('\n');
+        lines.forEach(line => {
+          const match = line.match(/^([A-Za-z0-9_]+)\s*=\s*"(.*)"/);
+          if (match) {
+            envVars.push(`${match[1]}=${match[2]}`);
+          }
+        });
+      }
+      
+      if (envVars.length > 0) {
+        fs.writeFileSync('.next/standalone/.env', envVars.join('\n'));
+        console.log('Created fallback .env file from railway.toml variables');
+      }
+    }
+  } catch (err) {
+    console.error('Error creating fallback .env file:', err);
+  }
 }
 
 // Copy public directory to standalone
@@ -96,7 +131,8 @@ const minimalPackageJson = {
     "start": "node server.js"
   },
   dependencies: {
-    "next": "^14.0.0"
+    "next": "^14.0.0",
+    "dotenv": "^16.0.0"
   },
   engines: {
     "node": ">=18.17.0"

@@ -5,22 +5,83 @@ const next = require('next');
 const path = require('path');
 const fs = require('fs');
 
-// Load environment variables from .env file if available
-try {
-  if (fs.existsSync(path.join(process.cwd(), '.env'))) {
-    console.log('Loading .env file from:', path.join(process.cwd(), '.env'));
-    require('dotenv').config();
-    console.log('Environment variables loaded from .env file');
+// Enhanced environment variable loading from multiple possible locations
+function loadEnvFromPossibleLocations() {
+  const possibleLocations = [
+    path.join(process.cwd(), '.env'),
+    path.join(process.cwd(), '.env.local'),
+    path.join(process.cwd(), '.env.production'),
+    path.join(__dirname, '.env'),
+    path.join(__dirname, '..', '.env')
+  ];
+  
+  console.log('Searching for .env files in:');
+  possibleLocations.forEach(location => console.log(`- ${location}`));
+  
+  let loaded = false;
+  
+  for (const location of possibleLocations) {
+    try {
+      if (fs.existsSync(location)) {
+        console.log(`Found .env file at: ${location}`);
+        require('dotenv').config({ path: location });
+        console.log('Loaded environment variables from:', location);
+        loaded = true;
+        break;
+      }
+    } catch (error) {
+      console.error(`Error checking/loading .env at ${location}:`, error.message);
+    }
   }
-} catch (error) {
-  console.error('Error loading .env file:', error);
+  
+  if (!loaded) {
+    console.log('No .env file found in any of the expected locations');
+    console.log('Using environment variables from process.env only');
+  }
+  
+  // Check for critical environment variables
+  const criticalVars = ['MONGODB_URI', 'NEXTAUTH_SECRET', 'NEXTAUTH_URL'];
+  const missing = criticalVars.filter(v => !process.env[v]);
+  
+  if (missing.length > 0) {
+    console.warn(`WARNING: Missing critical environment variables: ${missing.join(', ')}`);
+  } else {
+    console.log('All critical environment variables are present');
+  }
 }
+
+// Load environment variables from all possible locations
+loadEnvFromPossibleLocations();
 
 // Force production mode
 process.env.NODE_ENV = 'production';
 
 // Disable Next.js telemetry
 process.env.NEXT_TELEMETRY_DISABLED = '1';
+
+// Ensure NEXTAUTH_URL is set correctly in production
+if (process.env.NODE_ENV === 'production') {
+  // If we're in Railway, use the Railway URL
+  if (process.env.RAILWAY_STATIC_URL) {
+    console.log(`Setting NEXTAUTH_URL from RAILWAY_STATIC_URL: ${process.env.RAILWAY_STATIC_URL}`);
+    process.env.NEXTAUTH_URL = process.env.RAILWAY_STATIC_URL;
+  }
+  // If we're in Railway with a custom domain
+  else if (process.env.RAILWAY_PUBLIC_DOMAIN) {
+    console.log(`Setting NEXTAUTH_URL from RAILWAY_PUBLIC_DOMAIN: ${process.env.RAILWAY_PUBLIC_DOMAIN}`);
+    process.env.NEXTAUTH_URL = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
+  }
+  // Fallback to the Railway service URL
+  else if (process.env.RAILWAY_SERVICE_URL) {
+    console.log(`Setting NEXTAUTH_URL from RAILWAY_SERVICE_URL: ${process.env.RAILWAY_SERVICE_URL}`);
+    process.env.NEXTAUTH_URL = process.env.RAILWAY_SERVICE_URL;
+  }
+  // If NEXTAUTH_URL is localhost in production, set a default
+  else if (process.env.NEXTAUTH_URL && process.env.NEXTAUTH_URL.includes('localhost')) {
+    console.log('NEXTAUTH_URL contains localhost but we are in production, setting to default Railway URL');
+    process.env.NEXTAUTH_URL = 'https://blackbird-production.up.railway.app';
+  }
+}
 
 // Configure app
 const app = next({ 
@@ -42,6 +103,7 @@ console.log(`- PORT: ${port}`);
 console.log(`- MONGODB_URI: ${process.env.MONGODB_URI ? 'set (hidden)' : 'not set'}`);
 console.log(`- NEXTAUTH_URL: ${process.env.NEXTAUTH_URL || 'not set'}`);
 console.log(`- Current directory: ${process.cwd()}`);
+console.log(`- __dirname: ${__dirname}`);
 
 // Improved error handling for the server
 const startServer = async () => {
@@ -59,10 +121,11 @@ const startServer = async () => {
         const parsedUrl = parse(req.url, true);
         const { pathname } = parsedUrl;
         
-        // Health check endpoint for Railway
-        if (pathname === '/' && req.method === 'HEAD') {
-          console.log('Responding to HEAD / health check');
+        // Health check endpoint for Railway (root path)
+        if (pathname === '/' && (req.method === 'HEAD' || req.method === 'GET')) {
+          console.log('Responding to / health check');
           res.statusCode = 200;
+          res.setHeader('Content-Type', 'text/plain');
           res.end('OK');
           return;
         }
@@ -77,7 +140,11 @@ const startServer = async () => {
             timestamp: new Date().toISOString(),
             env: {
               NODE_ENV: process.env.NODE_ENV || 'not set',
-              PORT: port
+              PORT: port,
+              MONGODB_URI: process.env.MONGODB_URI ? 'set' : 'not set',
+              NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'not set',
+              cwd: process.cwd(),
+              dirname: __dirname
             }
           }));
           return;
