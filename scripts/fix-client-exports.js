@@ -7,6 +7,7 @@ const path = require('path');
 
 // List of page files that are causing export errors
 const problemPages = [
+  // Regular pages
   'app/(public)/page.tsx',
   'app/admin/events/page.tsx',
   'app/admin/hall-of-fame/page.tsx',
@@ -40,12 +41,198 @@ const problemPages = [
   'app/university/study-plans/page.tsx',
   'app/users/profile/[username]/page.tsx',
   'app/users/profile/page.tsx',
+  
+  // Special Next.js pages
+  'app/not-found.tsx',
+  'app/error.tsx',
+  'app/global-error.tsx',
+  'app/_not-found/page.tsx',
 ];
+
+// Also check for these special Next.js files that might exist
+const specialNextFiles = [
+  'pages/_app.tsx',
+  'pages/_document.tsx',
+  'pages/_error.tsx',
+  'pages/404.tsx',
+  'pages/500.tsx',
+];
+
+// Add any existing special Next.js files to the problemPages array
+specialNextFiles.forEach(file => {
+  const fullPath = path.join(__dirname, '..', file);
+  if (fs.existsSync(fullPath)) {
+    problemPages.push(file);
+  }
+});
 
 // Process each problem page
 console.log('Fixing client component export errors...');
 let fixedCount = 0;
 
+// Create _not-found directory and page if it doesn't exist
+const notFoundDir = path.join(__dirname, '..', 'app', '_not-found');
+const notFoundPage = path.join(notFoundDir, 'page.tsx');
+
+if (!fs.existsSync(notFoundDir)) {
+  console.log('Creating _not-found directory');
+  fs.mkdirSync(notFoundDir, { recursive: true });
+}
+
+if (!fs.existsSync(notFoundPage)) {
+  console.log('Creating _not-found/page.tsx');
+  const notFoundContent = `'use client'
+
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { ArrowLeft, Home } from 'lucide-react'
+import BackgroundNodes from '@/components/BackgroundNodes'
+
+export default function NotFound() {
+  return (
+    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="fixed inset-0 bg-gradient-to-br from-black via-gray-900 to-black" />
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.1),transparent_50%)]" />
+      <BackgroundNodes isMobile={false} />
+      
+      <div className="relative z-10 text-center max-w-md px-4">
+        <h1 className="text-6xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent mb-4">
+          404
+        </h1>
+        <h2 className="text-2xl font-semibold mb-4">Page Not Found</h2>
+        <p className="text-gray-400 mb-8">
+          The page you're looking for doesn't exist or has been moved.
+        </p>
+        
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Button asChild variant="outline" className="gap-2">
+            <Link href="/">
+              <Home className="w-4 h-4" />
+              Go Home
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="gap-2">
+            <Link href="javascript:history.back()">
+              <ArrowLeft className="w-4 h-4" />
+              Go Back
+            </Link>
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}`;
+  fs.writeFileSync(notFoundPage, notFoundContent);
+  console.log('✓ Created _not-found/page.tsx');
+  fixedCount++;
+}
+
+// Create error.tsx if it doesn't exist
+const errorPage = path.join(__dirname, '..', 'app', 'error.tsx');
+if (!fs.existsSync(errorPage)) {
+  console.log('Creating error.tsx');
+  const errorContent = `'use client'
+ 
+import { useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { RefreshCw } from 'lucide-react'
+import BackgroundNodes from '@/components/BackgroundNodes'
+ 
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string }
+  reset: () => void
+}) {
+  useEffect(() => {
+    // Log the error to an error reporting service
+    console.error(error)
+  }, [error])
+ 
+  return (
+    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="fixed inset-0 bg-gradient-to-br from-black via-gray-900 to-black" />
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.1),transparent_50%)]" />
+      <BackgroundNodes isMobile={false} />
+      
+      <div className="relative z-10 text-center max-w-md px-4">
+        <h1 className="text-6xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent mb-4">
+          Error
+        </h1>
+        <h2 className="text-2xl font-semibold mb-4">Something went wrong</h2>
+        <p className="text-gray-400 mb-8">
+          We apologize for the inconvenience. Please try again.
+        </p>
+        
+        <Button 
+          onClick={reset}
+          variant="outline" 
+          className="gap-2"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Try again
+        </Button>
+      </div>
+    </div>
+  )
+}`;
+  fs.writeFileSync(errorPage, errorContent);
+  console.log('✓ Created error.tsx');
+  fixedCount++;
+}
+
+// Create global-error.tsx if it doesn't exist
+const globalErrorPage = path.join(__dirname, '..', 'app', 'global-error.tsx');
+if (!fs.existsSync(globalErrorPage)) {
+  console.log('Creating global-error.tsx');
+  const globalErrorContent = `'use client'
+ 
+import { Button } from '@/components/ui/button'
+import { RefreshCw } from 'lucide-react'
+ 
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string }
+  reset: () => void
+}) {
+  return (
+    <html lang="en">
+      <body>
+        <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center">
+          <div className="text-center max-w-md px-4">
+            <h1 className="text-6xl font-bold text-red-500 mb-4">
+              Critical Error
+            </h1>
+            <h2 className="text-2xl font-semibold mb-4">Something went seriously wrong</h2>
+            <p className="text-gray-400 mb-8">
+              We apologize for the inconvenience. Please try refreshing the page.
+            </p>
+            
+            <Button 
+              onClick={reset}
+              variant="outline" 
+              className="gap-2 bg-white/10 hover:bg-white/20 text-white"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Try again
+            </Button>
+          </div>
+        </div>
+      </body>
+    </html>
+  )
+}`;
+  fs.writeFileSync(globalErrorPage, globalErrorContent);
+  console.log('✓ Created global-error.tsx');
+  fixedCount++;
+}
+
+// Process each problem page
 for (const pagePath of problemPages) {
   const fullPath = path.join(__dirname, '..', pagePath);
   
