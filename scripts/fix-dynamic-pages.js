@@ -33,8 +33,8 @@ function processDirectory(directory) {
       if (content.includes("'use client'") || content.includes('"use client"')) {
         console.log(`Client component detected: ${fullPath}`);
         
-        // For client components, we need to move any dynamic exports AFTER the 'use client' directive
-        // First, remove any existing dynamic exports
+        // For client components, completely remove any dynamic exports
+        // as they are not allowed in client components
         let updatedContent = content;
         
         // Remove dynamic exports if they exist
@@ -42,7 +42,7 @@ function processDirectory(directory) {
         updatedContent = updatedContent.replace(/export const revalidate\s*=\s*0;?(\r?\n|\r)?/g, '');
         updatedContent = updatedContent.replace(/export const fetchCache\s*=\s*['"]force-no-store['"];?(\r?\n|\r)?/g, '');
         
-        // Now write the file without any dynamic exports
+        // Write the file without any dynamic exports
         fs.writeFileSync(fullPath, updatedContent);
         console.log(`✓ Removed dynamic exports from client component: ${fullPath}`);
       } else {
