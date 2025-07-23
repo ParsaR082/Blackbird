@@ -2,11 +2,27 @@
 const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
+const path = require('path');
+
+// Load environment variables from .env file if available
+try {
+  require('dotenv').config();
+  console.log('Environment variables loaded from .env file');
+} catch (error) {
+  console.log('Failed to load dotenv, continuing without it:', error.message);
+}
 
 // Configure environment
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
 const port = process.env.PORT || 3000;
+
+// Log important environment variables (without sensitive values)
+console.log('Starting server with environment:');
+console.log(`- NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
+console.log(`- PORT: ${port}`);
+console.log(`- MONGODB_URI: ${process.env.MONGODB_URI ? 'set (hidden)' : 'not set'}`);
+console.log(`- NEXTAUTH_URL: ${process.env.NEXTAUTH_URL || 'not set'}`);
 
 // Initialize Next.js
 const app = next({ dev, hostname, port });
@@ -16,18 +32,30 @@ const handle = app.getRequestHandler();
 app.prepare().then(() => {
   createServer(async (req, res) => {
     try {
-      // Health check endpoint for Railway
-      if (req.url === '/') {
-        // For HEAD requests (used by Railway healthcheck)
+      // Parse the URL
+      const parsedUrl = parse(req.url, true);
+      const { pathname } = parsedUrl;
+      
+      // Health check endpoints for Railway
+      if (pathname === '/' && req.method === 'HEAD') {
+        console.log('Responding to HEAD / health check');
+        res.statusCode = 200;
+        res.end();
+        return;
+      }
+      
+      if (pathname === '/api/health') {
+        console.log('Responding to /api/health endpoint');
+        
         if (req.method === 'HEAD') {
           res.statusCode = 200;
+          res.setHeader('Content-Type', 'application/json');
           res.end();
           return;
         }
+        
+        // Let Next.js handle GET requests to /api/health
       }
-
-      // Parse the URL
-      const parsedUrl = parse(req.url, true);
       
       // Let Next.js handle the request
       await handle(req, res, parsedUrl);
@@ -39,5 +67,6 @@ app.prepare().then(() => {
   }).listen(port, (err) => {
     if (err) throw err;
     console.log(`> Ready on http://${hostname}:${port}`);
+    console.log(`> Environment: ${process.env.NODE_ENV || 'development'}`);
   });
 }); 

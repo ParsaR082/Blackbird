@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Disable static exports
+  // Use standalone output for deployment
   output: 'standalone',
   
   // Image optimization configuration
@@ -23,9 +23,6 @@ const nextConfig = {
     // External packages that should be bundled with the server code
     serverComponentsExternalPackages: ['mongodb', 'mongoose'],
     
-    // Explicitly disable static exports
-    disableStaticExport: true,
-    
     // Exclude problematic files from tracing
     outputFileTracingExcludes: {
       '*': [
@@ -38,6 +35,14 @@ const nextConfig = {
   
   // Optimize for production
   swcMinify: true,
+  
+  // Environment-specific configurations
+  env: {
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+    MONGODB_URI: process.env.MONGODB_URI,
+    CSRF_SECRET: process.env.CSRF_SECRET,
+  },
   
   // Ensure all API routes are treated as dynamic
   async headers() {
