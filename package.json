@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "safe-build": "node scripts/build-safe.js",
-    "start": "next start",
+    "start": "node server.js",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "setup-db": "node scripts/push-schema.js"
