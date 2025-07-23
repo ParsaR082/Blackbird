@@ -34,6 +34,23 @@ const startServer = async () => {
         const parsedUrl = parse(req.url, true);
         const { pathname } = parsedUrl;
         
+        // Health check endpoint for Railway
+        if (pathname === '/' && req.method === 'HEAD') {
+          // Respond with 200 OK for health checks
+          res.statusCode = 200;
+          res.end('OK');
+          return;
+        }
+        
+        // Explicit health check endpoint
+        if (pathname === '/health') {
+          // Respond with 200 OK for health checks
+          res.statusCode = 200;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ status: 'ok', timestamp: new Date().toISOString() }));
+          return;
+        }
+        
         // Special handling for API routes to ensure they're treated as dynamic
         if (pathname?.startsWith('/api/')) {
           // Add headers to ensure dynamic behavior

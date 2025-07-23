@@ -71,6 +71,12 @@ if (fs.existsSync('server.js')) {
   copyFileSync('server.js', '.next/standalone/');
 }
 
+// Copy .env file to standalone directory if it exists
+if (fs.existsSync('.env')) {
+  copyFileSync('.env', '.next/standalone/');
+  console.log('Copied .env file to standalone directory');
+}
+
 // Copy public directory to standalone
 if (fs.existsSync('public')) {
   copyDirSync('public', '.next/standalone/public');
