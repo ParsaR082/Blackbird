@@ -1,1 +1,0 @@
-web: cd .next/standalone && node server.js

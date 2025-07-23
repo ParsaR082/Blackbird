@@ -6,8 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "safe-build": "node scripts/build-safe.js",
-    "start": "node server.js",
-    "railway-deploy": "next build && node scripts/railway-deploy.js",
+    "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "setup-db": "node scripts/push-schema.js"
