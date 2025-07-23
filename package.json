@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/fix-dynamic-routes.js",
     "build": "next build",
     "start": "node server.js",
     "lint": "next lint",

@@ -40,7 +40,14 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith('/api/')) {
     // During build time, return a mock response for API routes
     if (isBuildTime) {
-      return NextResponse.next();
+      // This helps prevent static generation errors during build
+      return new Response(JSON.stringify({ status: 'ok' }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store, max-age=0',
+        },
+      });
     }
     
     // Add headers to ensure dynamic behavior
