@@ -1,3 +1,6 @@
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // app/admin/roadmaps/page.tsx
 'use client';
 import dynamic from 'next/dynamic';

@@ -23,6 +23,9 @@ const nextConfig = {
     // External packages that should be bundled with the server code
     serverComponentsExternalPackages: ['mongodb', 'mongoose'],
     
+    // Explicitly disable static exports
+    disableStaticExport: true,
+    
     // Exclude problematic files from tracing
     outputFileTracingExcludes: {
       '*': [
