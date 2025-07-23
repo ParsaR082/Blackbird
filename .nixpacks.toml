@@ -5,7 +5,7 @@ nixPkgs = ["nodejs_18"]
 cmds = ["npm ci"]
 
 [phases.build]
-cmds = ["npm run build"]
+cmds = ["node scripts/custom-build.js"]
 
 [start]
 cmd = "npm run start"

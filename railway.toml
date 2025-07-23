@@ -1,6 +1,6 @@
 [build]
 builder = "nixpacks"
-buildCommand = "npm run build"
+buildCommand = "node scripts/custom-build.js"
 
 [deploy]
 startCommand = "npm start"
