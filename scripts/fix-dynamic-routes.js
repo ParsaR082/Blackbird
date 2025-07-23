@@ -30,16 +30,31 @@ function processDirectory(directory) {
       // Read the file content
       let content = fs.readFileSync(fullPath, 'utf8');
       
-      // Check if the file already has the dynamic config
-      if (!content.includes('export const dynamic =')) {
-        // Add the dynamic config at the top of the file
-        content = dynamicConfig + content;
+      // Check if it's a client component
+      if (content.includes("'use client'") || content.includes('"use client"')) {
+        console.log(`Client component detected in API route: ${fullPath}`);
         
-        // Write the updated content back to the file
-        fs.writeFileSync(fullPath, content);
-        console.log(`✓ Added dynamic config to ${fullPath}`);
+        // For client components, we need to ensure 'use client' is at the top
+        // Remove any existing dynamic exports
+        let updatedContent = content;
+        
+        // Remove dynamic exports if they exist
+        updatedContent = updatedContent.replace(/export const dynamic\s*=\s*['"]force-dynamic['"];?(\r?\n|\r)?/g, '');
+        updatedContent = updatedContent.replace(/export const revalidate\s*=\s*0;?(\r?\n|\r)?/g, '');
+        updatedContent = updatedContent.replace(/export const fetchCache\s*=\s*['"]force-no-store['"];?(\r?\n|\r)?/g, '');
+        
+        // Now write the file without any dynamic exports
+        fs.writeFileSync(fullPath, updatedContent);
+        console.log(`✓ Removed dynamic exports from client component API route: ${fullPath}`);
       } else {
-        console.log(`✓ File already has dynamic config: ${fullPath}`);
+        // For server components, add at the top if not already present
+        if (!content.includes('export const dynamic =')) {
+          content = dynamicConfig + content;
+          fs.writeFileSync(fullPath, content);
+          console.log(`✓ Added dynamic config to API route: ${fullPath}`);
+        } else {
+          console.log(`✓ API route already has dynamic config: ${fullPath}`);
+        }
       }
     }
   }
