@@ -3,14 +3,14 @@ const nextConfig = {
   // Use standalone output for deployment
   output: 'standalone',
   
-  // Disable static exports completely - force all pages to be server-rendered
-  // This should fix the export errors
-  staticPageGenerationTimeout: 1000,
+  // Completely disable static exports
+  // This prevents Next.js from trying to generate static HTML files
+  staticPageGenerationTimeout: 1,
   
-  // Image optimization configuration
+  // Disable static image optimization
   images: {
+    unoptimized: true,
     domains: ['supabase.co', 'avatars.githubusercontent.com', 'lh3.googleusercontent.com'],
-    unoptimized: true, // Required for deployment without image optimization service
   },
   
   // Skip type checking and linting during build for faster builds
@@ -35,6 +35,12 @@ const nextConfig = {
         'node_modules/@esbuild/linux-x64',
       ],
     },
+    
+    // Disable static exports
+    isrMemoryCacheSize: 0,
+    
+    // Force server components
+    serverActions: true,
   },
   
   // Optimize for production
@@ -48,11 +54,11 @@ const nextConfig = {
     CSRF_SECRET: process.env.CSRF_SECRET,
   },
   
-  // Ensure all API routes are treated as dynamic
+  // Ensure all routes are treated as dynamic
   async headers() {
     return [
       {
-        source: '/api/:path*',
+        source: '/:path*',
         headers: [
           {
             key: 'Cache-Control',
