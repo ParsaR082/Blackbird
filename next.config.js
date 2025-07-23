@@ -23,9 +23,6 @@ const nextConfig = {
     // External packages that should be bundled with the server code
     serverComponentsExternalPackages: ['mongodb', 'mongoose'],
     
-    // Disable static export for API routes
-    disableStaticExport: true,
-    
     // Exclude problematic files from tracing
     outputFileTracingExcludes: {
       '*': [
