@@ -3,6 +3,10 @@ const nextConfig = {
   // Use standalone output for deployment
   output: 'standalone',
   
+  // Disable static exports completely - force all pages to be server-rendered
+  // This should fix the export errors
+  staticPageGenerationTimeout: 1000,
+  
   // Image optimization configuration
   images: {
     domains: ['supabase.co', 'avatars.githubusercontent.com', 'lh3.googleusercontent.com'],
