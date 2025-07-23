@@ -3,6 +3,18 @@ const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
 const path = require('path');
+const fs = require('fs');
+
+// Load environment variables from .env file if available
+try {
+  if (fs.existsSync(path.join(process.cwd(), '.env'))) {
+    console.log('Loading .env file from:', path.join(process.cwd(), '.env'));
+    require('dotenv').config();
+    console.log('Environment variables loaded from .env file');
+  }
+} catch (error) {
+  console.error('Error loading .env file:', error);
+}
 
 // Force production mode
 process.env.NODE_ENV = 'production';
@@ -23,20 +35,33 @@ const app = next({
 const handle = app.getRequestHandler();
 const port = process.env.PORT || 3000;
 
+// Log important environment variables (without sensitive values)
+console.log('Starting server with environment:');
+console.log(`- NODE_ENV: ${process.env.NODE_ENV}`);
+console.log(`- PORT: ${port}`);
+console.log(`- MONGODB_URI: ${process.env.MONGODB_URI ? 'set (hidden)' : 'not set'}`);
+console.log(`- NEXTAUTH_URL: ${process.env.NEXTAUTH_URL || 'not set'}`);
+console.log(`- Current directory: ${process.cwd()}`);
+
 // Improved error handling for the server
 const startServer = async () => {
   try {
+    console.log('Preparing Next.js app...');
     await app.prepare();
+    console.log('Next.js app prepared successfully');
     
     const server = createServer((req, res) => {
       try {
+        // Log all incoming requests for debugging
+        console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+        
         // Parse the URL
         const parsedUrl = parse(req.url, true);
         const { pathname } = parsedUrl;
         
         // Health check endpoint for Railway
         if (pathname === '/' && req.method === 'HEAD') {
-          // Respond with 200 OK for health checks
+          console.log('Responding to HEAD / health check');
           res.statusCode = 200;
           res.end('OK');
           return;
@@ -44,10 +69,17 @@ const startServer = async () => {
         
         // Explicit health check endpoint
         if (pathname === '/health') {
-          // Respond with 200 OK for health checks
+          console.log('Responding to /health endpoint');
           res.statusCode = 200;
           res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify({ status: 'ok', timestamp: new Date().toISOString() }));
+          res.end(JSON.stringify({ 
+            status: 'ok', 
+            timestamp: new Date().toISOString(),
+            env: {
+              NODE_ENV: process.env.NODE_ENV || 'not set',
+              PORT: port
+            }
+          }));
           return;
         }
         

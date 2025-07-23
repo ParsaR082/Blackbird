@@ -4,10 +4,10 @@ buildCommand = "npm run railway-deploy"
 
 [deploy]
 startCommand = "cd .next/standalone && node server.js"
-healthcheckPath = "/health"
-healthcheckTimeout = 10
+healthcheckPath = "/"
+healthcheckTimeout = 30
 restartPolicyType = "always"
-restartPolicyMaxRetries = 5
+restartPolicyMaxRetries = 10
 
 [nixpacks]
 nodejs-version = "20"
