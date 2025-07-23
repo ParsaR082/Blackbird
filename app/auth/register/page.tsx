@@ -1,7 +1,7 @@
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 'use client'
+
+
 
 import { motion } from 'framer-motion'
 import BackgroundNodes from '@/components/BackgroundNodes'
