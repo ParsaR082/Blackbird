@@ -8,7 +8,6 @@ const bcrypt = require('bcrypt');
 // Connection string - use environment variable if available
 require('dotenv').config();
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/blackbird-portal';
-console.log('Using MongoDB URI:', MONGODB_URI);
 
 // User schema
 const UserSchema = new mongoose.Schema({
@@ -26,7 +25,6 @@ async function testAdminLogin() {
   try {
     // Connect to MongoDB
     await mongoose.connect(MONGODB_URI);
-    console.log('Connected to MongoDB');
 
     // Get User model
     const User = mongoose.models.User || mongoose.model('User', UserSchema);
@@ -35,16 +33,8 @@ async function testAdminLogin() {
     const admin = await User.findOne({ email: 'admin@blackbird.com' });
     
     if (!admin) {
-      console.error('❌ Admin user not found!');
       return;
     }
-    
-    console.log('Admin user found:');
-    console.log('- Email:', admin.email);
-    console.log('- Full Name:', admin.fullName);
-    console.log('- Role:', admin.role);
-    console.log('- Verified:', admin.isVerified);
-    console.log('- Password set:', !!admin.password);
     
     // Test password
     const testPassword = 'admin123';
@@ -53,8 +43,6 @@ async function testAdminLogin() {
     if (admin.password) {
       passwordValid = await bcrypt.compare(testPassword, admin.password);
     }
-    
-    console.log('- Password "admin123" valid:', passwordValid);
     
     if (!passwordValid) {
       // Update password if invalid
@@ -68,14 +56,11 @@ async function testAdminLogin() {
         updatedAt: new Date()
       });
       
-      console.log('✅ Admin password updated to "admin123"');
     }
     
   } catch (error) {
-    console.error('❌ Error testing admin login:', error);
   } finally {
     await mongoose.disconnect();
-    console.log('Disconnected from MongoDB');
   }
 }
 

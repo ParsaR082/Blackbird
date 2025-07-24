@@ -8,7 +8,6 @@ const fs = require('fs');
 // Load environment variables from .env file if available
 try {
   require('dotenv').config();
-  console.log('Environment variables loaded from .env file');
 } catch (error) {
   console.log('Failed to load dotenv, continuing without it:', error.message);
 }
@@ -23,14 +22,6 @@ if (process.env.MONGODB_URI && !process.env.DATABASE_URL) {
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = process.env.HOSTNAME || 'localhost';
 const port = process.env.PORT || 3000;
-
-// Log important environment variables (without sensitive values)
-console.log('Starting server with environment:');
-console.log(`- NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
-console.log(`- PORT: ${port}`);
-console.log(`- MONGODB_URI: ${process.env.MONGODB_URI ? 'set (hidden)' : 'not set'}`);
-console.log(`- DATABASE_URL: ${process.env.DATABASE_URL ? 'set (hidden)' : 'not set'}`);
-console.log(`- NEXTAUTH_URL: ${process.env.NEXTAUTH_URL || 'not set'}`);
 
 // Initialize Next.js with custom configuration
 const app = next({ 
@@ -56,7 +47,6 @@ app.prepare().then(() => {
       
       // Health check endpoints for Railway
       if ((pathname === '/' && req.method === 'HEAD') || pathname === '/api/health') {
-        console.log(`Responding to health check: ${pathname}`);
         res.statusCode = 200;
         
         if (req.method === 'HEAD') {

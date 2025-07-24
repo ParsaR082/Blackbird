@@ -25,13 +25,6 @@ try {
   // Write the file back
   fs.writeFileSync(rateLimitFilePath, content);
   
-  console.log('✅ Rate limit settings updated successfully!');
-  console.log('Login limit increased to 20 requests per minute');
-  
-  // In a real application, we would also clear Redis or other persistent storage
-  // For this in-memory implementation, restarting the server will clear the rate limits
-  console.log('Please restart the server to apply changes');
-  
 } catch (error) {
-  console.error('❌ Error updating rate limit settings:', error);
+  // حذف تمام console.log و console.error غیرضروری
 } 

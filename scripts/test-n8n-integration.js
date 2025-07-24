@@ -54,20 +54,18 @@ const testPayloads = {
  */
 async function callN8nWebhook(payload) {
   try {
-    console.log(`\nTesting ${payload.action}...`);
     
     // Get webhook secret and URL
     const secret = process.env.BUBOT_WEBHOOK_SECRET;
     const webhookUrl = process.env.N8N_WEBHOOK_URL;
     
-    console.log(`Using webhook URL: ${webhookUrl}`);
     
     // Sign the payload
     const signature = signPayload(payload, secret);
-    console.log(`Generated signature: ${signature.substring(0, 10)}...`);
+    
     
     // Call n8n webhook
-    console.log('Sending request to n8n...');
+    
     const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: {
@@ -78,20 +76,17 @@ async function callN8nWebhook(payload) {
     });
     
     // Check response status
-    console.log(`Response status: ${response.status}`);
+    
     
     // Parse and return the response
     if (response.ok) {
       const data = await response.json();
-      console.log('Response data:', JSON.stringify(data, null, 2));
       return data;
     } else {
       const error = await response.text();
-      console.error(`Error response: ${error}`);
       return null;
     }
   } catch (error) {
-    console.error('Error calling n8n webhook:', error.message);
     return null;
   }
 }
@@ -101,8 +96,7 @@ async function callN8nWebhook(payload) {
  */
 async function runTests() {
   try {
-    console.log('=== n8n Integration Test ===');
-    console.log('Testing connection to n8n...');
+    
     
     // Test study plan
     await callN8nWebhook(testPayloads.studyPlan);
@@ -113,9 +107,7 @@ async function runTests() {
     // Test feedback
     await callN8nWebhook(testPayloads.feedback);
     
-    console.log('\nTests completed!');
   } catch (error) {
-    console.error('Test error:', error);
   }
 }
 

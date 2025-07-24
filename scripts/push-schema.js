@@ -7,8 +7,6 @@ require('dotenv').config({ path: '.env.local' });
 const mongodbUri = process.env.MONGODB_URI;
 
 if (!mongodbUri) {
-  console.error('❌ Missing MongoDB environment variables!');
-  console.error('Please set MONGODB_URI in your .env.local file');
   process.exit(1);
 }
 
@@ -16,30 +14,25 @@ async function setupDatabase() {
   const client = new MongoClient(mongodbUri);
   
   try {
-    console.log('🔗 Connecting to MongoDB...');
     await client.connect();
     
     const db = client.db();
-    console.log('✅ Connected to MongoDB successfully!');
 
     console.log('📦 Setting up collections and indexes...');
     
     // Create Users collection with indexes
     const usersCollection = db.collection('users');
     await usersCollection.createIndex({ email: 1 }, { unique: true });
-    console.log('✅ Users collection and email index created');
 
     // Create UserVerifications collection with indexes
     const verificationsCollection = db.collection('userverifications');
     await verificationsCollection.createIndex({ userId: 1 }, { unique: true });
     await verificationsCollection.createIndex({ token: 1 }, { unique: true });
-    console.log('✅ UserVerifications collection and indexes created');
 
     // Create Sessions collection with indexes
     const sessionsCollection = db.collection('sessions');
     await sessionsCollection.createIndex({ userId: 1 });
     await sessionsCollection.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-    console.log('✅ Sessions collection and indexes created');
 
     // Create default admin user
     console.log('👤 Creating default admin user...');
