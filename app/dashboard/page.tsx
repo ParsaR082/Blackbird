@@ -10,11 +10,12 @@ import { useAuth } from '@/contexts/auth-context'
 import { useTheme } from '@/contexts/theme-context'
 import { Loader2 } from 'lucide-react'
 import BackgroundNodes from '@/components/BackgroundNodes'
-import { DashboardHeader } from './components/DashboardHeader'
-import { StatsCards } from './components/StatsCards'
-import { QuickAccess } from './components/QuickAccess'
-import { RecentActivity } from './components/RecentActivity'
-import { CurrentProjects } from './components/CurrentProjects'
+import dynamic from 'next/dynamic'
+const DashboardHeader = dynamic(() => import('./components/DashboardHeader').then(m => m.DashboardHeader), { ssr: false })
+const StatsCards = dynamic(() => import('./components/StatsCards').then(m => m.StatsCards), { ssr: false })
+const QuickAccess = dynamic(() => import('./components/QuickAccess').then(m => m.QuickAccess), { ssr: false })
+const RecentActivity = dynamic(() => import('./components/RecentActivity').then(m => m.RecentActivity), { ssr: false })
+const CurrentProjects = dynamic(() => import('./components/CurrentProjects').then(m => m.CurrentProjects), { ssr: false })
 
 const containerVariants = {
   hidden: { opacity: 0 },

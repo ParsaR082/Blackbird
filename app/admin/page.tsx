@@ -43,21 +43,22 @@ import {
 import { motion } from 'framer-motion'
 import BackgroundNodes from '@/components/BackgroundNodes'
 import Link from 'next/link'
-import { UserProfileModal } from './components/UserProfileModal'
-import { ContentEditor } from './components/ContentEditor'
-import { NotificationSystem } from './components/NotificationSystem'
-import { SystemSettings } from './components/SystemSettings'
-import { AdvancedAnalytics } from './components/AdvancedAnalytics'
-import { WorkflowAutomation } from './components/WorkflowAutomation'
-import { AdvancedUserManagement } from './components/AdvancedUserManagement'
-import { SystemMonitoring } from './components/SystemMonitoring'
-import { IntegrationDashboard } from './components/IntegrationDashboard'
-import { DataOptimization } from './components/DataOptimization'
-import { SecurityCenter } from './components/SecurityCenter'
-import AuditLogViewer from './components/AuditLogViewer'
-import { TwoFactorAuth } from './components/TwoFactorAuth'
-import RoadmapsManager from './components/RoadmapsManager';
-import { AssistantManager } from './components/AssistantManager';
+import dynamic from 'next/dynamic'
+const UserProfileModal = dynamic(() => import('./components/UserProfileModal').then(m => m.UserProfileModal), { ssr: false })
+const ContentEditor = dynamic(() => import('./components/ContentEditor').then(m => m.ContentEditor), { ssr: false })
+const NotificationSystem = dynamic(() => import('./components/NotificationSystem').then(m => m.NotificationSystem), { ssr: false })
+const SystemSettings = dynamic(() => import('./components/SystemSettings').then(m => m.SystemSettings), { ssr: false })
+const AdvancedAnalytics = dynamic(() => import('./components/AdvancedAnalytics').then(m => m.AdvancedAnalytics), { ssr: false })
+const WorkflowAutomation = dynamic(() => import('./components/WorkflowAutomation').then(m => m.WorkflowAutomation), { ssr: false })
+const AdvancedUserManagement = dynamic(() => import('./components/AdvancedUserManagement').then(m => m.AdvancedUserManagement), { ssr: false })
+const SystemMonitoring = dynamic(() => import('./components/SystemMonitoring').then(m => m.SystemMonitoring), { ssr: false })
+const IntegrationDashboard = dynamic(() => import('./components/IntegrationDashboard').then(m => m.IntegrationDashboard), { ssr: false })
+const DataOptimization = dynamic(() => import('./components/DataOptimization').then(m => m.DataOptimization), { ssr: false })
+const SecurityCenter = dynamic(() => import('./components/SecurityCenter').then(m => m.SecurityCenter), { ssr: false })
+const AuditLogViewer = dynamic(() => import('./components/AuditLogViewer'), { ssr: false })
+const TwoFactorAuth = dynamic(() => import('./components/TwoFactorAuth').then(m => m.TwoFactorAuth), { ssr: false })
+const RoadmapsManager = dynamic(() => import('./components/RoadmapsManager'), { ssr: false })
+const AssistantManager = dynamic(() => import('./components/AssistantManager').then(m => m.AssistantManager), { ssr: false })
 
 interface User {
   id: string
