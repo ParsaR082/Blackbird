@@ -11,6 +11,14 @@ import {
   getTodayString,
   isUserLocked
 } from '@/lib/models/assistant-usage'
+import { 
+  callStudyPlanAdvanced,
+  callStudySuggestions,
+  callFeedbackSend,
+  StudyPlanAdvPayload,
+  StudySuggestionsPayload,
+  FeedbackSendPayload
+} from '@/lib/n8n-service'
 
 // Content filtering function
 function isContentAppropriate(message: string): { appropriate: boolean; reason?: string } {
@@ -37,6 +45,36 @@ function isContentAppropriate(message: string): { appropriate: boolean; reason?:
   return { appropriate: true }
 }
 
+// Parse n8n action from LLM response
+function parseActionFromMessage(message: string): { 
+  isAction: boolean; 
+  action?: string; 
+  payload?: any;
+} {
+  try {
+    // Try to extract JSON from the message using regex
+    const match = message.match(/\{.*"action".*\}/s);
+    if (!match) return { isAction: false };
+    
+    // Parse the JSON
+    const data = JSON.parse(match[0]);
+    
+    // Check if it's a valid action
+    if (data.action && data.payload) {
+      return {
+        isAction: true,
+        action: data.action,
+        payload: data.payload
+      };
+    }
+    
+    return { isAction: false };
+  } catch (error) {
+    console.log('Failed to parse action:', error);
+    return { isAction: false };
+  }
+}
+
 // Generate AI response using OpenRouter API with DeepSeek R1
 async function generateAIResponse(message: string, actionType?: string): Promise<{ response: string; tokensUsed: number }> {
   const API_KEY = process.env.GEMINI_API_KEY
@@ -50,7 +88,13 @@ async function generateAIResponse(message: string, actionType?: string): Promise
       throw new Error('API_KEY not configured')
     }
 
-    let systemPrompt = `You are Blackbird Assistant, an AI academic companion for university students. You provide helpful, educational support while maintaining a professional, friendly tone. Always stay focused on academic topics and refuse non-educational requests politely.`
+    let systemPrompt = `You are Blackbird Assistant, an AI academic companion for university students. You provide helpful, educational support while maintaining a professional, friendly tone. Always stay focused on academic topics and refuse non-educational requests politely.
+
+If a DB/calendar/teacher-inbox action is needed, respond ONLY with:
+
+{ "action": "<one_of: study_plan_adv | study_suggestions_simple | feedback_send>", "payload": { ... } }
+
+Otherwise, answer normally.`
 
     if (actionType === 'daily-routine' || actionType === 'study-schedule-planning') {
       systemPrompt += ` The user wants help creating a daily study routine. Ask for their courses, study preferences, available time, challenging subjects, and deadlines. Provide personalized study schedules.`
@@ -118,60 +162,32 @@ async function generateAIResponse(message: string, actionType?: string): Promise
       throw new Error('Invalid response from OpenRouter API')
     }
 
-  } catch (error) {
-    console.error('OpenRouter API Error:', error)
+  } catch (error: any) {
+    console.error('OpenRouter API error:', error.message)
     
-    // Enhanced fallback responses based on action type
-    let fallbackResponse = ''
-
+    // Provide a reasonable fallback response
+    let fallbackResponse = `I'm sorry, but I'm having trouble connecting to my knowledge system at the moment. Please try again in a few minutes.`
+    
     if (actionType === 'daily-routine' || actionType === 'study-schedule-planning') {
-      fallbackResponse = `Hello! I'm Blackbird Assistant, and I'd be happy to help you create a personalized daily study routine.
+      fallbackResponse = `I'd be happy to help you create a study routine! To get started, please tell me:
 
-To create an effective study plan, I'll need some information from you:
+1. What courses are you currently taking?
+2. When are your free time slots during the week?
+3. Do you have any upcoming exams or deadlines?
+4. Are there any subjects you find particularly challenging?
+5. Do you prefer studying in short bursts or longer sessions?
 
-**📚 Course Information:**
-- List your current courses
-- Identify your most challenging subjects
-- Note any upcoming exams or deadlines
-
-**⏰ Time Preferences:**
-- When do you feel most productive? (morning, afternoon, evening)
-- How many hours can you dedicate to studying daily?
-- What's your current class schedule?
-
-**🎯 Study Goals:**
-- What are your target grades?
-- Are there specific skills you want to improve?
-- Any particular study methods you prefer?
-
-Once you share this information, I can help you create a balanced study routine that maximizes your learning while ensuring adequate rest time!
-
-What would you like to start with?`
+Once you provide this information, I can help you create a personalized study schedule.`
     } else if (actionType === 'study-suggestions' || actionType === 'course-recommendation') {
-      fallbackResponse = `I'm Blackbird Assistant, ready to provide personalized study suggestions and course recommendations!
+      fallbackResponse = `I'd be happy to provide study suggestions and course recommendations! To give you the most relevant advice, could you please tell me:
 
-**📖 For Better Study Strategies:**
-- Tell me about your current major or field of study
-- Which subjects are you finding most challenging?
-- What's your preferred learning style? (visual, auditory, hands-on)
+1. What is your major or field of study?
+2. Which courses have you already completed?
+3. What are your academic goals?
+4. Are there any subjects you struggle with or particularly enjoy?
+5. What timeframe are you planning for?
 
-**🎓 For Course Planning:**
-- What courses have you already completed?
-- What are your career goals?
-- Are you planning for next semester or further ahead?
-
-**📊 Academic Goals:**
-- What's your target GPA?
-- Any specific skills or knowledge areas you want to focus on?
-- Timeline for graduation?
-
-I can help you with:
-✅ Optimal course sequencing
-✅ Study technique recommendations
-✅ Time management strategies
-✅ Academic goal setting
-
-What specific area would you like guidance on?`
+With this information, I can provide personalized recommendations for your academic journey.`
     } else if (actionType === 'feedback-analyzer' || actionType === 'feedback-enhancement') {
       fallbackResponse = `Hello! I'm Blackbird Assistant, your academic feedback specialist.
 
@@ -198,119 +214,35 @@ I'll help you craft professional, constructive feedback for your courses and ins
 
 What feedback would you like to work on today? Just share your initial thoughts and I'll help you refine them!`
     } else if (actionType === 'result-predictor' || actionType === 'performance-analysis') {
-      fallbackResponse = `I'm Blackbird Assistant, ready to help analyze your academic performance and predict future outcomes!
+      fallbackResponse = `I'd be happy to help analyze your academic performance and provide predictions! To give you meaningful insights, please share:
 
-**📊 Performance Analysis Framework:**
+1. Your current GPA or recent grades
+2. Your attendance record
+3. Your study habits (hours per week, methods used)
+4. Any upcoming assessments or challenges
+5. Your target goals or desired outcomes
 
-**Current Academic Data I'll need:**
-- Your current GPA and target GPA
-- Individual course grades and trends
-- Assignment completion rates
-- Quiz/exam performance patterns
-- Attendance records
-
-**Study Habits Assessment:**
-- Weekly study hours per subject
-- Study methods you currently use
-- Time management effectiveness
-- Learning environment preferences
-
-**External Factors:**
-- Work commitments
-- Extracurricular activities
-- Personal challenges
-- Support systems available
-
-**📈 What I'll help you predict:**
-- Semester GPA projections
-- Course-specific performance forecasts
-- Risk assessment for challenging subjects
-- Improvement timeline estimates
-- Study strategy effectiveness
-
-**🎯 Personalized Recommendations:**
-- Study schedule optimizations
-- Learning technique adjustments
-- Time management improvements
-- Resource allocation strategies
-
-Share your current academic situation and I'll provide detailed performance insights and predictions!`
+Once you provide this information, I can help you assess your academic trajectory and suggest strategies for improvement.`
     } else if (actionType === 'academic-goal-setting') {
-      fallbackResponse = `Hello! I'm Blackbird Assistant, here to help you set and achieve meaningful academic goals using the SMART framework!
+      fallbackResponse = `I'd be happy to help you set effective academic goals! Let's create SMART goals together:
 
-**🎯 SMART Academic Goal Setting:**
+- **Specific**: What exactly do you want to achieve?
+- **Measurable**: How will you track progress?
+- **Achievable**: Is it realistic given your circumstances?
+- **Relevant**: Does it align with your larger academic plans?
+- **Time-bound**: What's your timeline?
 
-**Specific** - Clear, well-defined objectives
-**Measurable** - Quantifiable progress indicators  
-**Achievable** - Realistic given your resources
-**Relevant** - Aligned with your career aspirations
-**Time-bound** - Clear deadlines and milestones
-
-**📚 Types of Goals We Can Set:**
-- GPA targets (semester/annual)
-- Course performance objectives
-- Study habit improvements
-- Skill development milestones
-- Graduate school preparation
-- Career readiness benchmarks
-
-**📋 Goal Planning Process:**
-1. Assess your current academic standing
-2. Define your long-term career vision
-3. Break down major goals into smaller steps
-4. Create accountability measures
-5. Establish reward systems
-6. Plan for obstacle management
-
-**💡 Example Goal Areas:**
-- "Achieve 3.5 GPA this semester"
-- "Master calculus concepts by midterm"
-- "Develop research writing skills"
-- "Build professional network"
-- "Prepare for graduate entrance exams"
-
-What academic goals would you like to work on? Let's start with your biggest priority!`
+What academic areas would you like to focus on? Some examples might be improving your GPA, mastering specific subjects, developing study skills, or preparing for future opportunities.`
     } else if (actionType === 'time-management') {
-      fallbackResponse = `I'm Blackbird Assistant, your time management specialist for academic success!
+      fallbackResponse = `I'd be happy to help you improve your time management for academic success! Let's explore some strategies:
 
-**⏰ Academic Time Management Strategies:**
+1. **Assessment**: How are you currently managing your study time?
+2. **Challenges**: What specific time management issues are you facing?
+3. **Schedule**: What does your typical week look like?
+4. **Priorities**: Which courses or tasks need the most attention?
+5. **Learning Style**: Do you prefer studying in long blocks or short sessions?
 
-**📅 Planning Techniques:**
-- Weekly study schedule creation
-- Daily prioritization methods
-- Long-term project planning
-- Exam preparation timelines
-- Assignment deadline management
-
-**🎯 Productivity Methods:**
-- Pomodoro Technique for focused study
-- Time blocking for different subjects
-- Energy management (peak performance hours)
-- Distraction elimination strategies
-- Break optimization
-
-**📊 Assessment Tools:**
-- Time audit (where your hours actually go)
-- Study efficiency evaluation
-- Procrastination pattern identification
-- Energy level tracking
-- Goal progress monitoring
-
-**🔧 Practical Solutions:**
-- Digital calendar organization
-- Study session structuring
-- Multitasking vs. deep focus
-- Social time integration
-- Self-care scheduling
-
-**📈 Advanced Techniques:**
-- Batch processing similar tasks
-- Transition time optimization
-- Deadline buffer management
-- Priority matrix application
-- Habit stacking for consistency
-
-What time management challenges are you facing? Let's create a personalized system that works for your schedule and learning style!`
+Once you share this information, I can provide personalized time management strategies tailored to your academic needs.`
     } else {
       fallbackResponse = `Hello! I'm Blackbird Assistant, your dedicated academic companion for university success!
 
@@ -432,29 +364,113 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate AI response
-    const { response, tokensUsed } = await generateAIResponse(message, actionType)
+    const { response: aiResponse, tokensUsed } = await generateAIResponse(message, actionType)
+
+    // Check if the response is an action command
+    const parsedAction = parseActionFromMessage(aiResponse)
+    let finalResponse = aiResponse
+    let finalTokensUsed = tokensUsed
+    let n8nResult: any = null
+
+    // If it's an action, process it with n8n
+    if (parsedAction.isAction) {
+      console.log('Detected n8n action:', parsedAction.action);
+      
+      try {
+        switch(parsedAction.action) {
+          case 'study_plan_adv': {
+            n8nResult = await callStudyPlanAdvanced(
+              user.id, 
+              parsedAction.payload as StudyPlanAdvPayload
+            );
+            finalResponse = `I've created your study plan! ${n8nResult.summary}`;
+            finalTokensUsed += 50; // Token usage for the n8n call
+            break;
+          }
+          
+          case 'study_suggestions_simple': {
+            n8nResult = await callStudySuggestions(
+              user.id, 
+              parsedAction.payload as StudySuggestionsPayload
+            );
+            
+            const suggestionsList = n8nResult.suggestions
+              .map((s: any) => `- **${s.course}**: ${s.reason}`)
+              .join('\n');
+              
+            finalResponse = `Here are my course suggestions based on your profile:\n\n${suggestionsList}\n\n${n8nResult.note || ''}`;
+            finalTokensUsed += 50;
+            break;
+          }
+          
+          case 'feedback_send': {
+            n8nResult = await callFeedbackSend(
+              user.id, 
+              parsedAction.payload as FeedbackSendPayload
+            );
+            
+            finalResponse = "I've processed and delivered your feedback to the instructor. It has been enhanced for clarity and professionalism while preserving your original points and sentiment. The instructor will receive this in their feedback inbox.";
+            finalTokensUsed += 50;
+            break;
+          }
+          
+          default:
+            console.log('Unknown action type:', parsedAction.action);
+            // Keep the original response if action type is unknown
+        }
+      } catch (error) {
+        console.error('Error processing n8n action:', error);
+        
+        // Log the error to the error tracking system
+        try {
+          fetch('/api/logging/error', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              source: 'n8n-integration',
+              error: error instanceof Error ? error.message : 'Unknown error',
+              context: { action: parsedAction.action, userId: user.id }
+            })
+          }).catch(logError => console.error('Error logging failed:', logError));
+        } catch (logError) {
+          console.error('Failed to log error:', logError);
+        }
+        
+        // Provide specific fallback messages for different actions
+        if (parsedAction.action === 'study_plan_adv') {
+          finalResponse = "I apologize, but I couldn't create your study plan at the moment. Our scheduling service is temporarily unavailable. Please try again later, or I can help you manually plan your study schedule now.";
+        } else if (parsedAction.action === 'study_suggestions_simple') {
+          finalResponse = "I'm sorry, but I couldn't retrieve personalized course suggestions at the moment. Our recommendation service is temporarily unavailable. However, I can still discuss your academic goals and interests to provide general advice.";
+        } else if (parsedAction.action === 'feedback_send') {
+          finalResponse = "I apologize, but I couldn't process your feedback at this time. Our feedback system is temporarily unavailable. You can try again later, or submit your feedback directly through the university portal.";
+        } else {
+          finalResponse = "I apologize, but I encountered an issue while processing your request. Please try again later or contact support if the problem persists.";
+        }
+      }
+    }
 
     // Update usage
-    usage.tokensUsed += tokensUsed
-    usage.interactionCount += 1
-    usage.lastInteraction = new Date()
+    usage.tokensUsed += finalTokensUsed;
+    usage.interactionCount += 1;
+    usage.lastInteraction = new Date();
 
     // Check if limit exceeded after this interaction
     if (usage.tokensUsed >= 20000) {
-      usage.isLocked = true
-      usage.lockExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+      usage.isLocked = true;
+      usage.lockExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
     }
 
-    await usage.save()
+    await usage.save();
 
     return NextResponse.json({
-      response,
+      response: finalResponse,
       tokensUsed: usage.tokensUsed,
       remainingTokens: Math.max(0, 20000 - usage.tokensUsed),
       interactionCount: usage.interactionCount,
       isLocked: usage.isLocked,
-      lockExpiresAt: usage.lockExpiresAt
-    })
+      lockExpiresAt: usage.lockExpiresAt,
+      n8nResult: n8nResult // Include the n8n result for debugging or UI purposes
+    });
 
   } catch (error) {
     console.error('Assistant chat error:', error)

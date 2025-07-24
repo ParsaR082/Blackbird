@@ -9,7 +9,9 @@
     "start": "node server.js",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "setup-db": "node scripts/push-schema.js"
+    "setup-db": "node scripts/push-schema.js",
+    "test": "jest",
+    "test-n8n": "node scripts/test-n8n-integration.js"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",

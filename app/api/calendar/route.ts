@@ -47,6 +47,12 @@ const calendarEventSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
+  },
+  origin: {
+    type: String,
+    default: 'manual',
+    trim: true,
+    maxlength: 50
   }
 })
 

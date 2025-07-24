@@ -167,6 +167,27 @@ Blackbird Portal/
 - Content moderation
 - Analytics and reporting
 
+## n8n Integration
+
+The Blackbird Portal now includes integration with n8n for advanced AI-powered academic features. These features leverage the DeepSeek R1 large language model through n8n workflows:
+
+1. **Advanced Study Planner**: Creates personalized study plans based on free time slots and exam dates, adding events to the user's calendar
+2. **Study Suggestions**: Provides course recommendations based on a student's goals and interests
+3. **Smart Feedback Analyzer**: Refines and professionally formats feedback before sending it to instructors
+
+For detailed documentation on the n8n integration, see `docs/N8N_INTEGRATION.md`.
+
+To test the integration, use:
+```
+npm run test-n8n
+```
+
+### Environment Variables
+
+For the n8n integration to work, the following environment variables must be set:
+- `BUBOT_WEBHOOK_SECRET`: Shared secret for HMAC signature verification
+- `N8N_WEBHOOK_URL`: URL of the n8n webhook endpoint
+
 ##  Deployment
 
 ### Vercel (Recommended)

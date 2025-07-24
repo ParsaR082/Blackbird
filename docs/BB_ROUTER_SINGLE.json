@@ -1,0 +1,769 @@
+{
+  "name": "BB_ROUTER_SINGLE",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bubot-router",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get request body and headers\nconst body = $input.item.json;\nconst headers = $input.item.headers;\n\n// Get signature from headers\nconst signature = headers['x-bubot-sig'];\n\nif (!signature) {\n  return {\n    error: true,\n    message: 'Missing signature header',\n    statusCode: 401\n  };\n}\n\n// Get webhook secret from environment\nconst secret = $env.BUBOT_WEBHOOK_SECRET;\n\nif (!secret) {\n  return {\n    error: true,\n    message: 'Webhook secret not configured',\n    statusCode: 500\n  };\n}\n\n// Function to create HMAC\nfunction signPayload(payload, secret) {\n  const crypto = require('crypto');\n  const hmac = crypto.createHmac('sha256', secret);\n  const stringPayload = typeof payload === 'string' ? payload : JSON.stringify(payload);\n  hmac.update(stringPayload);\n  return hmac.digest('hex');\n}\n\n// Calculate expected signature\nconst expectedSignature = signPayload(body, secret);\n\n// Compare signatures using timing-safe comparison to prevent timing attacks\nfunction timingSafeEqual(a, b) {\n  const crypto = require('crypto');\n  try {\n    return crypto.timingSafeEqual(\n      Buffer.from(a, 'hex'),\n      Buffer.from(b, 'hex')\n    );\n  } catch (error) {\n    return false;\n  }\n}\n\nif (!timingSafeEqual(signature, expectedSignature)) {\n  return {\n    error: true,\n    message: 'Invalid signature',\n    statusCode: 401\n  };\n}\n\n// Verify required fields\nif (!body.action || !body.userId || !body.payload) {\n  return {\n    error: true,\n    message: 'Missing required fields: action, userId, payload',\n    statusCode: 400\n  };\n}\n\n// Validate action type\nconst validActions = ['study_plan_adv', 'study_suggestions_simple', 'feedback_send'];\nif (!validActions.includes(body.action)) {\n  return {\n    error: true,\n    message: `Invalid action type: ${body.action}`,\n    statusCode: 400\n  };\n}\n\nreturn {\n  error: false,\n  body\n};"
+      },
+      "id": "verify-signature",
+      "name": "Verify Signature",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.error }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "error-check",
+      "name": "Error Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {error: $json.message} }}",
+        "options": {
+          "responseCode": "={{ $json.statusCode }}"
+        }
+      },
+      "id": "error-response",
+      "name": "Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        850,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.action }}",
+              "value2": "study_plan_adv"
+            }
+          ]
+        }
+      },
+      "id": "action-router",
+      "name": "Action Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        850,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.action }}",
+              "value2": "study_suggestions_simple"
+            }
+          ]
+        }
+      },
+      "id": "suggestions-check",
+      "name": "Suggestions Check",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        1050,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Study Plan Processing\nconst { userId, payload } = $input.item.json.body;\n\n// Validate payload\nif (!payload.freeTime || !Array.isArray(payload.freeTime) || payload.freeTime.length === 0) {\n  return { error: true, message: 'Missing or invalid freeTime in payload' };\n}\n\nif (!payload.examDates || !Array.isArray(payload.examDates)) {\n  payload.examDates = [];\n}\n\n// Process free time slots and exam dates\nconst freeTimeSlots = payload.freeTime.map(slot => {\n  return {\n    day: slot.day,\n    from: slot.from,\n    to: slot.to\n  };\n});\n\nconst examDates = payload.examDates.map(exam => {\n  return {\n    courseCode: exam.courseCode,\n    date: exam.date\n  };\n});\n\n// Generate a study plan\nconst studyPlan = {\n  userId,\n  freeTimeSlots,\n  examDates,\n  consentDeleteOld: payload.consentDeleteOld === true,\n};\n\nreturn studyPlan;"
+      },
+      "id": "process-study-plan",
+      "name": "Process Study Plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1050,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Study Suggestions Processing\nconst { userId, payload } = $input.item.json.body;\n\n// Validate payload\nif (!payload.courses || !Array.isArray(payload.courses) || payload.courses.length === 0) {\n  return { error: true, message: 'Missing or invalid courses in payload' };\n}\n\nif (!payload.goals || typeof payload.goals !== 'string') {\n  payload.goals = 'improve academic performance';\n}\n\nreturn {\n  userId,\n  courses: payload.courses,\n  goals: payload.goals\n};"
+      },
+      "id": "process-suggestions",
+      "name": "Process Suggestions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1250,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Feedback Processing\nconst { userId, payload } = $input.item.json.body;\n\n// Validate payload\nif (!payload.teacherId || typeof payload.teacherId !== 'string') {\n  return { error: true, message: 'Missing or invalid teacherId in payload' };\n}\n\nif (!payload.courseId || typeof payload.courseId !== 'string') {\n  return { error: true, message: 'Missing or invalid courseId in payload' };\n}\n\nif (!payload.feedback || typeof payload.feedback !== 'string') {\n  return { error: true, message: 'Missing or invalid feedback in payload' };\n}\n\n// Return validated data\nreturn {\n  userId,\n  teacherId: payload.teacherId,\n  courseId: payload.courseId,\n  rawText: payload.feedback\n};"
+      },
+      "id": "process-feedback",
+      "name": "Process Feedback",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1450,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.action }}",
+              "value2": "feedback_send"
+            }
+          ]
+        }
+      },
+      "id": "feedback-check",
+      "name": "Feedback Check",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        1250,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.DEEPEEK_URL }}",
+        "options": {},
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "DeepSeek_R1",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "deepseek-r1-llama-70b"
+            },
+            {
+              "name": "messages",
+              "value": "[{\"role\":\"system\",\"content\":\"You are an academic feedback processor. Rewrite the given student feedback to be more professional, constructive, and well-structured while preserving the original sentiment and core points. Focus on making the feedback helpful for the instructor.\"},{\"role\":\"user\",\"content\":\"{{ $json.rawText }}\"}]"
+            },
+            {
+              "name": "temperature",
+              "value": 0.3
+            },
+            {
+              "name": "max_tokens",
+              "value": 2000
+            }
+          ]
+        }
+      },
+      "id": "process-with-llm",
+      "name": "Process with LLM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1650,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "mongoDbCredential",
+        "operation": "insertOne",
+        "collection": "teacher_inbox",
+        "options": {},
+        "document": "={\n  \"teacherId\": \"{{ $('Process Feedback').json.teacherId }}\",\n  \"fromUserId\": \"{{ $('Process Feedback').json.userId }}\",\n  \"courseId\": \"{{ $('Process Feedback').json.courseId }}\",\n  \"text\": \"{{ $json.content }}\",\n  \"rawText\": \"{{ $('Process Feedback').json.rawText }}\",\n  \"status\": \"unread\",\n  \"createdAt\": new Date(),\n  \"updatedAt\": new Date()\n}"
+      },
+      "id": "save-feedback",
+      "name": "Save Feedback",
+      "type": "n8n-nodes-base.mongodb",
+      "typeVersion": 1,
+      "position": [
+        1850,
+        250
+      ],
+      "credentials": {
+        "mongoDb": {
+          "id": "Mongo_Blackbird",
+          "name": "MongoDB Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract response from DeepSeek\nconst response = $input.item.json;\n\n// Extract the content\nlet content = \"Feedback processed successfully.\";\n\nif (response.choices && response.choices[0] && response.choices[0].message) {\n  content = response.choices[0].message.content;\n} else if (response.content) {\n  content = response.content;\n}\n\nreturn { content };"
+      },
+      "id": "extract-feedback",
+      "name": "Extract Feedback",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1850,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "mongoDbCredential",
+        "operation": "find",
+        "collection": "events",
+        "options": {}
+      },
+      "id": "get-courses",
+      "name": "Get Courses",
+      "type": "n8n-nodes-base.mongodb",
+      "typeVersion": 1,
+      "position": [
+        1250,
+        100
+      ],
+      "credentials": {
+        "mongoDb": {
+          "id": "Mongo_Blackbird",
+          "name": "MongoDB Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "mongoDbCredential",
+        "operation": "find",
+        "collection": "calendarevents",
+        "options": {},
+        "filter": "={\n  \"userId\": \"{{ $('Process Study Plan').json.userId }}\",\n  \"origin\": \"bubot\"\n}"
+      },
+      "id": "get-old-events",
+      "name": "Get Old Events",
+      "type": "n8n-nodes-base.mongodb",
+      "typeVersion": 1,
+      "position": [
+        1250,
+        0
+      ],
+      "credentials": {
+        "mongoDb": {
+          "id": "Mongo_Blackbird",
+          "name": "MongoDB Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.consentDeleteOld }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "consent-check",
+      "name": "Consent Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1450,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "mongoDbCredential",
+        "operation": "deleteMany",
+        "collection": "calendarevents",
+        "options": {},
+        "filter": "={\n  \"userId\": \"{{ $('Process Study Plan').json.userId }}\",\n  \"origin\": \"bubot\"\n}"
+      },
+      "id": "delete-old-events",
+      "name": "Delete Old Events",
+      "type": "n8n-nodes-base.mongodb",
+      "typeVersion": 1,
+      "position": [
+        1650,
+        0
+      ],
+      "credentials": {
+        "mongoDb": {
+          "id": "Mongo_Blackbird",
+          "name": "MongoDB Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.DEEPEEK_URL }}",
+        "options": {},
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "DeepSeek_R1",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "deepseek-r1-llama-70b"
+            },
+            {
+              "name": "messages",
+              "value": "[{\"role\":\"system\",\"content\":\"You are a study plan generator for university students. Based on the student's free time slots, generate a well-structured daily study plan. Create one event for each study session in the following JSON format: [{\\\"title\\\": \\\"Study Math\\\", \\\"description\\\": \\\"Focus on chapter 5 problems\\\", \\\"date\\\": \\\"2023-08-15\\\", \\\"time\\\": \\\"18:00\\\", \\\"duration\\\": 2, \\\"category\\\": \\\"study\\\"}]. Make sure the study times fit within the provided free time slots. Also provide a summary of the study plan in plain text.\"},{\"role\":\"user\",\"content\":\"My free time: {{ JSON.stringify($json.freeTimeSlots) }}. My exam dates: {{ JSON.stringify($json.examDates) }}\"}]"
+            },
+            {
+              "name": "temperature",
+              "value": 0.4
+            },
+            {
+              "name": "max_tokens",
+              "value": 2000
+            }
+          ]
+        }
+      },
+      "id": "generate-plan",
+      "name": "Generate Plan",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1650,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract response from DeepSeek\nconst response = $input.item.json;\n\n// Extract content from DeepSeek response\nlet content = \"\";\nif (response.choices && response.choices[0] && response.choices[0].message) {\n  content = response.choices[0].message.content;\n} else if (response.content) {\n  content = response.content;\n}\n\n// Extract the events array and summary\nlet studyEvents = [];\nlet summary = \"Generated study plan based on your free time slots.\";\n\ntry {\n  // Try to extract JSON array from the content\n  const jsonMatch = content.match(/\\[\\s*\\{.*\\}\\s*\\]/s);\n  \n  if (jsonMatch) {\n    studyEvents = JSON.parse(jsonMatch[0]);\n    \n    // Get summary (text before or after the JSON)\n    const parts = content.split(jsonMatch[0]);\n    if (parts.length > 1) {\n      summary = (parts[0] + parts[1]).trim();\n      // Clean up summary (remove markdown, etc.)\n      summary = summary.replace(/^```json|```$/g, '').trim();\n    }\n  } else {\n    // Fallback: Generate a simple study plan\n    console.log(\"Could not extract JSON events, generating fallback plan\");\n    \n    // Get days from free time slots\n    const days = [...new Set($('Process Study Plan').json.freeTimeSlots.map(slot => slot.day))];\n    \n    // Generate one event per day\n    studyEvents = days.map(day => {\n      const slot = $('Process Study Plan').json.freeTimeSlots.find(s => s.day === day);\n      return {\n        title: `Study Session (${day})`,\n        description: \"General study time\",\n        date: getDateForDay(day),\n        time: slot ? slot.from : \"18:00\",\n        duration: slot ? getHoursDifference(slot.from, slot.to) : 2,\n        category: \"study\"\n      };\n    });\n    \n    summary = \"Fallback study plan generated based on your free time slots.\";\n  }\n} catch (error) {\n  console.log(\"Error parsing study events:\", error);\n}\n\n// Helper function to get date for day of week\nfunction getDateForDay(day) {\n  const days = [\"sun\", \"mon\", \"tue\", \"wed\", \"thu\", \"fri\", \"sat\"];\n  const today = new Date();\n  const todayIndex = today.getDay();\n  const targetIndex = days.findIndex(d => d.toLowerCase().startsWith(day.toLowerCase()));\n  \n  if (targetIndex === -1) return today.toISOString().split('T')[0];\n  \n  const daysToAdd = (targetIndex - todayIndex + 7) % 7;\n  const targetDate = new Date(today);\n  targetDate.setDate(today.getDate() + daysToAdd);\n  \n  return targetDate.toISOString().split('T')[0];\n}\n\n// Helper function to calculate hours between times\nfunction getHoursDifference(from, to) {\n  const [fromHours, fromMinutes] = from.split(':').map(Number);\n  const [toHours, toMinutes] = to.split(':').map(Number);\n  \n  const fromTotal = fromHours + (fromMinutes / 60);\n  const toTotal = toHours + (toMinutes / 60);\n  \n  return Math.max(1, Math.min(4, Math.round((toTotal - fromTotal) * 2) / 2));\n}\n\nreturn {\n  events: studyEvents,\n  summary,\n  userId: $('Process Study Plan').json.userId\n};"
+      },
+      "id": "extract-plan",
+      "name": "Extract Plan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1850,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "mongoDbCredential",
+        "operation": "insertMany",
+        "collection": "calendarevents",
+        "options": {},
+        "documents": "={{ $json.events.map(event => ({\n  userId: $json.userId,\n  title: event.title,\n  description: event.description || '',\n  date: new Date(event.date),\n  time: event.time || '18:00',\n  duration: event.duration || 1,\n  category: 'study',\n  color: '#4CAF50',\n  reminder: true,\n  reminderTime: 15,\n  origin: 'bubot',\n  createdAt: new Date()\n})) }}"
+      },
+      "id": "create-events",
+      "name": "Create Events",
+      "type": "n8n-nodes-base.mongodb",
+      "typeVersion": 1,
+      "position": [
+        2050,
+        -100
+      ],
+      "credentials": {
+        "mongoDb": {
+          "id": "Mongo_Blackbird",
+          "name": "MongoDB Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.DEEPEEK_URL }}",
+        "options": {},
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "DeepSeek_R1",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "deepseek-r1-llama-70b"
+            },
+            {
+              "name": "messages",
+              "value": "[{\"role\":\"system\",\"content\":\"You are a course recommendation assistant. Based on the student's provided courses and goals, suggest relevant courses they should consider taking. Return your response in JSON format: {\\\"suggestions\\\": [{\\\"course\\\": \\\"Course name\\\", \\\"reason\\\": \\\"Why this is a good fit\\\"}], \\\"note\\\": \\\"Brief additional advice\\\"}.\"},{\"role\":\"user\",\"content\":\"My courses: {{ $json.courses.join(', ') }}. My goals: {{ $json.goals }}\"}]"
+            },
+            {
+              "name": "temperature",
+              "value": 0.5
+            },
+            {
+              "name": "max_tokens",
+              "value": 1500
+            }
+          ]
+        }
+      },
+      "id": "generate-suggestions",
+      "name": "Generate Suggestions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1450,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract response from DeepSeek\nconst response = $input.item.json;\n\n// Extract content\nlet content = \"\";\nif (response.choices && response.choices[0] && response.choices[0].message) {\n  content = response.choices[0].message.content;\n} else if (response.content) {\n  content = response.content;\n}\n\n// Parse suggestions\nlet suggestions = [];\nlet note = \"Based on your current courses and goals, these are some recommendations to consider.\";\n\ntry {\n  // Try to parse JSON from the response\n  const jsonMatch = content.match(/\\{[\\s\\S]*\\}/m);\n  \n  if (jsonMatch) {\n    const data = JSON.parse(jsonMatch[0]);\n    suggestions = data.suggestions || [];\n    note = data.note || note;\n  } else {\n    // Fallback: Extract suggestions using regex pattern matching\n    const courseSuggestions = content.match(/\\*\\*([^*]+)\\*\\*:\\s*([^\\n]+)/g) || [];\n    \n    courseSuggestions.forEach((match) => {\n      const parts = match.match(/\\*\\*([^*]+)\\*\\*:\\s*([^\\n]+)/);\n      if (parts && parts.length >= 3) {\n        suggestions.push({\n          course: parts[1].trim(),\n          reason: parts[2].trim()\n        });\n      }\n    });\n    \n    // Extract any additional note\n    const noteMatch = content.match(/Note:\\s*([^\\n]+)/) || \n                     content.match(/Additional advice:\\s*([^\\n]+)/);\n    if (noteMatch && noteMatch.length >= 2) {\n      note = noteMatch[1].trim();\n    }\n  }\n} catch (error) {\n  console.log(\"Error parsing suggestions:\", error);\n  // Provide fallback suggestions\n  suggestions = [\n    { \n      course: \"Research Methods\", \n      reason: \"Strengthens analytical skills applicable across disciplines\"\n    },\n    {\n      course: \"Advanced Writing\",\n      reason: \"Improves communication skills essential for academic success\"\n    }\n  ];\n}\n\nreturn {\n  suggestions,\n  note\n};"
+      },
+      "id": "extract-suggestions",
+      "name": "Extract Suggestions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1650,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"ok\", \n  \"inserted\": {{ $json.insertedCount }},\n  \"summary\": \"{{ $('Extract Plan').json.summary }}\"\n}",
+        "options": {}
+      },
+      "id": "study-plan-response",
+      "name": "Study Plan Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        2250,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"suggestions\": {{ $json.suggestions }},\n  \"note\": \"{{ $json.note }}\"\n}",
+        "options": {}
+      },
+      "id": "suggestions-response",
+      "name": "Suggestions Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1850,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"ok\",\n  \"sent\": true,\n  \"feedbackId\": \"{{ $json.insertedId }}\"\n}",
+        "options": {}
+      },
+      "id": "feedback-response",
+      "name": "Feedback Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        2050,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"error\": true,\n  \"message\": \"Unknown or unsupported action\"\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "unknown-action-response",
+      "name": "Unknown Action Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1450,
+        550
+      ]
+    }
+  ],
+  "connections": {
+    "webhook-trigger": {
+      "main": [
+        [
+          {
+            "node": "verify-signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "verify-signature": {
+      "main": [
+        [
+          {
+            "node": "error-check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "error-check": {
+      "main": [
+        [
+          {
+            "node": "error-response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "action-router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "action-router": {
+      "main": [
+        [
+          {
+            "node": "process-study-plan",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "suggestions-check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "suggestions-check": {
+      "main": [
+        [
+          {
+            "node": "process-suggestions",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "feedback-check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "process-study-plan": {
+      "main": [
+        [
+          {
+            "node": "consent-check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "process-suggestions": {
+      "main": [
+        [
+          {
+            "node": "generate-suggestions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "process-feedback": {
+      "main": [
+        [
+          {
+            "node": "process-with-llm",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "feedback-check": {
+      "main": [
+        [
+          {
+            "node": "process-feedback",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "unknown-action-response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "process-with-llm": {
+      "main": [
+        [
+          {
+            "node": "extract-feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extract-feedback": {
+      "main": [
+        [
+          {
+            "node": "save-feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "save-feedback": {
+      "main": [
+        [
+          {
+            "node": "feedback-response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "consent-check": {
+      "main": [
+        [
+          {
+            "node": "delete-old-events",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "generate-plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "delete-old-events": {
+      "main": [
+        [
+          {
+            "node": "generate-plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "generate-plan": {
+      "main": [
+        [
+          {
+            "node": "extract-plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extract-plan": {
+      "main": [
+        [
+          {
+            "node": "create-events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create-events": {
+      "main": [
+        [
+          {
+            "node": "study-plan-response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "generate-suggestions": {
+      "main": [
+        [
+          {
+            "node": "extract-suggestions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extract-suggestions": {
+      "main": [
+        [
+          {
+            "node": "suggestions-response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "staticData": {},
+  "tags": [],
+  "pinData": {},
+  "versionId": "f3af7ae7-3df1-4e61-bf48-6715bcdb81a3",
+  "triggerCount": 0,
+  "createdAt": "2024-07-30T15:45:00.000Z",
+  "updatedAt": "2024-07-30T15:45:00.000Z"
+} 

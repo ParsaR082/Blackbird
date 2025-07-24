@@ -1,0 +1,137 @@
+{
+  "name": "BB_ERROR_LOGGER",
+  "nodes": [
+    {
+      "parameters": {
+        "functionCode": "// Error handler for other workflows\nreturn $input.all();"
+      },
+      "id": "error-trigger",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process error information\nconst data = $input.all()[0];\n\nlet errorDetails = {\n  workflow: data.workflow?.name || 'Unknown workflow',\n  timestamp: new Date().toISOString(),\n  error: {}\n};\n\nif (data.error) {\n  errorDetails.error = {\n    message: data.error.message,\n    stack: data.error.stack,\n    code: data.error.code\n  };\n}\n\nif (data.execution) {\n  errorDetails.execution = {\n    id: data.execution.id,\n    url: data.execution.url,\n    retryOf: data.execution.retryOf,\n    startedAt: data.execution.startedAt\n  };\n}\n\n// Include node and request info if available\nif (data.node) {\n  errorDetails.node = {\n    name: data.node.name,\n    type: data.node.type\n  };\n}\n\nif (data.workflow) {\n  errorDetails.workflow = {\n    name: data.workflow.name,\n    id: data.workflow.id,\n    active: data.workflow.active\n  };\n}\n\nreturn errorDetails;"
+      },
+      "id": "process-error",
+      "name": "Process Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendFile",
+        "filePath": "./logs/bubot-errors.log",
+        "options": {
+          "content": "={{ JSON.stringify($json, null, 2) + '\\n--------------\\n' }}"
+        }
+      },
+      "id": "log-to-file",
+      "name": "Log to File",
+      "type": "n8n-nodes-base.fileSystem",
+      "typeVersion": 1,
+      "position": [
+        650,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "botToken": "={{ $env.TELEGRAM_BOT_TOKEN }}",
+        "chatId": "={{ $env.TELEGRAM_ADMIN_CHAT_ID }}",
+        "text": "=🚨 *ERROR IN n8n WORKFLOW*\n\n*Workflow:* {{ $json.workflow.name || 'Unknown' }}\n*Time:* {{ new Date($json.timestamp).toLocaleString() }}\n*Error:* {{ $json.error.message || 'Unknown error' }}\n\n{{ $json.error.stack ? ('Stack: ' + $json.error.stack.split('\\n')[0]) : '' }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "send-telegram-alert",
+      "name": "Send Telegram Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        650,
+        400
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "Telegram_Blackbird",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "mongoDbCredential",
+        "operation": "insertOne",
+        "collection": "system_errors",
+        "options": {},
+        "document": "={{ $json }}"
+      },
+      "id": "log-to-db",
+      "name": "Log to DB",
+      "type": "n8n-nodes-base.mongodb",
+      "typeVersion": 1,
+      "position": [
+        850,
+        300
+      ],
+      "credentials": {
+        "mongoDb": {
+          "id": "Mongo_Blackbird",
+          "name": "MongoDB Account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "error-trigger": {
+      "main": [
+        [
+          {
+            "node": "process-error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "process-error": {
+      "main": [
+        [
+          {
+            "node": "log-to-file",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "send-telegram-alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "log-to-db",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "staticData": {},
+  "tags": [],
+  "pinData": {},
+  "versionId": "d2e4a972-5c41-4a83-9d7c-be8c9f3a1b2c",
+  "triggerCount": 0,
+  "createdAt": "2024-07-30T15:55:00.000Z",
+  "updatedAt": "2024-07-30T15:55:00.000Z"
+} 

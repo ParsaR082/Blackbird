@@ -1,0 +1,593 @@
+{
+  "name": "BB_TELEGRAM_ROUTER",
+  "nodes": [
+    {
+      "parameters": {
+        "pollUpdates": true,
+        "additionalFields": {}
+      },
+      "id": "telegram-trigger",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "Telegram_Blackbird",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process incoming message\nconst message = $input.item.json;\n\n// Ignore if not a message or callback_query\nif (!message.message && !message.callback_query) {\n  return { skip: true };\n}\n\n// Get user ID\nlet userId, chatId, messageText, messageType;\n\nif (message.message) {\n  userId = message.message.from.id;\n  chatId = message.message.chat.id;\n  messageText = message.message.text || '';\n  messageType = 'message';\n} else if (message.callback_query) {\n  userId = message.callback_query.from.id;\n  chatId = message.callback_query.message.chat.id;\n  messageText = message.callback_query.data || '';\n  messageType = 'callback';\n}\n\n// Default response\nlet responseText = 'Hello! I am Blackbird Assistant. I can help you with your academic needs.';\n\n// Process the message text to determine the action\nlet action = null;\nlet payload = {};\n\nif (messageType === 'callback') {\n  // Handle callback queries (button clicks)\n  try {\n    const data = JSON.parse(messageText);\n    action = data.action;\n    payload = data.payload || {};\n  } catch (error) {\n    // If not JSON, use the text as is\n    if (messageText === 'study_plan') {\n      action = 'study_plan_adv';\n    } else if (messageText === 'study_suggestions') {\n      action = 'study_suggestions_simple';\n    } else if (messageText === 'feedback') {\n      action = 'feedback_send';\n    }\n  }\n} else {\n  // Handle text commands\n  if (messageText.startsWith('/study_plan')) {\n    action = 'study_plan_adv';\n    // Try to parse parameters\n    const params = messageText.replace('/study_plan', '').trim();\n    if (params) {\n      try {\n        payload = JSON.parse(params);\n      } catch (error) {\n        // Invalid JSON, use default payload\n      }\n    }\n  } else if (messageText.startsWith('/suggestions')) {\n    action = 'study_suggestions_simple';\n    // Try to extract courses\n    const params = messageText.replace('/suggestions', '').trim();\n    if (params) {\n      const courses = params.split(',').map(c => c.trim()).filter(c => c);\n      if (courses.length > 0) {\n        payload = { courses, goals: 'improve academic performance' };\n      }\n    }\n  } else if (messageText.startsWith('/feedback')) {\n    action = 'feedback_send';\n    // Extract feedback text\n    const feedback = messageText.replace('/feedback', '').trim();\n    if (feedback) {\n      payload = { \n        teacherId: '507f1f77bcf86cd799439011', // Default teacher ID\n        courseId: '507f1f77bcf86cd799439012', // Default course ID\n        feedback\n      };\n    }\n  } else if (messageText.startsWith('/link')) {\n    // Link Telegram account to Blackbird account\n    action = 'link_account';\n    const token = messageText.replace('/link', '').trim();\n    if (token) {\n      payload = { token, telegramId: userId.toString(), chatId: chatId.toString() };\n    } else {\n      responseText = `To link your Blackbird account, please provide the link token from your Blackbird account.\\n\\nExample: /link abc123def456`;\n    }\n  } else if (messageText.startsWith('/help')) {\n    // Show help message with available commands\n    responseText = `🎓 *Blackbird Assistant Help*\\n\\nCommands:\\n\\n/study_plan - Create a study plan\\n/suggestions - Get course suggestions\\n/feedback - Send feedback to instructor\\n/link [token] - Link to your Blackbird account\\n/help - Show this help message\\n\\nOr use the buttons below to interact with me.`;\n  }\n}\n\n// Return the processed data\nreturn {\n  userId, \n  chatId, \n  messageText,\n  messageType,\n  action,\n  payload,\n  responseText,\n  skip: false\n};"
+      },
+      "id": "process-message",
+      "name": "Process Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.skip }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "skip-check",
+      "name": "Skip Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.responseText }}",
+        "additionalFields": {
+          "parse_mode": "Markdown",
+          "reply_markup": "{\n  \"inline_keyboard\": [\n    [\n      {\n        \"text\": \"📅 Create Study Plan\",\n        \"callback_data\": \"study_plan\"\n      }\n    ],\n    [\n      {\n        \"text\": \"📚 Course Suggestions\",\n        \"callback_data\": \"study_suggestions\"\n      }\n    ],\n    [\n      {\n        \"text\": \"✏️ Send Feedback\",\n        \"callback_data\": \"feedback\"\n      }\n    ]\n  ]\n}"
+        }
+      },
+      "id": "send-response",
+      "name": "Send Response",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        850,
+        200
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "Telegram_Blackbird",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.action }}",
+              "value2": "study_plan_adv"
+            }
+          ]
+        }
+      },
+      "id": "action-router",
+      "name": "Action Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        850,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.action }}",
+              "value2": "study_suggestions_simple"
+            }
+          ]
+        }
+      },
+      "id": "suggestions-check",
+      "name": "Suggestions Check",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        1050,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.action }}",
+              "value2": "feedback_send"
+            }
+          ]
+        }
+      },
+      "id": "feedback-check",
+      "name": "Feedback Check",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        1250,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.action }}",
+              "value2": "link_account"
+            }
+          ]
+        }
+      },
+      "id": "link-check",
+      "name": "Link Check",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        1450,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "Let's create a study plan! Please share your free time slots in the following format:\n\n/study_plan {\"freeTime\":[{\"day\":\"Mon\",\"from\":\"18:00\",\"to\":\"21:00\"}],\"examDates\":[{\"courseCode\":\"CS101\",\"date\":\"2023-08-01\"}],\"consentDeleteOld\":true}\n\nOr answer these questions:\n\n1. What days are you free to study?\n2. What hours on those days?\n3. When are your exams?",
+        "additionalFields": {}
+      },
+      "id": "study-plan-prompt",
+      "name": "Study Plan Prompt",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1050,
+        300
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "Telegram_Blackbird",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "I'd be happy to provide course suggestions! Please list the courses you're interested in, separated by commas:\n\n/suggestions CS101, MATH202, ENG101\n\nOr tell me about your academic goals.",
+        "additionalFields": {}
+      },
+      "id": "suggestions-prompt",
+      "name": "Suggestions Prompt",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1250,
+        300
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "Telegram_Blackbird",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "I'd be happy to help process your feedback. Please share your thoughts about the course or instructor in this format:\n\n/feedback Your feedback text here\n\nI'll help make it professional and constructive.",
+        "additionalFields": {}
+      },
+      "id": "feedback-prompt",
+      "name": "Feedback Prompt",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1450,
+        300
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "Telegram_Blackbird",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.API_BASE_URL }}/api/telegram/link/verify",
+        "authentication": "none",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "={{ $json.payload.token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "verify-link-token",
+      "name": "Verify Link Token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1650,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.BUBOT_WEBHOOK_URL }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpDigestAuth",
+        "sendQuery": false,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "action",
+              "value": "={{ $json.action }}"
+            },
+            {
+              "name": "userId",
+              "value": "={{ $json.userId }}"
+            },
+            {
+              "name": "payload",
+              "value": "={{ $json.payload }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "call-webhook",
+      "name": "Call Webhook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1650,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Sign the payload using HMAC\nconst crypto = require('crypto');\n\nconst payload = {\n  action: $input.item.json.action,\n  userId: $input.item.json.userId.toString(),\n  payload: $input.item.json.payload\n};\n\nconst secret = $env.BUBOT_WEBHOOK_SECRET;\n\nif (!secret) {\n  throw new Error('BUBOT_WEBHOOK_SECRET not configured');\n}\n\nconst stringPayload = JSON.stringify(payload);\nconst hmac = crypto.createHmac('sha256', secret);\nhmac.update(stringPayload);\nconst signature = hmac.digest('hex');\n\nreturn {\n  ...payload,\n  signature,\n  chatId: $input.item.json.chatId\n};"
+      },
+      "id": "sign-payload",
+      "name": "Sign Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1450,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "Processing your request... Please wait.",
+        "additionalFields": {}
+      },
+      "id": "processing-notification",
+      "name": "Processing Notification",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1650,
+        300
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "Telegram_Blackbird",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process the response from the webhook\nconst response = $input.item.json;\nconst chatId = $('Sign Payload').json.chatId;\n\nlet message = 'Something went wrong. Please try again later.';\n\n// Different response formats based on action type\nif (response.status === 'ok') {\n  // Study plan response\n  if (response.summary) {\n    message = `✅ *Study Plan Created*\\n\\n${response.summary}\\n\\n${response.inserted} study sessions added to your calendar.`;\n  }\n  // Study suggestions response\n  else if (response.suggestions) {\n    const suggestions = response.suggestions.map((s, i) => \n      `${i+1}. *${s.course}*: ${s.reason}`\n    ).join('\\n\\n');\n    \n    message = `📚 *Course Suggestions*\\n\\n${suggestions}\\n\\n${response.note || ''}`;\n  }\n  // Feedback response\n  else if (response.sent) {\n    message = '✅ Your feedback has been processed and delivered to the instructor. Thank you for your contribution!';\n  }\n} else if (response.error) {\n  message = `❌ Error: ${response.message || response.error}`;\n}\n\nreturn { \n  chatId,\n  message \n};"
+      },
+      "id": "format-response",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1850,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process link token verification response\nconst response = $input.item.json;\nconst chatId = $('Sign Payload').json.chatId;\nlet message = '';\n\nif (response.success) {\n  // Successfully linked account\n  message = \"✅ Your Telegram account has been successfully linked to your Blackbird account! You can now use Blackbird Assistant features through Telegram.\";\n  \n  // If this was a temporary linkage\n  if (response.isTemporary) {\n    message += \"\\n\\nThis is the first time you've linked this Telegram account. Your user ID has been associated with your Blackbird account.\";\n  }\n} else {\n  // Failed to link account\n  message = \"❌ Failed to link your account. The token may be invalid or expired. Please generate a new link token from the Blackbird portal.\";\n}\n\nreturn {\n  chatId,\n  message\n};"
+      },
+      "id": "format-link-response",
+      "name": "Format Link Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1850,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.message }}",
+        "additionalFields": {
+          "parse_mode": "Markdown",
+          "disable_web_page_preview": true
+        }
+      },
+      "id": "send-result",
+      "name": "Send Result",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        2050,
+        400
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "Telegram_Blackbird",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.API_BASE_URL }}/api/telegram/link/update",
+        "authentication": "none",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "token",
+              "value": "={{ $json.payload.token }}"
+            },
+            {
+              "name": "telegramId",
+              "value": "={{ $json.payload.telegramId }}"
+            },
+            {
+              "name": "chatId",
+              "value": "={{ $json.payload.chatId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "update-telegram-link",
+      "name": "Update Telegram Link",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1850,
+        600
+      ]
+    }
+  ],
+  "connections": {
+    "telegram-trigger": {
+      "main": [
+        [
+          {
+            "node": "process-message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "process-message": {
+      "main": [
+        [
+          {
+            "node": "skip-check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "skip-check": {
+      "main": [
+        [],
+        [
+          {
+            "node": "send-response",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "action-router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "action-router": {
+      "main": [
+        [
+          {
+            "node": "study-plan-prompt",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "sign-payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "suggestions-check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "suggestions-check": {
+      "main": [
+        [
+          {
+            "node": "suggestions-prompt",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "sign-payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "feedback-check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "feedback-check": {
+      "main": [
+        [
+          {
+            "node": "feedback-prompt",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "sign-payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "link-check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "link-check": {
+      "main": [
+        [
+          {
+            "node": "verify-link-token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "sign-payload": {
+      "main": [
+        [
+          {
+            "node": "processing-notification",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "call-webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "call-webhook": {
+      "main": [
+        [
+          {
+            "node": "format-response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "format-response": {
+      "main": [
+        [
+          {
+            "node": "send-result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "verify-link-token": {
+      "main": [
+        [
+          {
+            "node": "format-link-response",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "update-telegram-link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "format-link-response": {
+      "main": [
+        [
+          {
+            "node": "send-result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "staticData": {},
+  "tags": [],
+  "pinData": {},
+  "versionId": "a1b2c3d4-e5f6-4a83-9d7c-123456789abc",
+  "triggerCount": 0,
+  "createdAt": "2024-07-30T16:00:00.000Z",
+  "updatedAt": "2024-07-30T16:00:00.000Z"
+} 

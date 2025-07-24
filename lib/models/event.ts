@@ -19,6 +19,7 @@ export interface IEvent {
   imageUrl?: string
   createdBy: string // Admin who created it
   isActive: boolean
+  origin?: string // Source of the event (manual, bubot, etc.)
   createdAt: Date
   updatedAt: Date
 }
@@ -103,7 +104,7 @@ const EventSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ['workshops', 'hackathons', 'conferences', 'networking']
+    enum: ['workshops', 'hackathons', 'conferences', 'networking', 'study']
   },
   maxAttendees: {
     type: Number,
@@ -147,6 +148,12 @@ const EventSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
+  },
+  origin: {
+    type: String,
+    default: 'manual',
+    trim: true,
+    maxlength: 50
   }
 }, {
   timestamps: true
