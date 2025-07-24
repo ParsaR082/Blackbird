@@ -8,18 +8,7 @@ const path = require('path');
 
 console.log('Running custom build script that skips the export step...');
 
-// First, run all our fix scripts
-try {
-  console.log('Running fix scripts...');
-  execSync('node scripts/disable-all-static-exports.js', { stdio: 'inherit' });
-  execSync('node scripts/fix-dynamic-routes.js', { stdio: 'inherit' });
-  execSync('node scripts/fix-dynamic-pages.js', { stdio: 'inherit' });
-  execSync('node scripts/fix-client-exports.js', { stdio: 'inherit' });
-  execSync('node scripts/fix-error-pages.js', { stdio: 'inherit' });
-  console.log('✓ Fix scripts completed');
-} catch (error) {
-  console.warn('Warning: Some fix scripts failed, but continuing build:', error.message);
-}
+// حذف اجرای اسکریپت‌های حذف‌شده
 
 // Run Next.js build with minimal flags
 try {
