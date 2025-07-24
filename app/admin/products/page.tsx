@@ -14,7 +14,6 @@ import ProductsFilters from './components/ProductsFilters'
 import ProductsList from './components/ProductsList'
 import ProductDialog from './components/ProductDialog'
 import { Product } from './types'
-import { mockProducts } from './mock-data'
 import { toast } from 'sonner'
 
 export default function AdminProductsPage() {
@@ -62,7 +61,7 @@ export default function AdminProductsPage() {
       console.error('Error fetching products:', err)
       // Fallback to mock data for development
       console.log('Using mock data as fallback')
-      setProducts(mockProducts)
+      setProducts([]) // Changed from mockProducts to []
       setLoading(false)
     }
   }
