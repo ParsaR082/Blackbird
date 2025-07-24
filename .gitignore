@@ -42,3 +42,5 @@ next-env.d.ts
 
 # Large build artifacts
 *.pack
+*.dll.node
+/generated/prisma/
