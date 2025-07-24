@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcrypt'
-import { v4 as uuidv4 } from 'uuid'
 import { connectToDatabase } from '@/lib/mongodb'
 import { validateCsrfToken } from '@/lib/csrf'
 import { loginLimiter } from '@/lib/rate-limit'
@@ -158,7 +157,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate session token
-    const sessionToken = uuidv4()
+    const sessionToken = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2);
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 7) // Token expires in 7 days
     
