@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useTheme } from '@/contexts/theme-context'
 import { useAuth } from '@/contexts/auth-context'
+import { useRouter } from 'next/navigation';
 import { 
   Gamepad2,
   Trophy,
@@ -69,6 +70,7 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
   const [isRandomMatchLoading, setIsRandomMatchLoading] = useState(false)
   const { theme } = useTheme()
   const { user } = useAuth()
+  const router = useRouter();
 
   // Pagination configuration
   const gamesPerPage = 3
@@ -577,7 +579,7 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
                     }`}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => window.location.href = '/games/create'}
+                    onClick={() => router.push('/admin/games/add')}
                     aria-label="Add a Game"
                   >
                     <Star className={`w-5 h-5 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} aria-hidden="true" />

@@ -217,7 +217,6 @@ model Game {
   title         String
   description   String
   link          String
-  imageUrl      String
   category      String
   color         String
   isMultiplayer Boolean  @default(false)
