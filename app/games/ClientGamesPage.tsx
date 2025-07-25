@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useTheme } from '@/contexts/theme-context'
 import { useAuth } from '@/contexts/auth-context'
 import { useRouter } from 'next/navigation';
-import { 
+import {
   Gamepad2,
   Trophy,
   Zap,
@@ -27,6 +27,10 @@ import {
   Users,
   Dices
 } from 'lucide-react'
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 
 const BackgroundNodes = lazy(() => import('@/components/BackgroundNodes'))
 
@@ -63,14 +67,32 @@ interface ClientGamesPageProps {
   dbGames: FeaturedGame[]
 }
 
+const GameSchema = z.object({
+  title: z.string().min(3, 'Title must be at least 3 characters'),
+  description: z.string().min(10, 'Description must be at least 10 characters'),
+  link: z.string().url('Must be a valid URL'),
+  category: z.string().min(3),
+  color: z.string().min(3),
+  isMultiplayer: z.boolean().optional(),
+});
+
 export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
   const [isMobile, setIsMobile] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [isRandomMatchLoading, setIsRandomMatchLoading] = useState(false)
+  const [showAddGame, setShowAddGame] = useState(false);
+  const [categories, setCategories] = useState<string[]>([]);
   const { theme } = useTheme()
   const { user } = useAuth()
   const router = useRouter();
+
+  useEffect(() => {
+    fetch('/api/admin/game-categories')
+      .then(res => res.json())
+      .then(data => setCategories(data))
+      .catch(() => setCategories([]));
+  }, []);
 
   // Pagination configuration
   const gamesPerPage = 3
@@ -112,7 +134,7 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
 
   // Memoized filtered games
   const filteredGames = useMemo(() => {
-    return selectedCategory 
+    return selectedCategory
       ? featuredGames.filter(game => game.category === selectedCategory)
       : featuredGames
   }, [featuredGames, selectedCategory])
@@ -188,21 +210,21 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
           {filteredGames.length === 0 ? '. No games found.' : `, ${filteredGames.length} games found.`}
         </div>
         {/* Header */}
-        <motion.div 
+        <motion.div
           className="text-center mb-12"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
         >
           <div className="flex items-center justify-center gap-4 mb-4">
-            <motion.div 
+            <motion.div
               className="p-4 rounded-full border backdrop-blur-sm transition-colors duration-300"
               style={{
                 backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
                 borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
               }}
-              whileHover={{ 
-                scale: 1.1, 
+              whileHover={{
+                scale: 1.1,
                 boxShadow: theme === 'light' ? '0 0 25px rgba(0,0,0,0.2)' : '0 0 25px rgba(255,255,255,0.4)'
               }}
               transition={{ duration: 0.3 }}
@@ -219,7 +241,7 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
         </motion.div>
 
         {/* Game Categories */}
-        <motion.div 
+        <motion.div
           className="max-w-4xl mx-auto mb-12"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -255,20 +277,19 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
                   transition={{ duration: 0.3 }}
                 />
                 {/* Category Card */}
-                <div className={`relative p-6 border rounded-lg backdrop-blur-sm h-32 flex flex-col items-center justify-center text-center transition-all duration-300 bg-gradient-to-br ${category.color} ${
-                  selectedCategory === category.label 
-                    ? 'shadow-lg' 
+                <div className={`relative p-6 border rounded-lg backdrop-blur-sm h-32 flex flex-col items-center justify-center text-center transition-all duration-300 bg-gradient-to-br ${category.color} ${selectedCategory === category.label
+                    ? 'shadow-lg'
                     : ''
-                }`}
-                style={{
-                  backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
-                  borderColor: selectedCategory === category.label 
-                    ? (theme === 'light' ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)')
-                    : (theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'),
-                  boxShadow: selectedCategory === category.label 
-                    ? (theme === 'light' ? '0 0 20px rgba(0,0,0,0.2)' : '0 0 20px rgba(255,255,255,0.3)')
-                    : undefined
-                }}>
+                  }`}
+                  style={{
+                    backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
+                    borderColor: selectedCategory === category.label
+                      ? (theme === 'light' ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)')
+                      : (theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'),
+                    boxShadow: selectedCategory === category.label
+                      ? (theme === 'light' ? '0 0 20px rgba(0,0,0,0.2)' : '0 0 20px rgba(255,255,255,0.3)')
+                      : undefined
+                  }}>
                   <category.icon className={`w-8 h-8 mb-2 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} />
                   <h3 className={`text-sm font-medium mb-1 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>{category.label}</h3>
                   <p className={`text-xs transition-colors duration-300 ${theme === 'light' ? 'text-gray-600' : 'text-white/60'}`}>{getCategoryCount(category.label)} games</p>
@@ -281,7 +302,7 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
                     opacity: selectedCategory === category.label ? 0.6 : undefined
                   }}
                   animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ 
+                  transition={{
                     duration: 2,
                     repeat: Infinity,
                     ease: "easeInOut"
@@ -295,7 +316,7 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
         {/* Main Gaming Interface */}
         <div className="max-w-6xl mx-auto flex flex-col gap-8">
           {/* Featured Games */}
-          <motion.div 
+          <motion.div
             className="lg:col-span-2"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -356,7 +377,7 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.4, delay: index * 0.1 }}
-                            whileHover={{ 
+                            whileHover={{
                               scale: 1.02,
                               backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
                               borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.4)' : 'rgba(255, 255, 255, 0.4)'
@@ -366,11 +387,10 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
                               <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-2">
                                   <h3 className={`text-base font-medium transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>{game.title}</h3>
-                                  <span className={`px-2 py-1 border rounded-full text-xs transition-colors duration-300 ${
-                                    theme === 'light' 
-                                      ? 'bg-black/10 border-black/20 text-gray-700' 
+                                  <span className={`px-2 py-1 border rounded-full text-xs transition-colors duration-300 ${theme === 'light'
+                                      ? 'bg-black/10 border-black/20 text-gray-700'
                                       : 'bg-white/10 border-white/20 text-white/70'
-                                  }`}>
+                                    }`}>
                                     {game.category}
                                   </span>
                                 </div>
@@ -393,11 +413,10 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
                                   }}
                                 >
                                   <motion.button
-                                    className={`px-6 py-3 border rounded-lg transition-all duration-300 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                                      theme === 'light' 
-                                        ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60 focus:ring-black/50 focus:ring-offset-white' 
+                                    className={`px-6 py-3 border rounded-lg transition-all duration-300 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 ${theme === 'light'
+                                        ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60 focus:ring-black/50 focus:ring-offset-white'
                                         : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60 focus:ring-white/50 focus:ring-offset-black'
-                                    }`}
+                                      }`}
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     tabIndex={-1}
@@ -409,11 +428,10 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
                               ) : (
                                 <Link href={game.link} className="ml-4" prefetch={true}>
                                   <motion.button
-                                    className={`px-6 py-3 border rounded-lg transition-all duration-300 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                                      theme === 'light' 
-                                        ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60 focus:ring-black/50 focus:ring-offset-white' 
+                                    className={`px-6 py-3 border rounded-lg transition-all duration-300 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 ${theme === 'light'
+                                        ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60 focus:ring-black/50 focus:ring-offset-white'
                                         : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60 focus:ring-white/50 focus:ring-offset-black'
-                                    }`}
+                                      }`}
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     aria-label={`Play ${game.title}`}
@@ -443,15 +461,14 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
                         <motion.button
                           onClick={goToPreviousPage}
                           disabled={currentPage === 1}
-                          className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-all duration-300 ${
-                            currentPage === 1 
-                              ? (theme === 'light' 
-                                  ? 'bg-black/5 border-black/10 text-gray-400 cursor-not-allowed' 
-                                  : 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed')
-                              : (theme === 'light' 
-                                  ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60' 
-                                  : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60')
-                          }`}
+                          className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-all duration-300 ${currentPage === 1
+                              ? (theme === 'light'
+                                ? 'bg-black/5 border-black/10 text-gray-400 cursor-not-allowed'
+                                : 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed')
+                              : (theme === 'light'
+                                ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60'
+                                : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60')
+                            }`}
                           whileHover={currentPage !== 1 ? { scale: 1.05 } : {}}
                           whileTap={currentPage !== 1 ? { scale: 0.95 } : {}}
                           aria-label="Previous page"
@@ -467,15 +484,14 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
                         <motion.button
                           onClick={goToNextPage}
                           disabled={currentPage === paginationData.totalPages}
-                          className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-all duration-300 ${
-                            currentPage === paginationData.totalPages 
-                              ? (theme === 'light' 
-                                  ? 'bg-black/5 border-black/10 text-gray-400 cursor-not-allowed' 
-                                  : 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed')
-                              : (theme === 'light' 
-                                  ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60' 
-                                  : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60')
-                          }`}
+                          className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-all duration-300 ${currentPage === paginationData.totalPages
+                              ? (theme === 'light'
+                                ? 'bg-black/5 border-black/10 text-gray-400 cursor-not-allowed'
+                                : 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed')
+                              : (theme === 'light'
+                                ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60'
+                                : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60')
+                            }`}
                           whileHover={currentPage !== paginationData.totalPages ? { scale: 1.05 } : {}}
                           whileTap={currentPage !== paginationData.totalPages ? { scale: 0.95 } : {}}
                           aria-label="Next page"
@@ -491,7 +507,7 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
             </div>
           </motion.div>
           {/* Quick Actions (moved below Featured Games) */}
-          <motion.div 
+          <motion.div
             className="space-y-6"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -509,15 +525,14 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
               <div className="space-y-3">
                 {/* Join Random Match Button */}
                 <motion.button
-                  className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                    featuredGames.length === 0 
-                      ? (theme === 'light' 
-                          ? 'bg-black/5 border-black/10 text-gray-400 cursor-not-allowed focus:ring-black/30 focus:ring-offset-white' 
-                          : 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed focus:ring-white/50 focus:ring-offset-black')
-                      : (theme === 'light' 
-                          ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60 focus:ring-black/50 focus:ring-offset-white' 
-                          : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60 focus:ring-white/50 focus:ring-offset-black')
-                  }`}
+                  className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-offset-2 ${featuredGames.length === 0
+                      ? (theme === 'light'
+                        ? 'bg-black/5 border-black/10 text-gray-400 cursor-not-allowed focus:ring-black/30 focus:ring-offset-white'
+                        : 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed focus:ring-white/50 focus:ring-offset-black')
+                      : (theme === 'light'
+                        ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60 focus:ring-black/50 focus:ring-offset-white'
+                        : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60 focus:ring-white/50 focus:ring-offset-black')
+                    }`}
                   whileHover={featuredGames.length > 0 && !isRandomMatchLoading ? { scale: 1.05 } : {}}
                   whileTap={featuredGames.length > 0 && !isRandomMatchLoading ? { scale: 0.95 } : {}}
                   transition={{ type: "spring", stiffness: 400, damping: 10 }}
@@ -528,21 +543,20 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
                   title={featuredGames.length === 0 ? "No games available" : "Join a random game"}
                 >
                   <motion.div
-                    animate={isRandomMatchLoading ? { 
+                    animate={isRandomMatchLoading ? {
                       rotate: [0, 90, 180, 270, 360],
                       scale: [1, 1.1, 1]
                     } : {}}
-                    transition={{ 
-                      duration: 0.3, 
+                    transition={{
+                      duration: 0.3,
                       ease: "easeInOut",
                       times: [0, 0.25, 0.5, 0.75, 1]
                     }}
                   >
-                    <Dices className={`w-5 h-5 transition-colors duration-300 ${
-                      featuredGames.length === 0 
+                    <Dices className={`w-5 h-5 transition-colors duration-300 ${featuredGames.length === 0
                         ? (theme === 'light' ? 'text-gray-400' : 'text-white/30')
                         : (theme === 'light' ? 'text-black' : 'text-white')
-                    }`} />
+                      }`} />
                   </motion.div>
                   <span className="flex-1 text-left">
                     {isRandomMatchLoading ? 'Selecting Game...' : 'Join Random Match'}
@@ -550,11 +564,10 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
                 </motion.button>
                 {/* Play with Friends Button */}
                 <motion.button
-                  className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                    theme === 'light' 
-                      ? 'bg-black/10 border-black/30 text-black hover:bg-black/15 hover:border-black/40 focus:ring-black/50 focus:ring-offset-white' 
+                  className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-offset-2 ${theme === 'light'
+                      ? 'bg-black/10 border-black/30 text-black hover:bg-black/15 hover:border-black/40 focus:ring-black/50 focus:ring-offset-white'
                       : 'bg-white/10 border-white/30 text-white hover:bg-white/15 hover:border-white/40 focus:ring-white/50 focus:ring-offset-black'
-                  }`}
+                    }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handlePlayWithFriends}
@@ -563,28 +576,31 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
                 >
                   <Users className={`w-5 h-5 transition-colors duration-300 ${theme === 'light' ? 'text-gray-700' : 'text-white/70'}`} aria-hidden="true" />
                   <span className="flex-1 text-left">Play with Friends</span>
-                  <div className={`text-xs px-2 py-1 rounded-full transition-colors duration-300 ${
-                    theme === 'light' ? 'bg-black/20 text-gray-700' : 'bg-white/20 text-white/70'
-                  }`}>
+                  <div className={`text-xs px-2 py-1 rounded-full transition-colors duration-300 ${theme === 'light' ? 'bg-black/20 text-gray-700' : 'bg-white/20 text-white/70'
+                    }`}>
                     SOON
                   </div>
                 </motion.button>
                 {/* Admin-only Add a Game Button */}
                 {user && user.role === 'ADMIN' && (
-                  <motion.button
-                    className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                      theme === 'light' 
-                        ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60 focus:ring-black/50 focus:ring-offset-white' 
-                        : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60 focus:ring-white/50 focus:ring-offset-black'
-                    }`}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => router.push('/admin/games/add')}
-                    aria-label="Add a Game"
-                  >
-                    <Star className={`w-5 h-5 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} aria-hidden="true" />
-                    <span className="flex-1 text-left">Add a Game</span>
-                  </motion.button>
+                  <>
+                    <motion.button
+                      className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-offset-2 ${theme === 'light'
+                          ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60 focus:ring-black/50 focus:ring-offset-white'
+                          : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60 focus:ring-white/50 focus:ring-offset-black'
+                        }`}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setShowAddGame(true)}
+                      aria-label="Add a Game"
+                    >
+                      <Star className={`w-5 h-5 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} aria-hidden="true" />
+                      <span className="flex-1 text-left">Add a Game</span>
+                    </motion.button>
+                    {showAddGame && (
+                      <AddGameModal onClose={() => setShowAddGame(false)} />
+                    )}
+                  </>
                 )}
                 {/* Hidden accessibility helpers */}
                 {featuredGames.length === 0 && (
@@ -600,7 +616,7 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
           </motion.div>
         </div>
         {/* Bottom Status */}
-        <motion.div 
+        <motion.div
           className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-10"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -609,13 +625,191 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
           <div className={`flex items-center space-x-2 text-xs transition-colors duration-300 ${theme === 'light' ? 'text-gray-500' : 'text-white/40'}`}>
             <div className={`w-2 h-2 rounded-full animate-pulse transition-colors duration-300 ${theme === 'light' ? 'bg-gray-500' : 'bg-white/40'}`} />
             <span>Gaming Network Online</span>
-            <div 
+            <div
               className={`w-2 h-2 rounded-full animate-pulse transition-colors duration-300 ${theme === 'light' ? 'bg-gray-500' : 'bg-white/40'}`}
-              style={{ animationDelay: '0.5s' }} 
+              style={{ animationDelay: '0.5s' }}
             />
           </div>
         </motion.div>
       </div>
     </div>
   )
+}
+
+function AddGameModal({ onClose }: { onClose: () => void }) {
+  const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState<string[]>([]);
+  useEffect(() => {
+    fetch('/api/admin/game-categories')
+      .then(res => res.json())
+      .then(data => setCategories(data))
+      .catch(() => setCategories([]));
+  }, []);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+    watch,
+  } = useForm({
+    resolver: zodResolver(GameSchema),
+    defaultValues: {
+      title: '',
+      description: '',
+      link: '',
+      category: '',
+      color: '#000000',
+      isMultiplayer: false,
+    },
+  });
+
+  const onSubmit = async (data: any) => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/games', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        toast.success('Game added successfully!');
+        reset();
+        onClose();
+      } else {
+        const err = await res.json();
+        toast.error(err.error || 'Failed to add game');
+      }
+    } catch (e) {
+      toast.error('Network error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 backdrop-blur-sm animate-fade-in">
+      <div 
+        className="relative w-full max-w-md rounded-xl border border-white/20 bg-white dark:bg-neutral-900 p-6 shadow-2xl animate-modal-pop"
+        style={{
+          boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)'
+        }}
+      >
+        <button
+          onClick={onClose}
+          className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full bg-red-500 text-white shadow-lg transition hover:bg-red-600"
+          aria-label="Close"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+
+        <h2 className="mb-6 text-center text-2xl font-bold text-gray-900 dark:text-white">Add New Game</h2>
+        
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {/* Title Field */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Title *</label>
+            <input 
+              type="text" 
+              {...register('title')} 
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-600 dark:bg-neutral-800 dark:text-white" 
+              disabled={loading} 
+            />
+            {errors.title && <p className="mt-1 text-sm text-red-500">{errors.title.message}</p>}
+          </div>
+
+          {/* Description Field */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Description *</label>
+            <textarea 
+              {...register('description')} 
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-600 dark:bg-neutral-800 dark:text-white" 
+              rows={3} 
+              disabled={loading} 
+            />
+            {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description.message}</p>}
+          </div>
+
+          {/* Link Field */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Link *</label>
+            <input 
+              type="url" 
+              {...register('link')} 
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-600 dark:bg-neutral-800 dark:text-white" 
+              disabled={loading} 
+            />
+            {errors.link && <p className="mt-1 text-sm text-red-500">{errors.link.message}</p>}
+          </div>
+
+          {/* Category Field */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Category *</label>
+            <select 
+              {...register('category')} 
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-600 dark:bg-neutral-800 dark:text-white" 
+              disabled={loading || categories.length === 0}
+            >
+              <option value="" disabled>Select category</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+            {errors.category && <p className="mt-1 text-sm text-red-500">{errors.category.message}</p>}
+          </div>
+
+          {/* Color Field */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Color *</label>
+            <div className="flex items-center gap-3">
+              <input 
+                type="color" 
+                {...register('color')} 
+                className="h-10 w-10 cursor-pointer rounded border border-gray-300 bg-white dark:border-gray-600 dark:bg-neutral-800" 
+                disabled={loading} 
+              />
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                {watch('color') || '#000000'}
+              </span>
+            </div>
+            {errors.color && <p className="mt-1 text-sm text-red-500">{errors.color.message}</p>}
+          </div>
+
+          {/* Multiplayer Checkbox */}
+          <div className="flex items-center">
+            <input 
+              type="checkbox" 
+              {...register('isMultiplayer')} 
+              id="isMultiplayer" 
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700" 
+              disabled={loading} 
+            />
+            <label htmlFor="isMultiplayer" className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+              Is Multiplayer?
+            </label>
+          </div>
+
+          {/* Submit Button */}
+          <button 
+            type="submit" 
+            className="w-full rounded-lg bg-blue-600 px-4 py-2 font-medium text-white shadow-md transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50" 
+            disabled={loading}
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Adding...
+              </span>
+            ) : (
+              'Add Game'
+            )}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
 } 
