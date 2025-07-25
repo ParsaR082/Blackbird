@@ -32,6 +32,15 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
+export const GameSchema = z.object({
+  title: z.string().min(3, 'Title must be at least 3 characters'),
+  description: z.string().min(10, 'Description must be at least 10 characters'),
+  link: z.string().url('Must be a valid URL'),
+  category: z.string().min(3),
+  color: z.string().min(3),
+  isMultiplayer: z.boolean().optional(),
+});
+
 const BackgroundNodes = lazy(() => import('@/components/BackgroundNodes'))
 
 interface GameCategory {
@@ -66,15 +75,6 @@ interface PlayerStat {
 interface ClientGamesPageProps {
   dbGames: FeaturedGame[]
 }
-
-const GameSchema = z.object({
-  title: z.string().min(3, 'Title must be at least 3 characters'),
-  description: z.string().min(10, 'Description must be at least 10 characters'),
-  link: z.string().url('Must be a valid URL'),
-  category: z.string().min(3),
-  color: z.string().min(3),
-  isMultiplayer: z.boolean().optional(),
-});
 
 export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
   const [isMobile, setIsMobile] = useState(false)
@@ -217,20 +217,20 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
           transition={{ duration: 0.8 }}
         >
           <div className="flex items-center justify-center gap-4 mb-4">
-            <motion.div
+            <div
               className="p-4 rounded-full border backdrop-blur-sm transition-colors duration-300"
               style={{
                 backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.9)',
                 borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)'
               }}
-              whileHover={{
-                scale: 1.1,
-                boxShadow: theme === 'light' ? '0 0 25px rgba(0,0,0,0.2)' : '0 0 25px rgba(255,255,255,0.4)'
-              }}
-              transition={{ duration: 0.3 }}
             >
-              <Gamepad2 className="w-8 h-8 transition-colors duration-300" style={{ color: 'var(--text-color)' }} />
-            </motion.div>
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Gamepad2 className="w-8 h-8 transition-colors duration-300" style={{ color: 'var(--text-color)' }} />
+              </motion.div>
+            </div>
           </div>
           <h1 className="text-3xl font-light tracking-wide mb-2 transition-colors duration-300" style={{ color: 'var(--text-color)' }}>
             Gaming Portal
@@ -295,19 +295,15 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
                   <p className={`text-xs transition-colors duration-300 ${theme === 'light' ? 'text-gray-600' : 'text-white/60'}`}>{getCategoryCount(category.label)} games</p>
                 </div>
                 {/* Pulse effect */}
-                <motion.div
+                <div
                   className="absolute inset-0 rounded-lg border opacity-0 group-hover:opacity-40 transition-colors duration-300"
-                  style={{
-                    borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)',
-                    opacity: selectedCategory === category.label ? 0.6 : undefined
-                  }}
-                  animate={{ scale: [1, 1.1, 1] }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                />
+                  style={{ borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)', opacity: selectedCategory === category.label ? 0.6 : undefined }}
+                >
+                  <motion.div
+                    animate={{ scale: [1, 1.1, 1] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                </div>
               </motion.div>
             ))}
           </div>
@@ -367,107 +363,101 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
                         transition={{ duration: 0.3 }}
                       >
                         {paginationData.currentGames.map((game: FeaturedGame, index: number) => (
-                          <motion.div
+                          <div
                             key={game.title}
                             className="group p-4 border rounded-lg transition-all duration-300 cursor-pointer"
                             style={{
                               backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)',
                               borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'
                             }}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.4, delay: index * 0.1 }}
-                            whileHover={{
-                              scale: 1.02,
-                              backgroundColor: theme === 'light' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
-                              borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.4)' : 'rgba(255, 255, 255, 0.4)'
-                            }}
                           >
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-2">
-                                  <h3 className={`text-base font-medium transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>{game.title}</h3>
-                                  <span className={`px-2 py-1 border rounded-full text-xs transition-colors duration-300 ${theme === 'light'
-                                      ? 'bg-black/10 border-black/20 text-gray-700'
-                                      : 'bg-white/10 border-white/20 text-white/70'
-                                    }`}>
-                                    {game.category}
-                                  </span>
+                            <motion.div
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.4, delay: index * 0.1 }}
+                              whileHover={{ scale: 1.02 }}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <h3 className={`text-base font-medium transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`}>{game.title}</h3>
+                                    <span className={`px-2 py-1 border rounded-full text-xs transition-colors duration-300 ${theme === 'light'
+                                        ? 'bg-black/10 border-black/20 text-gray-700'
+                                        : 'bg-white/10 border-white/20 text-white/70'
+                                      }`}>
+                                      {game.category}
+                                    </span>
+                                  </div>
+                                  <p className={`text-sm mb-3 transition-colors duration-300 ${theme === 'light' ? 'text-gray-700' : 'text-white/70'}`}>{game.description}</p>
                                 </div>
-                                <p className={`text-sm mb-3 transition-colors duration-300 ${theme === 'light' ? 'text-gray-700' : 'text-white/70'}`}>{game.description}</p>
+                                {/* Enhanced Play Button with Prefetching */}
+                                {game.link.startsWith('http') ? (
+                                  <a
+                                    href={game.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="ml-4"
+                                    aria-label={`Play ${game.title} in new tab`}
+                                    onMouseEnter={() => {
+                                      // Prefetch external link on hover
+                                      const link = document.createElement('link')
+                                      link.rel = 'prefetch'
+                                      link.href = game.link
+                                      document.head.appendChild(link)
+                                    }}
+                                  >
+                                    <motion.button
+                                      className={`px-6 py-3 border rounded-lg transition-all duration-300 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 ${theme === 'light'
+                                          ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60 focus:ring-black/50 focus:ring-offset-white'
+                                          : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60 focus:ring-white/50 focus:ring-offset-black'
+                                        }`}
+                                      whileHover={{ scale: 1.05 }}
+                                      whileTap={{ scale: 0.95 }}
+                                      tabIndex={-1}
+                                    >
+                                      <Play className="w-4 h-4" aria-hidden="true" />
+                                      Play
+                                    </motion.button>
+                                  </a>
+                                ) : (
+                                  <Link href={game.link} className="ml-4" prefetch={true}>
+                                    <motion.button
+                                      className={`px-6 py-3 border rounded-lg transition-all duration-300 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 ${theme === 'light'
+                                          ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60 focus:ring-black/50 focus:ring-offset-white'
+                                          : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60 focus:ring-white/50 focus:ring-offset-black'
+                                        }`}
+                                      whileHover={{ scale: 1.05 }}
+                                      whileTap={{ scale: 0.95 }}
+                                      aria-label={`Play ${game.title}`}
+                                      tabIndex={-1}
+                                    >
+                                      <Play className="w-4 h-4" aria-hidden="true" />
+                                      Play
+                                    </motion.button>
+                                  </Link>
+                                )}
                               </div>
-                              {/* Enhanced Play Button with Prefetching */}
-                              {game.link.startsWith('http') ? (
-                                <a
-                                  href={game.link}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="ml-4"
-                                  aria-label={`Play ${game.title} in new tab`}
-                                  onMouseEnter={() => {
-                                    // Prefetch external link on hover
-                                    const link = document.createElement('link')
-                                    link.rel = 'prefetch'
-                                    link.href = game.link
-                                    document.head.appendChild(link)
-                                  }}
-                                >
-                                  <motion.button
-                                    className={`px-6 py-3 border rounded-lg transition-all duration-300 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 ${theme === 'light'
-                                        ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60 focus:ring-black/50 focus:ring-offset-white'
-                                        : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60 focus:ring-white/50 focus:ring-offset-black'
-                                      }`}
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    tabIndex={-1}
-                                  >
-                                    <Play className="w-4 h-4" aria-hidden="true" />
-                                    Play
-                                  </motion.button>
-                                </a>
-                              ) : (
-                                <Link href={game.link} className="ml-4" prefetch={true}>
-                                  <motion.button
-                                    className={`px-6 py-3 border rounded-lg transition-all duration-300 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-offset-2 ${theme === 'light'
-                                        ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60 focus:ring-black/50 focus:ring-offset-white'
-                                        : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60 focus:ring-white/50 focus:ring-offset-black'
-                                      }`}
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    aria-label={`Play ${game.title}`}
-                                    tabIndex={-1}
-                                  >
-                                    <Play className="w-4 h-4" aria-hidden="true" />
-                                    Play
-                                  </motion.button>
-                                </Link>
-                              )}
-                            </div>
-                          </motion.div>
+                            </motion.div>
+                          </div>
                         ))}
                       </motion.div>
                     </AnimatePresence>
                     {/* Pagination Controls */}
                     {paginationData.totalPages > 1 && (
-                      <motion.div
+                      <div
                         className={`flex items-center justify-between mt-6 pt-4 border-t transition-colors duration-300`}
-                        style={{
-                          borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'
-                        }}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: 0.2 }}
+                        style={{ borderColor: theme === 'light' ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)' }}
                       >
                         <motion.button
                           onClick={goToPreviousPage}
                           disabled={currentPage === 1}
                           className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-all duration-300 ${currentPage === 1
-                              ? (theme === 'light'
-                                ? 'bg-black/5 border-black/10 text-gray-400 cursor-not-allowed'
-                                : 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed')
-                              : (theme === 'light'
-                                ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60'
-                                : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60')
+                            ? (theme === 'light'
+                              ? 'bg-black/5 border-black/10 text-gray-400 cursor-not-allowed'
+                              : 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed')
+                            : (theme === 'light'
+                              ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60'
+                              : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60')
                             }`}
                           whileHover={currentPage !== 1 ? { scale: 1.05 } : {}}
                           whileTap={currentPage !== 1 ? { scale: 0.95 } : {}}
@@ -485,12 +475,12 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
                           onClick={goToNextPage}
                           disabled={currentPage === paginationData.totalPages}
                           className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-all duration-300 ${currentPage === paginationData.totalPages
-                              ? (theme === 'light'
-                                ? 'bg-black/5 border-black/10 text-gray-400 cursor-not-allowed'
-                                : 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed')
-                              : (theme === 'light'
-                                ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60'
-                                : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60')
+                            ? (theme === 'light'
+                              ? 'bg-black/5 border-black/10 text-gray-400 cursor-not-allowed'
+                              : 'bg-white/5 border-white/10 text-white/30 cursor-not-allowed')
+                            : (theme === 'light'
+                              ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60'
+                              : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60')
                             }`}
                           whileHover={currentPage !== paginationData.totalPages ? { scale: 1.05 } : {}}
                           whileTap={currentPage !== paginationData.totalPages ? { scale: 0.95 } : {}}
@@ -499,7 +489,7 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
                           Next
                           <ChevronRight className="w-4 h-4" />
                         </motion.button>
-                      </motion.div>
+                      </div>
                     )}
                   </>
                 )}

@@ -1,4 +1,6 @@
 import { Metadata } from 'next'
+import { ThemeProvider } from '@/contexts/theme-context'
+import { AuthProvider } from '@/contexts/auth-context'
 
 export const metadata: Metadata = {
   title: 'Blackbird Portal',
@@ -12,6 +14,10 @@ export default function PublicLayout({
   children: React.ReactNode
 }) {
   return (
-    <>{children}</>
+    <ThemeProvider>
+      <AuthProvider>
+        {children}
+      </AuthProvider>
+    </ThemeProvider>
   )
 } 
