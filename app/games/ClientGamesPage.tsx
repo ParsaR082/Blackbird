@@ -87,6 +87,14 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
   const { user } = useAuth()
   const router = useRouter();
 
+  // Add debugging for user role
+  useEffect(() => {
+    console.log('🎮 Games Page - User object:', user)
+    console.log('🎮 Games Page - User role:', user?.role)
+    console.log('🎮 Games Page - Role type:', typeof user?.role)
+    console.log('🎮 Games Page - Is SUPER_ADMIN?:', user?.role === 'SUPER_ADMIN')
+    console.log('🎮 Games Page - Is ADMIN?:', user?.role === 'ADMIN')
+  }, [user])
   useEffect(() => {
     fetch('/api/admin/game-categories')
       .then(res => res.json())
@@ -115,10 +123,10 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
   }, [])
 
   const gameCategories: GameCategory[] = [
-    { icon: Brain, label: 'Strategy', color: 'from-purple-500/20 to-pink-500/20' },
-    { icon: Target, label: 'Arcade', color: 'from-blue-500/20 to-cyan-500/20' },
-    { icon: Puzzle, label: 'Puzzle', color: 'from-green-500/20 to-emerald-500/20' },
-    { icon: Swords, label: 'Action', color: 'from-red-500/20 to-orange-500/20' }
+    { icon: Brain, label: 'strategy', color: 'from-purple-500/20 to-pink-500/20' },
+    { icon: Target, label: 'arcade', color: 'from-blue-500/20 to-cyan-500/20' },
+    { icon: Puzzle, label: 'puzzle', color: 'from-green-500/20 to-emerald-500/20' },
+    { icon: Swords, label: 'action', color: 'from-red-500/20 to-orange-500/20' }
   ]
 
   const featuredGames: FeaturedGame[] = useMemo(() => dbGames, [dbGames])
@@ -573,7 +581,13 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
                   </div>
                 </motion.button>
                 {/* Admin-only Add a Game Button */}
-                {user && user.role === 'ADMIN' && (
+                {(() => {
+                  const isAdmin = user?.role === 'ADMIN'
+                  const isSuperAdmin = user?.role === 'SUPER_ADMIN'
+                  const canAddGame = user && (isAdmin || isSuperAdmin)
+                  
+                  return canAddGame
+                })() && (
                   <motion.button
                     className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-offset-2 ${theme === 'light'
                         ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60 focus:ring-black/50 focus:ring-offset-white'
@@ -630,12 +644,17 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
 function AddGameModal({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
+  
   useEffect(() => {
     fetch('/api/admin/game-categories')
       .then(res => res.json())
       .then(data => setCategories(data))
-      .catch(() => setCategories([]));
+      .catch(() => {
+        // Fallback to hardcoded categories if API fails
+        setCategories(['strategy', 'arcade', 'puzzle', 'action']);
+      });
   }, []);
+
   const {
     register,
     handleSubmit,
@@ -662,15 +681,20 @@ function AddGameModal({ onClose }: { onClose: () => void }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
+      
+      const result = await res.json();
+      
       if (res.ok) {
         toast.success('Game added successfully!');
         reset();
         onClose();
+        // Optionally refresh the page to show the new game
+        window.location.reload();
       } else {
-        const err = await res.json();
-        toast.error(err.error || 'Failed to add game');
+        toast.error(result.error || 'Failed to add game');
       }
     } catch (e) {
+      console.error('Error submitting form:', e);
       toast.error('Network error');
     } finally {
       setLoading(false);
@@ -708,6 +732,7 @@ function AddGameModal({ onClose }: { onClose: () => void }) {
               {...register('title')} 
               className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-600 dark:bg-neutral-800 dark:text-white" 
               disabled={loading} 
+              placeholder="Enter game title"
             />
             {errors.title && <p className="mt-1 text-sm text-red-500">{errors.title.message}</p>}
           </div>
@@ -720,6 +745,7 @@ function AddGameModal({ onClose }: { onClose: () => void }) {
               className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-600 dark:bg-neutral-800 dark:text-white" 
               rows={3} 
               disabled={loading} 
+              placeholder="Enter game description"
             />
             {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description.message}</p>}
           </div>
@@ -732,6 +758,7 @@ function AddGameModal({ onClose }: { onClose: () => void }) {
               {...register('link')} 
               className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-600 dark:bg-neutral-800 dark:text-white" 
               disabled={loading} 
+              placeholder="https://example.com/game"
             />
             {errors.link && <p className="mt-1 text-sm text-red-500">{errors.link.message}</p>}
           </div>
@@ -742,11 +769,13 @@ function AddGameModal({ onClose }: { onClose: () => void }) {
             <select 
               {...register('category')} 
               className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-gray-600 dark:bg-neutral-800 dark:text-white" 
-              disabled={loading || categories.length === 0}
+              disabled={loading}
             >
-              <option value="" disabled>Select category</option>
+              <option value="">Select category</option>
               {categories.map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
+                <option key={cat} value={cat}>
+                  {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                </option>
               ))}
             </select>
             {errors.category && <p className="mt-1 text-sm text-red-500">{errors.category.message}</p>}
