@@ -16,41 +16,11 @@ const excludedRoutes = [
   '/api/admin/dmig991100293848'
 ]
 
-// API routes that must be treated as dynamic (using cookies/headers)
-const dynamicApiRoutes = [
-  '/api/events',
-  '/api/products',
-  '/api/hall-of-fame',
-  '/api/university',
-  '/api/admin/analytics',
-  '/api/admin/integration',
-  '/api/admin/security',
-  '/api/admin/university',
-  '/api/admin/purchases',
-  '/api/admin/optimization'
-]
-
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Skip middleware processing during build time
-  const isBuildTime = process.env.NODE_ENV === 'production' && !request.cookies.has('next-auth.session-token');
-  
   // For API routes, ensure they're treated as dynamic
   if (pathname.startsWith('/api/')) {
-    // During build time, return a mock response for API routes
-    if (isBuildTime) {
-      // This helps prevent static generation errors during build
-      return new Response(JSON.stringify({ status: 'ok' }), {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-store, max-age=0',
-        },
-      });
-    }
-    
-    // Add headers to ensure dynamic behavior
     const response = NextResponse.next();
     response.headers.set('Cache-Control', 'no-store, max-age=0');
     response.headers.set('Surrogate-Control', 'no-store');
@@ -65,11 +35,6 @@ export async function middleware(request: NextRequest) {
 
   // If it's not a protected route or it's excluded, continue
   if (!isProtectedRoute || isExcludedRoute) {
-    return NextResponse.next();
-  }
-
-  // Skip auth check during build time
-  if (isBuildTime) {
     return NextResponse.next();
   }
 
@@ -88,15 +53,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * 1. /api/auth/* (authentication routes)
-     * 2. /_next/* (Next.js internals)
-     * 3. /fonts/* (static font files)
-     * 4. /images/* (static image files)
-     * 5. /favicon.ico, /logo.svg (static files at root)
-     */
-    '/((?!api/auth|_next|fonts|images|favicon.ico|logo.svg).*)',
+    '/((?!api/auth|_next|fonts|images|favicon.ico|logo.svg|blackbirdlogo.svg).*)',
     '/api/:path*',
   ],
-} 
+}

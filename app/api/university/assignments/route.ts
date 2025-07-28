@@ -5,161 +5,72 @@ export const fetchCache = 'force-no-store';
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/mongodb'
+import { Assignment, UserAssignment, Course } from '@/lib/models/university'
 import { getUserFromRequest } from '@/lib/server-utils'
-import { Assignment, UserAssignment } from '@/lib/models/university'
-import mongoose from 'mongoose'
+import { IAssignment, IUserAssignment } from '@/lib/models/university'
 
-// GET - Retrieve assignments for the authenticated user
 export async function GET(request: NextRequest) {
   try {
     const user = await getUserFromRequest(request)
     if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
     await connectToDatabase()
 
-    // Get query parameters
     const { searchParams } = new URL(request.url)
-    const assignmentId = searchParams.get('id')
     const courseId = searchParams.get('courseId')
     const status = searchParams.get('status')
-    const type = searchParams.get('type')
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '10')
+    const skip = (page - 1) * limit
 
-    // If specific assignment ID is requested
-    if (assignmentId) {
-      // Find the assignment
-      const assignment = await Assignment.findById(assignmentId).lean()
-      
-      if (!assignment) {
-        return NextResponse.json(
-          { error: 'Assignment not found' },
-          { status: 404 }
-        )
-      }
-      
-      // Find user's submission for this assignment
-      const userAssignment = await UserAssignment.findOne({
-        userId: user.id,
-        assignmentId: assignment._id
-      }).lean()
-      
-      // Get course details
-      const CourseSchema = new mongoose.Schema({
-        courseCode: String,
-        title: String
-      })
-      
-      const Course = mongoose.models.Course || mongoose.model('Course', CourseSchema)
-      const course = await Course.findById(assignment.courseId).lean()
-      
-      // Combine assignment data with user submission data
-      const formattedAssignment = {
-        _id: assignment._id,
-        courseId: assignment.courseId,
-        courseName: course ? course.title : 'Unknown Course',
-        courseCode: course ? course.courseCode : 'N/A',
-        title: assignment.title,
-        description: assignment.description,
-        type: assignment.type,
-        dueDate: assignment.dueDate,
-        points: assignment.points,
-        isRequired: assignment.isRequired,
-        attachments: assignment.attachments || [],
-        status: userAssignment ? userAssignment.status : 'pending',
-        submissionDate: userAssignment ? userAssignment.submissionDate : null,
-        grade: userAssignment ? userAssignment.grade : null,
-        feedback: userAssignment ? userAssignment.feedback : null,
-        timeSpent: userAssignment ? userAssignment.timeSpent : 0,
-        isCompleted: userAssignment ? userAssignment.isCompleted : false
-      }
-      
-      return NextResponse.json({
-        success: true,
-        assignment: formattedAssignment
-      })
-    }
-
-    // Get all enrolled courses for the user
-    const EnrollmentSchema = new mongoose.Schema({
-      userId: mongoose.Schema.Types.ObjectId,
-      courseId: mongoose.Schema.Types.ObjectId,
-      status: String
-    })
-    
-    const Enrollment = mongoose.models.Enrollment || mongoose.model('Enrollment', EnrollmentSchema)
-    const enrollments = await Enrollment.find({
-      userId: user.id,
-      status: { $in: ['enrolled', 'completed'] }
-    }).lean()
-    
-    const enrolledCourseIds = enrollments.map(enrollment => enrollment.courseId)
-    
-    // Build query for assignments
-    const query: any = {
-      courseId: { $in: enrolledCourseIds }
-    }
-    
+    // Build query
+    let query: any = {}
     if (courseId) {
       query.courseId = courseId
     }
-    
-    if (type) {
-      query.type = type
-    }
-    
-    // Find all assignments for enrolled courses
-    const assignments = await Assignment.find(query).lean()
-    
-    // Find user's submissions for these assignments
-    const assignmentIds = assignments.map(assignment => assignment._id)
+
+    // Get assignments
+    const assignments = await Assignment.find(query)
+      .sort({ dueDate: 1 })
+      .skip(skip)
+      .limit(limit)
+      .lean() as IAssignment[]
+
+    const totalAssignments = await Assignment.countDocuments(query)
+
+    // Get user assignments for this user
+    const assignmentIds = assignments.map(assignment => (assignment as any)._id.toString())
     const userAssignments = await UserAssignment.find({
       userId: user.id,
       assignmentId: { $in: assignmentIds }
-    }).lean()
-    
-    // Create a map of user assignments for quick lookup
+    }).lean() as IUserAssignment[]
+
+    // Create a map for quick lookup
     const userAssignmentMap = new Map()
     userAssignments.forEach(userAssignment => {
-      userAssignmentMap.set(userAssignment.assignmentId.toString(), userAssignment)
+      userAssignmentMap.set((userAssignment as any).assignmentId, userAssignment)
     })
-    
-    // Get course details
-    const CourseSchema = new mongoose.Schema({
-      courseCode: String,
-      title: String
-    })
-    
-    const Course = mongoose.models.Course || mongoose.model('Course', CourseSchema)
-    const courses = await Course.find({ _id: { $in: enrolledCourseIds } }).lean()
-    
-    // Create a map of courses for quick lookup
+
+    // Get course information
+    const courseIds = assignments.map(assignment => assignment.courseId)
+    const courses = await Course.find({ _id: { $in: courseIds } }).lean()
     const courseMap = new Map()
     courses.forEach(course => {
-      courseMap.set(course._id.toString(), course)
+      courseMap.set((course as any)._id.toString(), course)
     })
-    
-    // Combine assignment data with user submission data
+
+    // Format assignments with user progress
     const formattedAssignments = assignments.map(assignment => {
-      const userAssignment = userAssignmentMap.get(assignment._id.toString())
-      const course = courseMap.get(assignment.courseId.toString())
-      
-      // Determine assignment status
-      let status = userAssignment ? userAssignment.status : 'pending'
-      
-      // Check if assignment is overdue
-      if (status === 'pending' && new Date(assignment.dueDate) < new Date()) {
-        status = 'overdue'
-      }
-      
+      const userAssignment = userAssignmentMap.get((assignment as any)._id.toString())
+      const course = courseMap.get(assignment.courseId)
+
       return {
-        _id: assignment._id,
+        _id: (assignment as any)._id,
         courseId: assignment.courseId,
-        courseName: course ? course.title : 'Unknown Course',
-        courseCode: course ? course.courseCode : 'N/A',
+        courseName: course ? (course as any).title : 'Unknown Course',
+        courseCode: course ? (course as any).courseCode : 'N/A',
         title: assignment.title,
         description: assignment.description,
         type: assignment.type,
@@ -167,31 +78,37 @@ export async function GET(request: NextRequest) {
         points: assignment.points,
         isRequired: assignment.isRequired,
         attachments: assignment.attachments || [],
-        status,
-        submissionDate: userAssignment ? userAssignment.submissionDate : null,
-        grade: userAssignment ? userAssignment.grade : null,
-        feedback: userAssignment ? userAssignment.feedback : null,
-        timeSpent: userAssignment ? userAssignment.timeSpent : 0,
-        isCompleted: userAssignment ? userAssignment.isCompleted : false
+        status: userAssignment ? (userAssignment as any).status : 'pending',
+        submissionDate: userAssignment ? (userAssignment as any).submissionDate : null,
+        grade: userAssignment ? (userAssignment as any).grade : null,
+        feedback: userAssignment ? (userAssignment as any).feedback : null,
+        timeSpent: userAssignment ? (userAssignment as any).timeSpent : 0,
+        isCompleted: userAssignment ? (userAssignment as any).isCompleted : false
       }
     })
-    
-    // Filter by status if requested
+
+    // Filter by status if provided
     let filteredAssignments = formattedAssignments
-    if (status) {
+    if (status && status !== 'all') {
       filteredAssignments = formattedAssignments.filter(assignment => assignment.status === status)
     }
-    
+
     return NextResponse.json({
       success: true,
-      count: filteredAssignments.length,
-      assignments: filteredAssignments
+      assignments: filteredAssignments,
+      pagination: {
+        page,
+        limit,
+        total: totalAssignments,
+        totalPages: Math.ceil(totalAssignments / limit)
+      }
     })
+
   } catch (error) {
-    console.error('Assignments fetch error:', error)
+    console.error('Error fetching assignments:', error)
     return NextResponse.json(
       { error: 'Failed to fetch assignments' },
       { status: 500 }
     )
   }
-} 
+}

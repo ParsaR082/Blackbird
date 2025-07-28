@@ -120,7 +120,7 @@ export default function ChallengeList({ challenges, userProgress, loading, error
             No Challenges Available
           </h3>
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            This milestone doesn't have any challenges yet.
+            This milestone doesn&apos;t have any challenges yet.
           </p>
         </div>
       </div>

@@ -93,7 +93,7 @@ export default function LevelList({ levels, userProgress, loading, error, onSele
             No Levels Available
           </h3>
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            This roadmap doesn't have any levels yet.
+            This roadmap doesn&apos;t have any levels yet.
           </p>
         </div>
       </div>

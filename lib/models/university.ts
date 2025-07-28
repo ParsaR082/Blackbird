@@ -1,5 +1,15 @@
 import mongoose from 'mongoose'
 
+// Add User interface for API compatibility
+export interface IUser {
+  _id?: string
+  fullName: string
+  email: string
+  role?: string
+  createdAt?: Date
+  updatedAt?: Date
+}
+
 export interface ICourse {
   _id?: string
   courseCode: string
@@ -601,4 +611,4 @@ export const UserAssignment = mongoose.models.UserAssignment || mongoose.model('
 export const StudyPlan = mongoose.models.StudyPlan || mongoose.model('StudyPlan', StudyPlanSchema)
 export const AcademicRecord = mongoose.models.AcademicRecord || mongoose.model('AcademicRecord', AcademicRecordSchema)
 export const Semester = mongoose.models.Semester || mongoose.model('Semester', SemesterSchema)
-export const SemesterEnrollment = mongoose.models.SemesterEnrollment || mongoose.model('SemesterEnrollment', SemesterEnrollmentSchema) 
+export const SemesterEnrollment = mongoose.models.SemesterEnrollment || mongoose.model('SemesterEnrollment', SemesterEnrollmentSchema)

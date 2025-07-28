@@ -1,8 +1,8 @@
 import { Database, UserDocument } from '@/lib/mongodb'
 
-// User types
+// User types - Updated to include SUPER_ADMIN
 export type User = UserDocument
-export type UserRole = 'ADMIN' | 'MODERATOR' | 'USER' | 'GUEST'
+export type UserRole = 'ADMIN' | 'MODERATOR' | 'USER' | 'GUEST' | 'SUPER_ADMIN'
 
 // Navigation types
 export interface NavItem {
@@ -128,7 +128,7 @@ export interface UIStore {
   markNotificationRead: (id: string) => void
 }
 
-// User authentication types
+// User authentication types - Updated to include SUPER_ADMIN
 export interface UserAuth {
   id: string
   email: string
@@ -143,4 +143,4 @@ export interface UserAuth {
 export interface Session {
   user: UserAuth
   expires: string
-} 
+}

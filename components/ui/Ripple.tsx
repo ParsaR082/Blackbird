@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useImperativeHandle, forwardRef } from "react";
+import React, { useRef, useImperativeHandle, forwardRef, useCallback } from "react";
 
 export interface RippleHandle {
   createRipple: (event: React.MouseEvent) => void;
@@ -16,7 +16,7 @@ export const Ripple = forwardRef<RippleHandle, RippleProps>(
   ({ color = "rgba(59,130,246,0.3)", duration = 600, className = "" }, ref) => {
     const rippleRef = useRef<HTMLSpanElement>(null);
 
-    const createRipple = (event: React.MouseEvent) => {
+    const createRipple = useCallback((event: React.MouseEvent) => {
       const button = event.currentTarget as HTMLElement;
       const circle = document.createElement("span");
       const diameter = Math.max(button.clientWidth, button.clientHeight);
@@ -36,9 +36,9 @@ export const Ripple = forwardRef<RippleHandle, RippleProps>(
       circle.addEventListener("animationend", () => {
         circle.remove();
       });
-    };
+    }, [color, duration, className]);
 
-    useImperativeHandle(ref, () => ({ createRipple }), []);
+    useImperativeHandle(ref, () => ({ createRipple }), [createRipple]);
 
     return (
       <span

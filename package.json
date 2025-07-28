@@ -4,14 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "",
-    "build": "node scripts/custom-build.js",
-    "start": "node server.js",
-    "lint": "next lint",
+    "prebuild": "prisma generate",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint --fix",
     "type-check": "tsc --noEmit",
     "setup-db": "node scripts/push-schema.js",
     "test": "jest",
-    "test-n8n": "node scripts/test-n8n-integration.js"
+    "test-n8n": "node scripts/test-n8n-integration.js",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",

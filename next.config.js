@@ -1,29 +1,26 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // حذف output: 'standalone'
-  // حذف staticPageGenerationTimeout
   images: {
     unoptimized: true,
     domains: ['supabase.co', 'avatars.githubusercontent.com', 'lh3.googleusercontent.com'],
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false, // Enable type checking for better error detection
   },
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false, // Enable ESLint for better code quality
   },
-  // حذف experimental
   swcMinify: true,
   env: {
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
-    MONGODB_URI: process.env.MONGODB_URI,
+    DATABASE_URL: process.env.DATABASE_URL,
     CSRF_SECRET: process.env.CSRF_SECRET,
   },
   async headers() {
     return [
       {
-        source: '/:path*',
+        source: '/api/:path*',
         headers: [
           {
             key: 'Cache-Control',
@@ -37,6 +34,4 @@ const nextConfig = {
   poweredByHeader: false,
 }
 
-const withBundleAnalyzer = require('@next/bundle-analyzer')({ enabled: process.env.ANALYZE === 'true' })
-
-module.exports = withBundleAnalyzer(nextConfig)
+module.exports = nextConfig

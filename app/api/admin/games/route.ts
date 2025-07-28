@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@/generated/prisma";
+import { PrismaClient } from "@prisma/client";
 import { validateAdmin } from "@/lib/server-utils";
 import { z } from "zod";
 
 const prisma = new PrismaClient();
 
-// Server-side schema for game validation
+// Server-side schema for game validation - all fields required to match Prisma schema
 const GameSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
   description: z.string().min(10, 'Description must be at least 10 characters'),
   link: z.string().url('Must be a valid URL'),
   category: z.string().min(3),
   color: z.string().min(3),
-  isMultiplayer: z.boolean().optional(),
+  isMultiplayer: z.boolean().default(false), // Changed from optional to default
 });
 
 export async function POST(req: NextRequest) {
@@ -33,36 +33,31 @@ export async function POST(req: NextRequest) {
     // Test database connection first
     try {
       await prisma.$connect();
+      
+      // Create the game with properly typed data
+      const game = await prisma.game.create({
+        data: {
+          title: validatedData.title,
+          description: validatedData.description,
+          link: validatedData.link,
+          category: validatedData.category,
+          color: validatedData.color,
+          isMultiplayer: validatedData.isMultiplayer,
+        }
+      });
+
+      return NextResponse.json(game, { status: 201 });
     } catch (dbError) {
-      console.error("Database connection error:", dbError);
+      console.error('Database error:', dbError);
       return NextResponse.json({ 
-        error: "Database connection failed",
-        details: "Unable to connect to the database"
+        error: "Database connection failed" 
       }, { status: 500 });
     }
 
-    // Create the game in the database
-    const game = await prisma.game.create({
-      data: {
-        title: validatedData.title,
-        description: validatedData.description,
-        link: validatedData.link,
-        category: validatedData.category,
-        color: validatedData.color,
-        isMultiplayer: validatedData.isMultiplayer || false,
-      },
-    });
-
-    return NextResponse.json({ 
-      success: true, 
-      message: "Game added successfully",
-      game 
-    }, { status: 201 });
-
   } catch (error) {
-    console.error("Error creating game:", error);
+    console.error('Game creation error:', error);
     
-    if (error instanceof Error && error.name === 'ZodError') {
+    if (error instanceof z.ZodError) {
       return NextResponse.json({ 
         error: "Invalid data provided",
         details: error.message 
@@ -86,7 +81,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ 
       error: "Failed to create game",
-      details: error instanceof Error ? error.message : "Unknown error"
+      details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   } finally {
     await prisma.$disconnect();
