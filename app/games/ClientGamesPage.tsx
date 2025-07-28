@@ -202,6 +202,7 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
       <Suspense fallback={<div className="fixed inset-0 transition-colors duration-300" style={{ backgroundColor: 'var(--bg-color)' }} />}>
         <BackgroundNodes isMobile={isMobile} />
       </Suspense>
+      
       {/* Main Content */}
       <div className="relative z-10 min-h-screen px-4 pt-24 pb-8" role="main">
         {/* Accessibility: Live region for dynamic content updates */}
@@ -573,24 +574,19 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
                 </motion.button>
                 {/* Admin-only Add a Game Button */}
                 {user && user.role === 'ADMIN' && (
-                  <>
-                    <motion.button
-                      className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-offset-2 ${theme === 'light'
-                          ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60 focus:ring-black/50 focus:ring-offset-white'
-                          : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60 focus:ring-white/50 focus:ring-offset-black'
-                        }`}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setShowAddGame(true)}
-                      aria-label="Add a Game"
-                    >
-                      <Star className={`w-5 h-5 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} aria-hidden="true" />
-                      <span className="flex-1 text-left">Add a Game</span>
-                    </motion.button>
-                    {showAddGame && (
-                      <AddGameModal onClose={() => setShowAddGame(false)} />
-                    )}
-                  </>
+                  <motion.button
+                    className={`w-full p-3 border rounded-lg transition-all duration-300 text-sm flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-offset-2 ${theme === 'light'
+                        ? 'bg-black/10 border-black/30 text-black hover:bg-black/20 hover:border-black/60 focus:ring-black/50 focus:ring-offset-white'
+                        : 'bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/60 focus:ring-white/50 focus:ring-offset-black'
+                      }`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setShowAddGame(true)}
+                    aria-label="Add a Game"
+                  >
+                    <Star className={`w-5 h-5 transition-colors duration-300 ${theme === 'light' ? 'text-black' : 'text-white'}`} aria-hidden="true" />
+                    <span className="flex-1 text-left">Add a Game</span>
+                  </motion.button>
                 )}
                 {/* Hidden accessibility helpers */}
                 {featuredGames.length === 0 && (
@@ -622,6 +618,11 @@ export default function ClientGamesPage({ dbGames }: ClientGamesPageProps) {
           </div>
         </motion.div>
       </div>
+      
+      {/* Modal rendered at top level - MOVED HERE */}
+      {showAddGame && (
+        <AddGameModal onClose={() => setShowAddGame(false)} />
+      )}
     </div>
   )
 }
@@ -677,16 +678,18 @@ function AddGameModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in overflow-y-auto">
       <div 
-        className="relative w-full max-w-md rounded-xl border border-white/20 bg-white dark:bg-neutral-900 p-6 shadow-2xl animate-modal-pop"
+        className="relative w-full max-w-md mx-auto my-8 rounded-xl border border-white/20 bg-white dark:bg-neutral-900 p-6 shadow-2xl animate-modal-pop"
         style={{
-          boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)'
+          boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+          maxHeight: 'calc(100vh - 4rem)',
+          overflowY: 'auto'
         }}
       >
         <button
           onClick={onClose}
-          className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full bg-red-500 text-white shadow-lg transition hover:bg-red-600"
+          className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full bg-red-500 text-white shadow-lg transition hover:bg-red-600 z-10"
           aria-label="Close"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -802,4 +805,4 @@ function AddGameModal({ onClose }: { onClose: () => void }) {
       </div>
     </div>
   );
-} 
+}
