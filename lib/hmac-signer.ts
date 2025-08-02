@@ -31,12 +31,16 @@ export function signPayload(payload: any, secret: string): string {
  */
 export function verifySignature(payload: any, secret: string, signature: string): boolean {
   const expectedSignature = signPayload(payload, secret);
-  
+
+  const expectedBuffer = Buffer.from(expectedSignature, 'hex');
+  const providedBuffer = Buffer.from(signature, 'hex');
+
+  if (expectedBuffer.length !== providedBuffer.length) {
+    return false;
+  }
+
   // Use timing-safe comparison to prevent timing attacks
-  return crypto.timingSafeEqual(
-    Buffer.from(expectedSignature, 'hex'),
-    Buffer.from(signature, 'hex')
-  );
+  return crypto.timingSafeEqual(expectedBuffer, providedBuffer);
 }
 
 /**
