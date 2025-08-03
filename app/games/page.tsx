@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { PrismaClient } from '../../generated/prisma'
+import { PrismaClient } from '@prisma/client'
 import ClientGamesPage from './ClientGamesPage'
 
 export default async function GamesPage() {

@@ -2,7 +2,7 @@
  * Script to create multiple admin users
  * Run with: node scripts/create-admin-users.js
  */
-const { PrismaClient } = require('../generated/prisma');
+const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcrypt');
 require('dotenv').config();
 
@@ -110,4 +110,4 @@ async function createAdminUsers() {
 }
 
 // Run the function
-createAdminUsers(); 
+createAdminUsers();

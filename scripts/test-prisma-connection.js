@@ -1,4 +1,4 @@
-const { PrismaClient } = require('../generated/prisma');
+const { PrismaClient } = require('@prisma/client');
 
 // Set DATABASE_URL if not already set
 if (!process.env.DATABASE_URL) {
@@ -49,4 +49,4 @@ async function testPrismaConnection() {
   }
 }
 
-testPrismaConnection(); 
+testPrismaConnection();
