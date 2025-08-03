@@ -1,13 +1,13 @@
 [build]
 builder = "nixpacks"
-buildCommand = "node scripts/custom-build.js"
+buildCommand = "npm run build"
 
 [deploy]
-startCommand = "npm start"
+startCommand = "node server.js"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 600
 restartPolicyType = "always"
 restartPolicyMaxRetries = 10
 
 [nixpacks]
-nodejs-version = "20" 
+nodejs-version = "20"
