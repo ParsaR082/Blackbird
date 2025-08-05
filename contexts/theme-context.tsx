@@ -21,22 +21,24 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     // Set initial theme immediately
     const root = document.documentElement
     
-    // Check if theme is saved in localStorage
-    const savedTheme = localStorage.getItem('theme') as Theme
-    if (savedTheme) {
-      setTheme(savedTheme)
-      root.classList.remove('light', 'dark')
-      root.classList.add(savedTheme)
-    } else {
-      // Default to dark theme
-      setTheme('dark')
-      root.classList.remove('light', 'dark')
-      root.classList.add('dark')
+    // Check if theme is saved in localStorage (only on client side)
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme') as Theme
+      if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
+        setTheme(savedTheme)
+        root.classList.remove('light', 'dark')
+        root.classList.add(savedTheme)
+      } else {
+        // Default to dark theme
+        setTheme('dark')
+        root.classList.remove('light', 'dark')
+        root.classList.add('dark')
+      }
     }
   }, [])
 
   useEffect(() => {
-    if (mounted) {
+    if (mounted && typeof window !== 'undefined') {
       localStorage.setItem('theme', theme)
       
       // Apply theme to html element
@@ -104,4 +106,4 @@ export function useTheme() {
     throw new Error('useTheme must be used within a ThemeProvider')
   }
   return context
-} 
+}

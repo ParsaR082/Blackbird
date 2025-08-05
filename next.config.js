@@ -1,16 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    unoptimized: true,
-    domains: ['supabase.co', 'avatars.githubusercontent.com', 'lh3.googleusercontent.com'],
+    domains: ['localhost', 'blackbird-production.up.railway.app'],
   },
   typescript: {
-    ignoreBuildErrors: false, // Enable type checking for better error detection
+    ignoreBuildErrors: false,
   },
   eslint: {
-    ignoreDuringBuilds: false, // Enable ESLint for better code quality
+    ignoreDuringBuilds: false,
   },
   swcMinify: true,
+  output: 'standalone',
   env: {
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
@@ -28,10 +28,9 @@ const nextConfig = {
           },
         ],
       },
-    ];
+    ]
   },
   compress: process.env.NODE_ENV === 'production',
-  poweredByHeader: false,
 }
 
 module.exports = nextConfig

@@ -12,16 +12,27 @@ import { MobileMenu } from './MobileMenu'
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
 
   useEffect(() => {
+    setMounted(true)
+    
     const handleScroll = () => {
-      setScrolled(window.scrollY > 20)
+      if (typeof window !== 'undefined') {
+        setScrolled(window.scrollY > 20)
+      }
     }
 
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
+    if (typeof window !== 'undefined') {
+      window.addEventListener('scroll', handleScroll)
+      return () => window.removeEventListener('scroll', handleScroll)
+    }
   }, [])
+
+  if (!mounted) {
+    return null
+  }
 
   const isHomePage = pathname === '/'
 
@@ -58,4 +69,4 @@ export function Header() {
       />
     </motion.header>
   )
-} 
+}

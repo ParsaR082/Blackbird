@@ -10,19 +10,30 @@ import { useTheme } from '@/contexts/theme-context'
 export function HomePageContent() {
   const [isMobile, setIsMobile] = useState(false)
   const [showCategoryRing, setShowCategoryRing] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const { theme } = useTheme()
 
   useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!mounted || typeof window === 'undefined') return
+    
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768)
     }
     checkMobile()
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
-  }, [])
+  }, [mounted])
 
   const handleLogoClick = () => {
     setShowCategoryRing(!showCategoryRing)
+  }
+
+  if (!mounted) {
+    return null // Prevent SSR mismatch
   }
 
   return (
@@ -182,4 +193,4 @@ export function HomePageContent() {
       </motion.div>
     </>
   )
-} 
+}

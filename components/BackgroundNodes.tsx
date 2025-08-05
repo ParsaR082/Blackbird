@@ -25,11 +25,18 @@ const BackgroundNodes: React.FC<BackgroundNodesProps> = ({ isMobile = false }) =
   const animationRef = useRef<number>()
   const mouseRef = useRef({ x: 0, y: 0 })
   const [nodes, setNodes] = useState<Node[]>([])
+  const [mounted, setMounted] = useState(false)
   const { theme } = useTheme()
 
   useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!mounted) return
+    
     const canvas = canvasRef.current
-    if (!canvas) return
+    if (!canvas || typeof window === 'undefined') return
 
     const ctx = canvas.getContext('2d')
     if (!ctx) return
@@ -146,6 +153,7 @@ const BackgroundNodes: React.FC<BackgroundNodesProps> = ({ isMobile = false }) =
 
     // Mouse movement handler
     const handleMouseMove = (e: MouseEvent) => {
+      if (typeof window === 'undefined') return
       mouseRef.current = { x: e.clientX, y: e.clientY }
     }
 
@@ -265,13 +273,15 @@ const BackgroundNodes: React.FC<BackgroundNodesProps> = ({ isMobile = false }) =
     animate()
 
     return () => {
-      window.removeEventListener('resize', handleResize)
-      window.removeEventListener('mousemove', handleMouseMove)
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', handleResize)
+        window.removeEventListener('mousemove', handleMouseMove)
+      }
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current)
       }
     }
-  }, [isMobile, theme])
+  }, [isMobile, theme, mounted])
 
   return (
     <canvas
@@ -282,4 +292,4 @@ const BackgroundNodes: React.FC<BackgroundNodesProps> = ({ isMobile = false }) =
   )
 }
 
-export default BackgroundNodes 
+export default BackgroundNodes

@@ -4,14 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "prisma generate",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint --fix",
-    "type-check": "tsc --noEmit",
-    "setup-db": "node scripts/push-schema.js",
-    "test": "jest",
-    "test-n8n": "node scripts/test-n8n-integration.js",
+    "lint": "next lint",
+    "prebuild": "prisma generate",
     "postinstall": "prisma generate"
   },
   "dependencies": {
