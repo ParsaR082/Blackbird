@@ -1,17 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // ✅ فعال‌سازی خروجی standalone برای اجرای مستقیم روی سرور یا Railway
+  // Enable standalone output for Docker deployment
   output: 'standalone',
-
-  // ✅ فشرده‌سازی فقط در production
+  
+  // Compression for production
   compress: process.env.NODE_ENV === 'production',
 
-  // ✅ تنظیمات تصویری ساده (میتونه حذف شه اگه مهم نیست فعلاً)
+  // Image configuration
   images: {
     domains: ['localhost', 'blackbird-production.up.railway.app'],
   },
 
-  // ✅ جلوگیری از نادیده‌گرفتن خطاهای build
+  // Build error handling
   typescript: {
     ignoreBuildErrors: false,
   },
@@ -19,26 +19,10 @@ const nextConfig = {
     ignoreDuringBuilds: false,
   },
 
-  // ✅ فعال‌سازی SWC برای سرعت build
+  // Enable SWC minification
   swcMinify: true,
 
-  // ❗ در حال حاضر ویژگی‌های experimental رو حذف می‌کنیم چون احتمال باگ دارن
-  // اگه واقعا نیاز داشتن، بعداً با تست دوباره اضافه می‌کنیم
-  // experimental: {
-  //   instrumentationHook: false,
-  //   serverComponentsExternalPackages: ['@opentelemetry/api'],
-  // },
-
-  // ❗ env فقط در Vercel لازم میشه – در حالت local یا Railway فایل `.env` بارگذاری میشه
-  // اگر هم بخوای استفاده کنی، اینطوری باید باشه
-  // env: {
-  //   NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-  //   NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
-  //   DATABASE_URL: process.env.DATABASE_URL,
-  //   CSRF_SECRET: process.env.CSRF_SECRET,
-  // },
-
-  // ✅ نمونه‌ای از تنظیمات cache برای API – قابل حذف اگه نیاز نداری
+  // API headers configuration
   async headers() {
     return [
       {
