@@ -1,33 +1,35 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Temporarily disable standalone for testing
-  // output: 'standalone',
-  
-  // Enable compression for production
+  // 🔧 Standalone output is disabled intentionally (normal build for Docker)
+  // Do NOT enable 'standalone' unless you plan to copy .next/standalone in Docker
+
+  // ✅ Enable compression in production
   compress: process.env.NODE_ENV === 'production',
-  
-  // Configure image domains
+
+  // ✅ Allowed external image sources
   images: {
     domains: ['localhost', 'blackbird-portal.railway.app'],
   },
-  
-  // Don't ignore build errors for TypeScript and ESLint
+
+  // ✅ Strict mode for build (disable skipping errors)
   typescript: {
     ignoreBuildErrors: false,
   },
   eslint: {
     ignoreDuringBuilds: false,
   },
-  
-  // Enable SWC minification
+
+  // ✅ Use SWC for faster and smaller builds
   swcMinify: true,
-  
-  // Disable instrumentation in production to prevent clientModules error
+
+  // ✅ Prevent build-time crash from clientModules bug
   experimental: {
     instrumentationHook: false,
+    // 👇 OPTIONAL: disable serverActions if you don’t use them
+    // serverActions: false
   },
-  
-  // Configure headers for API routes
+
+  // ✅ Set headers for API routes (like no-cache)
   async headers() {
     return [
       {
