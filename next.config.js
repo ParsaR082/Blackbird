@@ -3,32 +3,31 @@ const nextConfig = {
   // Enable standalone output for Docker
   output: 'standalone',
   
-  // Compression for production
+  // Enable compression for production
   compress: process.env.NODE_ENV === 'production',
-
-  // Image configuration
+  
+  // Configure image domains
   images: {
-    domains: ['localhost', 'blackbird-production.up.railway.app'],
+    domains: ['localhost', 'blackbird-portal.railway.app'],
   },
-
-  // Build error handling
+  
+  // Don't ignore build errors for TypeScript and ESLint
   typescript: {
     ignoreBuildErrors: false,
   },
   eslint: {
     ignoreDuringBuilds: false,
   },
-
+  
   // Enable SWC minification
   swcMinify: true,
-
-  // Experimental features for better Docker support
+  
+  // Disable instrumentation in production to prevent clientModules error
   experimental: {
-    // Disable instrumentation in production to prevent clientModules error
     instrumentationHook: false,
   },
-
-  // API headers configuration
+  
+  // Configure headers for API routes
   async headers() {
     return [
       {

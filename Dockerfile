@@ -5,45 +5,42 @@ FROM node:20-alpine AS base
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# --- Install dependencies ---
+# --- Install production dependencies ---
 FROM base AS deps
 
 # Copy dependency files
 COPY package.json package-lock.json* ./
-COPY prisma ./prisma/
 
-# Install dependencies with exact versions
+# Install production dependencies only
 RUN npm ci --only=production && npm cache clean --force
 
-# --- Build dependencies (includes dev dependencies) ---
+# --- Install all dependencies for build ---
 FROM base AS build-deps
 
 # Copy dependency files
 COPY package.json package-lock.json* ./
-COPY prisma ./prisma/
 
-# Install all dependencies (including dev)
+# Install all dependencies (including dev dependencies for build)
 RUN npm ci && npm cache clean --force
 
-# --- Build the app ---
+# --- Build the application ---
 FROM base AS builder
 
-# Copy all dependencies
+# Copy all dependencies from build-deps stage
 COPY --from=build-deps /app/node_modules ./node_modules
-COPY --from=build-deps /app/prisma ./prisma
 COPY --from=build-deps /app/package.json ./package.json
 
-# Copy source code
+# Copy source code and Prisma schema
 COPY . .
 
-# Generate Prisma Client
+# Generate Prisma Client (requires prisma CLI from devDependencies)
 RUN npx prisma generate
 
 # Set build environment variables
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build the Next.js app
+# Build the Next.js application
 RUN npm run build
 
 # --- Final runtime image ---
@@ -62,15 +59,24 @@ RUN addgroup --system --gid 1001 nodejs && \
 # Set working directory
 WORKDIR /app
 
-# Copy runtime dependencies (production only)
+# Copy production dependencies and package.json
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/package.json ./package.json
 
-# Copy built application
+# Copy built application from builder stage
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+
+# Copy generated Prisma Client (only the client, not the CLI)
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma/client ./node_modules/@prisma/client
+
+# Copy Prisma schema for runtime (if needed for migrations)
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+
+# Copy healthcheck script
+COPY --from=builder --chown=nextjs:nodejs /app/healthcheck.js ./healthcheck.js
 
 # Switch to non-root user
 USER nextjs
@@ -82,5 +88,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node healthcheck.js || exit 1
 
-# Start the application
+# Next.js standalone mode automatically creates server.js in the standalone directory
 CMD ["node", "server.js"]
