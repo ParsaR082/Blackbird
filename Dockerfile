@@ -39,6 +39,10 @@ RUN npx prisma generate
 # Set build environment variables
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ARG MONGODB_URI
+ENV MONGODB_URI=${MONGODB_URI}
+ARG DATABASE_URL
+ENV DATABASE_URL=${DATABASE_URL}
 
 # Build the Next.js application
 RUN npm run build
