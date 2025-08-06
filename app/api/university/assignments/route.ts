@@ -2,12 +2,17 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
-// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/mongodb'
 import { Assignment, UserAssignment, Course } from '@/lib/models/university'
 import { getUserFromRequest } from '@/lib/server-utils'
 import { IAssignment, IUserAssignment } from '@/lib/models/university'
+
+interface AssignmentQuery {
+  userId: string;
+  courseId?: string;
+  status?: string;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,9 +31,12 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // Build query
-    let query: any = {}
+    let query: AssignmentQuery = { userId: user.id }
     if (courseId) {
       query.courseId = courseId
+    }
+    if (status) {
+      query.status = status
     }
 
     // Get assignments

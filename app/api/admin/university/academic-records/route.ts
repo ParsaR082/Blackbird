@@ -2,12 +2,31 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
-// @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/mongodb'
 import { AcademicRecord, Course, IUser } from '@/lib/models/university'
 import { validateAdmin } from '@/lib/server-utils'
 import { IAcademicRecord } from '@/lib/models/university'
+
+interface CourseData {
+  courseId: string;
+  courseName: string;
+  credits: number;
+  grade: string;
+  gpa: number;
+}
+
+interface UserData {
+  _id: string;
+  fullName: string;
+  email: string;
+}
+
+interface CourseInfo {
+  _id: string;
+  name: string;
+  credits: number;
+}
 
 // Create a User model for MongoDB queries
 const mongoose = require('mongoose')
@@ -47,9 +66,10 @@ export async function GET(request: NextRequest) {
 
     // Get user information
     const users = await User.find({ _id: { $in: userIds } }).lean()
-    const userMap = new Map()
+    const userMap = new Map<string, UserData>()
     users.forEach((user: any) => {
       userMap.set(user._id.toString(), {
+        _id: user._id.toString(),
         fullName: user.fullName,
         email: user.email
       })
@@ -65,13 +85,12 @@ export async function GET(request: NextRequest) {
 
     // Get course information
     const courses = await Course.find({ _id: { $in: Array.from(allCourseIds) } }).lean()
-    const courseMap = new Map()
+    const courseMap = new Map<string, CourseInfo>()
     courses.forEach((course: any) => {
       courseMap.set(course._id.toString(), {
-        title: course.title,
-        courseCode: course.courseCode,
-        credits: course.credits,
-        department: course.department
+        _id: course._id.toString(),
+        name: course.title,
+        credits: course.credits
       })
     })
 
@@ -138,21 +157,34 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get course information for validation
+    const courseIds = data.courses.map((course: any) => course.courseId)
+    const courses = await Course.find({ _id: { $in: courseIds } }).lean()
+    const courseMap = new Map<string, CourseInfo>()
+    courses.forEach((course: any) => {
+      courseMap.set(course._id.toString(), {
+        _id: course._id.toString(),
+        name: course.title,
+        credits: course.credits
+      })
+    })
+
     // Process courses data
-    const processedCourses = data.courses.map((course: any) => ({
+    const processedCourses = data.courses.map((course: CourseData) => ({
       courseId: course.courseId,
+      courseName: courseMap.get(course.courseId)?.name || 'Unknown Course',
+      credits: course.credits,
       grade: course.grade,
-      gpa: course.gpa,
-      credits: course.credits
+      gpa: course.gpa
     }))
 
     // Calculate totals
-    const totalCredits = processedCourses.reduce((sum: number, course: any) => sum + course.credits, 0)
-    const completedCredits = processedCourses
-      .filter((course: any) => course.grade !== 'F' && course.grade !== 'W')
-      .reduce((sum: number, course: any) => sum + course.credits, 0)
+    const totalCredits = processedCourses.reduce((sum: number, course: CourseData) => sum + course.credits, 0)
+    const passedCredits = processedCourses
+      .filter((course: CourseData) => course.grade !== 'F' && course.grade !== 'W')
+      .reduce((sum: number, course: CourseData) => sum + course.credits, 0)
     
-    const semesterGPA = processedCourses.reduce((sum: number, course: any) => sum + (course.gpa * course.credits), 0) / totalCredits
+    const semesterGPA = processedCourses.reduce((sum: number, course: CourseData) => sum + (course.gpa * course.credits), 0) / totalCredits
 
     // Create academic record
     const academicRecord = new AcademicRecord({
@@ -163,7 +195,7 @@ export async function POST(request: NextRequest) {
       semesterGPA: semesterGPA,
       cumulativeGPA: data.cumulativeGPA || semesterGPA,
       totalCredits: totalCredits,
-      completedCredits: completedCredits,
+      completedCredits: passedCredits,
       status: data.status || 'active'
     })
 
