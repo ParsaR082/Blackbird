@@ -1,58 +1,68 @@
-# Use official Node.js image
+# --- Base image ---
 FROM node:20-alpine AS base
 
-# Install dependencies only when needed
-FROM base AS deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk add --no-cache libc6-compat
+# Set working directory
 WORKDIR /app
 
-# Copy dependency files
+# --- Install dependencies ---
+FROM base AS deps
+
+# Add compatibility libs
+RUN apk add --no-cache libc6-compat
+
+# Copy only dependency files
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma/
 
-# Install dependencies
+# Install deps & clean cache
 RUN npm ci && npm cache clean --force
 
-# Rebuild the source code only when needed
+# --- Build the app ---
 FROM base AS builder
-WORKDIR /app
+
+# Copy deps from previous stage
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/prisma ./prisma
+COPY --from=deps /app/package.json ./package.json
 COPY . .
 
-# Generate Prisma client
+# Generate Prisma Client
 RUN npx prisma generate
 
-# Build the application
+# Set production env for build
+ENV NODE_ENV=production
+
+# Build the Next.js app
 RUN npm run build
 
-# Production image, copy all the files and run next
+# --- Final runtime image ---
 FROM base AS runner
-WORKDIR /app
 
+# Set environment
 ENV NODE_ENV=production
-# Disable telemetry during runtime
 ENV NEXT_TELEMETRY_DISABLED=1
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-# Copy the public folder from the project as this is not included in the build process
-COPY --from=builder /app/public ./public
-
-# Copy the built application
-COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
-
-# Copy Prisma files for runtime
-COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-
-USER nextjs
-
-EXPOSE 3000
-
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
+# Create app user
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 nextjs
+
+# Set working directory
+WORKDIR /app
+
+# Copy built files & runtime deps
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/prisma ./prisma
+
+# Set permissions
+USER nextjs
+
+# Expose app port
+EXPOSE 3000
+
+# Start app using Next.js
 CMD ["npm", "start"]
