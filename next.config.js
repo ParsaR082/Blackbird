@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Enable standalone output for Docker
-  output: 'standalone',
+  // Temporarily disable standalone for testing
+  // output: 'standalone',
   
   // Enable compression for production
   compress: process.env.NODE_ENV === 'production',
