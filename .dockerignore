@@ -10,11 +10,23 @@ out
 dist
 build
 
-# Environment files (keep .env for production)
+# Environment files
+.env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Testing
+coverage
+.nyc_output
+__tests__
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+jest.config.js
+jest.setup.js
 
 # IDE and editor files
 .vscode
@@ -32,9 +44,23 @@ build
 ehthumbs.db
 Thumbs.db
 
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Documentation
+README.md
+docs/
+*.md
+
 # Logs
-*.log
 logs
+*.log
 
 # Runtime data
 pids
@@ -43,11 +69,7 @@ pids
 *.pid.lock
 
 # Coverage directory used by tools like istanbul
-coverage
-*.lcov
-
-# nyc test coverage
-.nyc_output
+coverage/
 
 # Dependency directories
 jspm_packages/
@@ -77,76 +99,40 @@ jspm_packages/
 .cache
 .parcel-cache
 
-# Next.js build output
+# next.js build output
 .next
 
-# Nuxt.js build / generate output
+# nuxt.js build output
 .nuxt
 
-# Gatsby files
-.cache/
+# vuepress build output
+.vuepress/dist
 
-# Storybook build outputs
-.out
-.storybook-out
+# Serverless directories
+.serverless
+
+# FuseBox cache
+.fusebox/
+
+# DynamoDB Local files
+.dynamodb/
+
+# TernJS port file
+.tern-port
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
 
 # Temporary folders
 tmp/
 temp/
 
-# Docker files
-Dockerfile*
-docker-compose*
-.dockerignore
-
-# Git
-.git
-.gitignore
-
-# Documentation
-README.md
-*.md
-
-# Test files
-__tests__
-*.test.js
-*.test.ts
-*.spec.js
-*.spec.ts
-jest.config.js
-jest.setup.js
-
-# Linting
-.eslintrc*
-.prettierrc*
-
-# TypeScript
-*.tsbuildinfo
-
-# Vercel
-.vercel
-
-# Railway
-railway.toml
-.railwayignore
-
-# Nixpacks
-.nixpacks.toml
-
-# Generated files
-generated/
-
-# Audit and reports
-*-audit.json
-*-report.json
-depcheck-report.json
-eslint-report.json
-mobile-audit.json
-
-# Scripts (not needed in production)
-scripts/
-
-# Environment template
-.env.example
-.env.new
-env.txt
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
