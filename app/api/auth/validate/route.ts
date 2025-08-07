@@ -38,13 +38,25 @@ export async function GET(request: NextRequest) {
     const Session = mongoose.models.Session || mongoose.model('Session', SessionSchema)
 
     // Find valid session
+    console.log(`[Validate] Looking for session with token: ${sessionToken.substring(0, 8)}...`)
+    console.log(`[Validate] Current time: ${new Date().toISOString()}`)
+    
     const session = await Session.findOne({
       token: sessionToken,
       expiresAt: { $gt: new Date() }
     })
 
     if (!session) {
-      console.log('[Validate] Invalid or expired session')
+      console.log('[Validate] Session not found or expired')
+      
+      // Check if session exists but is expired
+      const expiredSession = await Session.findOne({ token: sessionToken })
+      if (expiredSession) {
+        console.log(`[Validate] Found expired session: expires at ${expiredSession.expiresAt.toISOString()}, current time: ${new Date().toISOString()}`)
+      } else {
+        console.log('[Validate] No session found with this token')
+      }
+      
       return NextResponse.json(
         { error: 'Invalid or expired session' },
         { status: 401 }
@@ -96,4 +108,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     )
   }
-} 
+}
