@@ -47,9 +47,10 @@ function getCookieConfig() {
   return {
     httpOnly: true,
     secure: isSecure,
-    // Use 'lax' instead of 'strict' for better compatibility in production
-    // 'lax' allows the cookie to be sent with top-level navigation
-    sameSite: isProduction ? 'lax' as const : 'lax' as const,
+    // Use 'lax' for better compatibility in production
+    // 'lax' allows the cookie to be sent with top-level navigation and same-site requests
+    // This is more compatible with Docker/proxy environments than 'strict'
+    sameSite: 'lax' as const,
     path: '/',
     maxAge: 60 * 60 // 1 hour
   }

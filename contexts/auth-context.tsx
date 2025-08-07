@@ -179,31 +179,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true)
       
+      console.log('[Auth] Starting registration process for:', userData.email)
+      
       // Get CSRF token from response body
-      const csrfResponse = await fetch('/api/auth/csrf')
+      const csrfResponse = await fetch('/api/auth/csrf', {
+        credentials: 'include', // Ensure cookies are sent and received
+        cache: 'no-store'
+      })
+      
+      if (!csrfResponse.ok) {
+        console.error('[Auth] Failed to get CSRF token for registration:', csrfResponse.status)
+        setIsLoading(false)
+        return { success: false, error: 'Failed to get security token' }
+      }
+      
       const { token: csrfToken } = await csrfResponse.json()
+      console.log('[Auth] CSRF token received for registration, length:', csrfToken?.length)
+      
+      if (!csrfToken) {
+        console.error('[Auth] No CSRF token in registration response')
+        setIsLoading(false)
+        return { success: false, error: 'Security token not received' }
+      }
       
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'x-csrf-token': csrfToken || ''
+          'x-csrf-token': csrfToken
         },
         body: JSON.stringify(userData),
-        cache: 'no-store'
+        cache: 'no-store',
+        credentials: 'include' // Ensure cookies are sent
       })
 
       const data = await response.json()
 
       if (!response.ok) {
+        console.error('[Auth] Registration failed:', data.error)
         setIsLoading(false)
         return { success: false, error: data.error || 'Registration failed' }
       }
 
+      console.log('[Auth] Registration successful')
       setIsLoading(false)
       return { success: true }
     } catch (error) {
-      console.error('Registration error:', error)
+      console.error('[Auth] Registration error:', error)
       setIsLoading(false)
       return { success: false, error: 'An unexpected error occurred' }
     }
@@ -214,21 +236,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true)
       
-      // Get CSRF token from response body
-      const csrfResponse = await fetch('/api/auth/csrf')
-      const { token: csrfToken } = await csrfResponse.json()
+      console.log('[Auth] Starting logout process')
       
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: {
-          'x-csrf-token': csrfToken || ''
-        },
+      // Get CSRF token from response body
+      const csrfResponse = await fetch('/api/auth/csrf', {
+        credentials: 'include', // Ensure cookies are sent and received
         cache: 'no-store'
       })
       
+      if (!csrfResponse.ok) {
+        console.error('[Auth] Failed to get CSRF token for logout:', csrfResponse.status)
+        // Continue with logout even if CSRF fails
+      } else {
+        const { token: csrfToken } = await csrfResponse.json()
+        console.log('[Auth] CSRF token received for logout, length:', csrfToken?.length)
+        
+        if (csrfToken) {
+          await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: {
+              'x-csrf-token': csrfToken
+            },
+            cache: 'no-store',
+            credentials: 'include' // Ensure cookies are sent
+          })
+        }
+      }
+      
+      console.log('[Auth] Logout completed')
       setUser(null)
     } catch (error) {
-      console.error('Logout error:', error)
+      console.error('[Auth] Logout error:', error)
+      // Still clear user state even if logout request fails
+      setUser(null)
     } finally {
       setIsLoading(false)
     }

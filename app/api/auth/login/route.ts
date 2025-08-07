@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
     // Determine if we're in production
     const isProduction = process.env.NODE_ENV === 'production'
     
-    // Set cookie options - Railway compatible
+    // Set cookie options - Production compatible
     const cookieOptions = {
       name: 'session_token',
       value: sessionToken,
@@ -206,7 +206,9 @@ export async function POST(request: NextRequest) {
       path: '/',
       httpOnly: true,
       secure: isProduction,
-      sameSite: isProduction ? 'none' as const : 'lax' as const,
+      // Use 'lax' for better Docker/proxy compatibility
+      // 'none' requires HTTPS and can cause issues in some Docker setups
+      sameSite: 'lax' as const,
       // Remove domain setting to let browser handle it automatically
     }
     
@@ -233,4 +235,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-} 
+}
