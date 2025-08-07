@@ -128,5 +128,6 @@ temp/
 *.sln
 *.sw?
 
-# Scripts directory (contains problematic custom build script)
-scripts/
+# Exclude most scripts but keep essential startup scripts
+scripts/*
+!scripts/start-app.sh
