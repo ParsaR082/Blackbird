@@ -26,7 +26,16 @@ COPY . .
 RUN npx prisma generate
 
 ENV NODE_ENV=production
+
+ARG DATABASE_URL
+ARG MONGODB_URI
+
+ENV DATABASE_URL=$DATABASE_URL
+ENV MONGODB_URI=$MONGODB_URI
 ENV NEXT_TELEMETRY_DISABLED=1
+
+COPY . .
+RUN npx prisma generate
 
 RUN npm run build
 
