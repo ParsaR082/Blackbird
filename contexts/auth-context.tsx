@@ -111,9 +111,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true)
       
+      console.log('[Auth] Starting login process for:', identifier)
+      
       // Get CSRF token from response body (not headers)
-      const csrfResponse = await fetch('/api/auth/csrf')
+      const csrfResponse = await fetch('/api/auth/csrf', {
+        credentials: 'include', // Ensure cookies are sent and received
+        cache: 'no-store'
+      })
+      
+      if (!csrfResponse.ok) {
+        console.error('[Auth] Failed to get CSRF token:', csrfResponse.status)
+        setIsLoading(false)
+        return { success: false, error: 'Failed to get security token' }
+      }
+      
       const { token: csrfToken } = await csrfResponse.json()
+      console.log('[Auth] CSRF token received, length:', csrfToken?.length)
+      
+      if (!csrfToken) {
+        console.error('[Auth] No CSRF token in response')
+        setIsLoading(false)
+        return { success: false, error: 'Security token not received' }
+      }
       
       console.log('[Auth] Logging in user:', identifier)
       
@@ -121,7 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'x-csrf-token': csrfToken || ''
+          'x-csrf-token': csrfToken
         },
         body: JSON.stringify({ identifier, password }),
         cache: 'no-store',
@@ -238,4 +257,4 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider')
   }
   return context
-} 
+}

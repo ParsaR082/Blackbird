@@ -4,6 +4,13 @@ const CSRF_SECRET = process.env.CSRF_SECRET || 'default-csrf-secret-change-in-pr
 const CSRF_COOKIE_NAME = 'csrf_token'
 const CSRF_HEADER_NAME = 'x-csrf-token'
 
+// Debug logging helper
+function debugLog(message: string, data?: any) {
+  if (process.env.NODE_ENV === 'development' || process.env.CSRF_DEBUG === 'true') {
+    console.log(`[CSRF Debug] ${message}`, data || '')
+  }
+}
+
 /**
  * Generate random bytes using Web Crypto API (Edge Runtime compatible)
  */
@@ -24,29 +31,66 @@ async function createHash(data: string): Promise<string> {
 }
 
 /**
+ * Get production-safe cookie configuration
+ */
+function getCookieConfig() {
+  const isProduction = process.env.NODE_ENV === 'production'
+  const isSecure = isProduction || process.env.FORCE_SECURE_COOKIES === 'true'
+  
+  debugLog('Cookie config', { 
+    isProduction, 
+    isSecure, 
+    nodeEnv: process.env.NODE_ENV,
+    forceSecure: process.env.FORCE_SECURE_COOKIES 
+  })
+  
+  return {
+    httpOnly: true,
+    secure: isSecure,
+    // Use 'lax' instead of 'strict' for better compatibility in production
+    // 'lax' allows the cookie to be sent with top-level navigation
+    sameSite: isProduction ? 'lax' as const : 'lax' as const,
+    path: '/',
+    maxAge: 60 * 60 // 1 hour
+  }
+}
+
+/**
  * Generates a new CSRF token and sets it as a cookie (only for route handlers)
  */
 export async function generateCsrfTokenWithCookie(): Promise<string> {
-  // Generate a random token
-  const token = generateRandomToken()
-  
-  // Create a hash of the token with a secret
-  const hash = await createHash(`${token}${CSRF_SECRET}`)
-  
-  // Set the token as a cookie
-  cookies().set({
-    name: CSRF_COOKIE_NAME,
-    value: token,
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    path: '/',
-    // Short expiration for CSRF tokens
-    maxAge: 60 * 60 // 1 hour
-  })
-  
-  // Return the hash that will be sent in the form/header
-  return hash
+  try {
+    // Generate a random token
+    const token = generateRandomToken()
+    debugLog('Generated raw token', token.substring(0, 8) + '...')
+    
+    // Create a hash of the token with a secret
+    const hash = await createHash(`${token}${CSRF_SECRET}`)
+    debugLog('Generated hash', hash.substring(0, 8) + '...')
+    
+    // Get cookie configuration
+    const cookieConfig = getCookieConfig()
+    
+    // Set the token as a cookie
+    cookies().set({
+      name: CSRF_COOKIE_NAME,
+      value: token,
+      ...cookieConfig
+    })
+    
+    debugLog('Cookie set successfully', { 
+      name: CSRF_COOKIE_NAME, 
+      config: cookieConfig,
+      tokenLength: token.length,
+      hashLength: hash.length
+    })
+    
+    // Return the hash that will be sent in the form/header
+    return hash
+  } catch (error) {
+    console.error('[CSRF Error] Failed to generate token with cookie:', error)
+    throw error
+  }
 }
 
 /**
@@ -62,22 +106,56 @@ export async function generateCsrfTokenPair(): Promise<{ token: string; hash: st
  * Validates a CSRF token against the stored cookie
  */
 export async function validateCsrfToken(token?: string | null): Promise<boolean> {
-  if (!token) {
+  try {
+    debugLog('Starting CSRF validation', { 
+      hasToken: !!token, 
+      tokenLength: token?.length,
+      tokenPreview: token?.substring(0, 8) + '...' 
+    })
+    
+    if (!token) {
+      debugLog('Validation failed: No token provided')
+      return false
+    }
+    
+    // Get the original token from the cookie
+    const cookieStore = cookies()
+    const cookieToken = cookieStore.get(CSRF_COOKIE_NAME)?.value
+    
+    debugLog('Cookie retrieval', { 
+      hasCookie: !!cookieToken, 
+      cookieLength: cookieToken?.length,
+      cookiePreview: cookieToken?.substring(0, 8) + '...',
+      cookieName: CSRF_COOKIE_NAME
+    })
+    
+    if (!cookieToken) {
+      debugLog('Validation failed: No cookie token found')
+      // Log all available cookies for debugging
+      const allCookies = cookieStore.getAll()
+      debugLog('Available cookies', allCookies.map(c => ({ name: c.name, hasValue: !!c.value })))
+      return false
+    }
+    
+    // Recreate the hash from the cookie value
+    const expectedHash = await createHash(`${cookieToken}${CSRF_SECRET}`)
+    debugLog('Hash comparison', { 
+      expectedHashPreview: expectedHash.substring(0, 8) + '...',
+      providedTokenPreview: token.substring(0, 8) + '...',
+      expectedLength: expectedHash.length,
+      providedLength: token.length
+    })
+    
+    // Compare in constant time to prevent timing attacks
+    const isValid = timingSafeEqual(token, expectedHash)
+    debugLog('Validation result', { isValid })
+    
+    return isValid
+  } catch (error) {
+    console.error('[CSRF Error] Token validation failed:', error)
+    debugLog('Validation error', error)
     return false
   }
-  
-  // Get the original token from the cookie
-  const cookieToken = cookies().get(CSRF_COOKIE_NAME)?.value
-  
-  if (!cookieToken) {
-    return false
-  }
-  
-  // Recreate the hash from the cookie value
-  const expectedHash = await createHash(`${cookieToken}${CSRF_SECRET}`)
-  
-  // Compare in constant time to prevent timing attacks
-  return timingSafeEqual(token, expectedHash)
 }
 
 /**
@@ -107,4 +185,4 @@ export function withCsrf(handler: Function) {
     response.headers.set(CSRF_HEADER_NAME, csrfToken)
     return response
   }
-} 
+}
