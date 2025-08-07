@@ -35,7 +35,9 @@ async function createHash(data: string): Promise<string> {
  */
 function getCookieConfig() {
   const isProduction = process.env.NODE_ENV === 'production'
-  const isSecure = isProduction || process.env.FORCE_SECURE_COOKIES === 'true'
+  // Only set secure cookies if explicitly forced to true, regardless of production mode
+  // This allows HTTP access in production environments (like Docker without HTTPS)
+  const isSecure = process.env.FORCE_SECURE_COOKIES === 'true'
   
   debugLog('Cookie config', { 
     isProduction, 
