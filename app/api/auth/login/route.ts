@@ -206,30 +206,8 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date() 
     })
 
-    // Get request host for cookie domain
-    const host = request.headers.get('host') || ''
-    
-    // Determine if we're in production
-    const isProduction = process.env.NODE_ENV === 'production'
-    
-    // Set cookie options - Production compatible
-    const cookieOptions = {
-      name: 'session_token',
-      value: sessionToken,
-      expires: expiresAt,
-      path: '/',
-      httpOnly: true,
-      secure: isProduction,
-      // Use 'lax' for better Docker/proxy compatibility
-      // 'none' requires HTTPS and can cause issues in some Docker setups
-      sameSite: 'lax' as const,
-      // Remove domain setting to let browser handle it automatically
-    }
-    
-    // Set session cookie
-    const isProduction = process.env.NODE_ENV === 'production'
+    // Set session cookie with debug logging
     console.log('[Login] Setting session cookie:', {
-      isProduction,
       secure: false, // Force secure to false for HTTP
       httpOnly: true,
       sameSite: 'lax',
