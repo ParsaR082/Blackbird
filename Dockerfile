@@ -24,8 +24,8 @@ COPY . .
 RUN npx prisma generate
 
 # ✅ Inject environment variables needed at build time
-ARG MONGODB_URI
-ARG DATABASE_URL
+ARG MONGODB_URI=mongodb://localhost:27017/blackbird-build
+ARG DATABASE_URL=mongodb://localhost:27017/blackbird-build
 ENV MONGODB_URI=${MONGODB_URI}
 ENV DATABASE_URL=${DATABASE_URL}
 ENV NODE_ENV=production
@@ -76,4 +76,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node healthcheck.js || exit 1
 
-CMD ["./scripts/start-app.sh"]
+CMD ["/bin/sh", "./scripts/start-app.sh"]
