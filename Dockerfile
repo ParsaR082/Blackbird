@@ -65,7 +65,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma/client ./nod
 COPY --from=builder --chown=nextjs:nodejs /app/healthcheck.js ./healthcheck.js
 
 # Startup scripts
-COPY scripts/ ./scripts/
+COPY ./scripts ./scripts
 COPY wait-for-it.sh ./wait-for-it.sh
 RUN chmod +x ./wait-for-it.sh ./scripts/start-app.sh
 
