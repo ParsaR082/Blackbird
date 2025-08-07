@@ -67,6 +67,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma/client ./nod
 # ✅ Copy optional healthcheck
 COPY --from=builder --chown=nextjs:nodejs /app/healthcheck.js ./healthcheck.js
 
+# Copy startup scripts and make them executable
+COPY scripts/ ./scripts/
+COPY wait-for-it.sh ./
+RUN chmod +x ./wait-for-it.sh ./scripts/start-app.sh
+
 USER nextjs
 
 EXPOSE 3000
@@ -74,5 +79,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node healthcheck.js || exit 1
 
-# ✅ Run via Next.js in normal (non-standalone) mode
-CMD ["npm", "start"]
+# Start the application using our startup script
+CMD ["./scripts/start-app.sh"]

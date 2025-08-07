@@ -222,6 +222,7 @@ model Game {
 
 // Enums
 enum Role {
+  SUPER_ADMIN
   ADMIN
   MODERATOR
   USER

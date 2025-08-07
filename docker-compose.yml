@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: blackbird-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - blackbird-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: blackbird-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.docker
+    depends_on:
+      - mongodb
+    networks:
+      - blackbird-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  blackbird-network:
+    driver: bridge
