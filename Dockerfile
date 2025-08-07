@@ -19,24 +19,19 @@ RUN npm ci && npm cache clean --force
 # --- Build the application ---
 FROM base AS builder
 
+# 🔹 ست کردن متغیرهای محیطی لازم برای بیلد
+ENV NODE_ENV=production
+ENV DATABASE_URL="mongodb://mongodb:27017/blackbird-db"
+ENV NEXT_TELEMETRY_DISABLED=1
+
 COPY --from=build-deps /app/node_modules ./node_modules
 COPY --from=build-deps /app/package.json ./package.json
 COPY . .
 
+# Prisma generation before build
 RUN npx prisma generate
 
-ENV NODE_ENV=production
-
-ARG DATABASE_URL
-ARG MONGODB_URI
-
-ENV DATABASE_URL=$DATABASE_URL
-ENV MONGODB_URI=$MONGODB_URI
-ENV NEXT_TELEMETRY_DISABLED=1
-
-COPY . .
-RUN npx prisma generate
-
+# Build the Next.js app
 RUN npm run build
 
 # --- Final runtime image ---
@@ -52,24 +47,23 @@ RUN addgroup --system --gid 1001 nodejs && \
 
 WORKDIR /app
 
+# Copy production node_modules and package.json
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/package.json ./package.json
 
-# ✅ Copy normal build output
+# ✅ Copy compiled app
 COPY --from=builder --chown=nextjs:nodejs /app/.next .next
 COPY --from=builder --chown=nextjs:nodejs /app/public public
 COPY --from=builder --chown=nextjs:nodejs /app/prisma prisma
 
-# ✅ Copy generated Prisma Client
+# ✅ Copy generated Prisma client
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma/client ./node_modules/@prisma/client
 
-# ✅ Copy optional healthcheck
-COPY --from=builder --chown=nextjs:nodejs /app/healthcheck.js ./healthcheck.js
-
-# Copy startup scripts and make them executable
-COPY scripts/ ./scripts/
-COPY wait-for-it.sh ./
+# ✅ Healthcheck and startup scripts
+COPY --from=builder /app/healthcheck.js ./healthcheck.js
+COPY --from=builder /app/scripts ./scripts
+COPY --from=builder /app/wait-for-it.sh ./wait-for-it.sh
 RUN chmod +x ./wait-for-it.sh ./scripts/start-app.sh
 
 USER nextjs
@@ -79,5 +73,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node healthcheck.js || exit 1
 
-# Start the application using our startup script
 CMD ["./scripts/start-app.sh"]
