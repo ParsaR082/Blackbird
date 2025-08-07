@@ -6,6 +6,10 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
   try {
     console.log('[CSRF Route] Generating new CSRF token')
+    console.log('[CSRF Route] Environment check:', {
+      NODE_ENV: process.env.NODE_ENV,
+      FORCE_SECURE_COOKIES: process.env.FORCE_SECURE_COOKIES
+    })
     
     // Generate a new CSRF token
     const csrfToken = await generateCsrfTokenWithCookie()
